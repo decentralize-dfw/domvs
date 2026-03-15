@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>vea-demo1-real estate</title>
+    <title>VEA Demo — Nova Residence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -11,6 +14,7 @@
             --bg: #000;
             --muted: #9aa0a6;
             --accent: #e5e5e5;
+            --gold: #c9a96e;
             --panel: rgba(0, 0, 0, .55);
             --panelBlur: 8px;
         }
@@ -20,7 +24,7 @@
             overflow: hidden;
             color: var(--fg);
             background: var(--bg);
-            font-family: Helvetica, Arial, sans-serif;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
             cursor: pointer;
         }
 
@@ -44,10 +48,57 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.8);
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.92);
             color: white;
             z-index: 1000;
-            font-size: 24px;
+            gap: 12px;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+        }
+
+        #loading .loading-title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
+
+        #loading .loading-subtitle {
+            font-size: 11px;
+            letter-spacing: 0.35em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+
+        #loading .loading-bar-track {
+            width: 280px;
+            height: 2px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #loadingProgressBar {
+            width: 30%;
+            height: 100%;
+            background: var(--gold);
+            border-radius: 2px;
+            animation: loadingPulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes loadingPulse {
+            0%   { width: 15%; }
+            50%  { width: 75%; }
+            100% { width: 15%; }
+        }
+
+        #loading .loading-tagline {
+            margin-top: 16px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 0.12em;
         }
 
         #loading img {
@@ -102,13 +153,36 @@
 
 
         #initiating {
-            /* ... (styles remain the same) ... */
+            position: fixed;
+            inset: 0;
             display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            color: #fff;
+            font-size: 20px;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            z-index: 500;
+            text-align: center;
         }
 
         #ended {
-            /* ... (styles remain the same) ... */
+            position: fixed;
+            inset: 0;
             display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            font-size: 22px;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            letter-spacing: 0.1em;
+            z-index: 500;
+            text-align: center;
+            gap: 20px;
         }
 
         /* UPDATED: Description position */
@@ -132,8 +206,21 @@
         }
 
         #hoverText {
-            /* ... (styles remain the same) ... */
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.72);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            pointer-events: none;
+            font-size: 13px;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            letter-spacing: 0.05em;
+            z-index: 20;
             display: none;
+            white-space: nowrap;
         }
         
         /* --- UPDATED HTML PANEL STYLES --- */
@@ -282,7 +369,14 @@
     </script>
 </head>
 <body>
-    <div id="loading">Loading Experience...</div>
+    <div id="loading">
+        <div class="loading-title">VEA</div>
+        <div class="loading-subtitle">Real Estate Experience</div>
+        <div class="loading-bar-track">
+            <div id="loadingProgressBar"></div>
+        </div>
+        <div class="loading-tagline">Geleceğin Konutunu Keşfet</div>
+    </div>
     
     <!-- Background image, also used for loading screen --><img id="backgroundImg" src="https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg">
     
@@ -307,11 +401,11 @@
     <button id="modelToggleBtn6" style="position: absolute; left: 360px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 6</button>
 
 
-<button id="fullscreenButton" style="position: absolute; right: 400px; top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Full Screen</button>
-    <button id="projectInfoButton" style="position: absolute; right: 300px;top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Project Info</button>
-    <button id="studioInfoButton" style="position: absolute; right: 200px; top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Studio Info</button>
-    <button id="hintButton" style="position: absolute; right: 10px; top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Hint</button>
-    <button id="creatorsNoteButton" style="position: absolute; right: 80px;top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Creators Note</button>
+<button id="fullscreenButton" style="position: fixed; right: 410px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">⛶ Tam Ekran</button>
+    <button id="projectInfoButton" style="position: fixed; right: 305px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">Proje Bilgisi</button>
+    <button id="studioInfoButton" style="position: fixed; right: 195px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">Stüdyo</button>
+    <button id="creatorsNoteButton" style="position: fixed; right: 95px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">Not</button>
+    <button id="hintButton" style="position: fixed; right: 15px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">? Yardım</button>
     
     
     <div id="description"></div>
@@ -322,124 +416,251 @@
 
     <!-- HTML Content Store --><div id="htmlContentStore" style="display: none;">
         <!-- Scene 0 --><div id="html_scene0_left">
-            <h3>Scene 0: Pre-Start</h3>
-            <p>Left panel for auto-rotate scene.</p>
+            <h3>VEA Demo</h3>
+            <p>Interaktif 3D gayrimenkul deneyimine hoş geldiniz.</p>
+            <p>Bu demo, yeni nesil konut projesinin tüm detaylarını immersive bir ortamda sunmaktadır.</p>
+            <p style="color: #c9a96e; margin-top: 10px;">▶ Başlamak için ekrana tıklayın</p>
         </div>
         <div id="html_scene0_right">
-            <h3>Scene 0: Pre-Start</h3>
-            <p>Right panel for auto-rotate scene.</p>
+            <h3>Proje Özeti</h3>
+            <p><strong>Proje:</strong> Nova Residence</p>
+            <p><strong>Geliştirici:</strong> VEA Development</p>
+            <p><strong>Konum:</strong> İstanbul, Türkiye</p>
+            <p><strong>Teslim:</strong> Q4 2026</p>
+            <p><strong>Toplam Ünite:</strong> 240</p>
         </div>
         
         <!-- Scene 1 --><div id="html_scene1_opt1_left">
-            <h3>Surrounding (L)</h3>
-            <p>Left panel details for 'Surrounding'.</p>
+            <h3>📍 Konum & Çevre</h3>
+            <p><strong>Koordinatlar:</strong> 41.0082° K, 28.9784° D</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p>🚇 Metro A İstasyonu — <strong>350m</strong></p>
+            <p>🚇 Metro B İstasyonu — <strong>800m</strong></p>
+            <p>🏫 İlköğretim Okulu — <strong>450m</strong></p>
+            <p>🏥 Devlet Hastanesi — <strong>1.2 km</strong></p>
+            <p>🛒 Alışveriş Merkezi — <strong>600m</strong></p>
+            <p>🌳 Kent Parkı — <strong>200m</strong></p>
         </div>
         <div id="html_scene1_opt1_right">
-            <h3>Surrounding (R)</h3>
-            <p>Right panel details for 'Surrounding'.</p>
+            <h3>Nova Residence</h3>
+            <p><strong>Geliştirici:</strong> VEA Development A.Ş.</p>
+            <p><strong>Blok Sayısı:</strong> 4 Blok</p>
+            <p><strong>Toplam Ünite:</strong> 240 Daire</p>
+            <p><strong>Kat Aralığı:</strong> 1+1 / 2+1 / 3+1</p>
+            <p><strong>Teslim Tarihi:</strong> Aralık 2026</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">🏅 LEED Gold Sertifikası</p>
+            <p style="color: #c9a96e;">🌱 Enerji Sınıfı: A+</p>
         </div>
         <div id="html_scene1_opt2_left">
-            <h3>Transportation</h3>
-            <p>Details about the 'Transportation' concept.</p>
+            <h3>🚌 Ulaşım Ağı</h3>
+            <p>🚇 M3 Metro Hattı — <strong>350m</strong></p>
+            <p>🚌 Otobüs Durağı — <strong>120m</strong></p>
+            <p>🚖 Taksi Durağı — <strong>80m</strong></p>
+            <p>🛵 Bisiklet Yolu — <strong>Proje önünden geçiyor</strong></p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p><strong>Havalimanı:</strong> 28 dk (E80)</p>
+            <p><strong>Boğaz Köprüsü:</strong> 12 dk</p>
+            <p><strong>TEM Bağlantısı:</strong> 5 dk</p>
         </div>
         <div id="html_scene1_opt2_right">
-            <h3>Transportation (R)</h3>
-            <p>Right panel details for 'Transportation'.</p>
+            <h3>Bağlantı Puanı</h3>
+            <p style="font-size: 36px; text-align: center; color: #c9a96e; margin: 10px 0;"><strong>9.2</strong><span style="font-size: 14px;">/10</span></p>
+            <p style="text-align: center; color: rgba(255,255,255,0.6); font-size: 12px;">Walk Score® Değerlendirmesi</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p>🚶 Yürünebilirlik: <strong>Mükemmel</strong></p>
+            <p>🚲 Bisiklet Dostu: <strong>İyi</strong></p>
+            <p>🚇 Toplu Ulaşım: <strong>Çok İyi</strong></p>
         </div>
         <div id="html_scene1_opt3_left">
-            <h3>Units</h3>
-            <p>Details about the 'Units' concept.</p>
+            <h3>🏠 Ünite Tipleri</h3>
+            <p><strong>1+1</strong> — 55–65 m² — 68 Daire</p>
+            <p><strong>2+1</strong> — 85–100 m² — 120 Daire</p>
+            <p><strong>3+1</strong> — 130–155 m² — 52 Daire</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">✅ Tüm üniteler güney-doğu cepheli</p>
+            <p style="color: #c9a96e;">✅ Panoramik balkon her dairede</p>
         </div>
         <div id="html_scene1_opt3_right">
-            <h3>Units (R)</h3>
-            <p>Right panel details for 'Units'.</p>
+            <h3>Fiyat Aralıkları</h3>
+            <p><strong>1+1</strong> — 2.850.000 ₺'den başlayan</p>
+            <p><strong>2+1</strong> — 4.200.000 ₺'den başlayan</p>
+            <p><strong>3+1</strong> — 6.500.000 ₺'den başlayan</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.5);">* Fiyatlar piyasa koşullarına göre değişkenlik gösterebilir.</p>
         </div>
 
         <!-- Scene 2 --><div id="html_scene2_opt1_left">
-            <h3>Option 1 (M1+M4)</h3>
-            <p>Details for model combination 1.</p>
+            <h3>🏙️ Klasik Cephe</h3>
+            <p>Geleneksel mimari dil ile modern detayların buluştuğu tasarım.</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p><strong>Cephe:</strong> Travertin & Alüminyum</p>
+            <p><strong>Renk Paleti:</strong> Krem / Antrasit</p>
+            <p><strong>Cam Oranı:</strong> %38</p>
+            <p><strong>Bina Yüksekliği:</strong> 14 kat</p>
         </div>
         <div id="html_scene2_opt1_right">
-            <h3>Option 1 (R)</h3>
-            <p>Right panel details for model combination 1.</p>
+            <h3>Klasik Cephe Avantajları</h3>
+            <p>✅ Düşük bakım maliyeti</p>
+            <p>✅ Zamansız estetik</p>
+            <p>✅ Daha iyi ısı yalıtımı</p>
+            <p>✅ Aydınlık iç mekan</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;"><strong>En Çok Tercih Edilen Seçenek</strong></p>
         </div>
-         <div id="html_scene2_opt2_left">
-            <h3>Option 2 (M3+M5)</h3>
-            <p>Details for model combination 2.</p>
+        <div id="html_scene2_opt2_left">
+            <h3>🔮 Metal Cephe</h3>
+            <p>Endüstriyel estetiği ile öne çıkan, geleceğe yönelik tasarım dili.</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p><strong>Cephe:</strong> Çelik Perforeli Panel</p>
+            <p><strong>Renk Paleti:</strong> Koyu Gri / Paslanmaz</p>
+            <p><strong>Cam Oranı:</strong> %52</p>
+            <p><strong>Bina Yüksekliği:</strong> 14 kat</p>
         </div>
         <div id="html_scene2_opt2_right">
-            <h3>Option 2 (R)</h3>
-            <p>Right panel details for model combination 2.</p>
+            <h3>Metal Cephe Avantajları</h3>
+            <p>✅ Yüksek cam oranı — daha fazla ışık</p>
+            <p>✅ Çarpıcı modern görünüm</p>
+            <p>✅ Uzun ömürlü malzeme</p>
+            <p>✅ Değer artışı potansiyeli</p>
         </div>
 
         <!-- Scene 3 --><div id="html_scene3_left">
-            <h3>Scene 3: Orbit (M2+M6)</h3>
-            <p>Left panel for orbit scene.</p>
+            <h3>🔄 360° Keşif</h3>
+            <p>Projeyi istediğiniz açıdan inceleyin.</p>
+            <p>🖱️ Fare ile döndürün</p>
+            <p>🖱️ Kaydırarak zoom yapın</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p><strong>Toplam İnşaat Alanı:</strong> 42.000 m²</p>
+            <p><strong>Yeşil Alan:</strong> 8.500 m²</p>
+            <p><strong>Otopark:</strong> 480 araç kapasiteli</p>
         </div>
         <div id="html_scene3_right">
-            <h3>Scene 3: Orbit (R)</h3>
-            <p>Right panel for orbit scene.</p>
+            <h3>Sosyal Alanlar</h3>
+            <p>🏊 Yüzme Havuzu</p>
+            <p>🏋️ Fitness Merkezi</p>
+            <p>🧖 Spa & Sauna</p>
+            <p>🎮 Çocuk Oyun Alanı</p>
+            <p>☕ Lobby Cafe</p>
+            <p>🔒 7/24 Güvenlik</p>
+            <p>📦 Kargo Odası</p>
         </div>
         
         <!-- Scene 4 --><div id="html_scene4_cam1_left">
-            <h3>Salon</h3>
-            <p>Left panel for Salon view.</p>
+            <h3>🛋️ Salon</h3>
+            <p><strong>Alan:</strong> 32 m²</p>
+            <p><strong>Zemin:</strong> Geniş Format Seramik</p>
+            <p><strong>Tavan Yüksekliği:</strong> 2.85m</p>
+            <p><strong>Pencere Yönü:</strong> Güney-Batı</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">☀️ Günün 7 saati doğal ışık</p>
         </div>
         <div id="html_scene4_cam1_right">
-            <h3>Salon (R)</h3>
-            <p>Right panel for Salon view.</p>
+            <h3>Salon Aksesuarları</h3>
+            <p>🪑 Koltuk Takımı: Poliform</p>
+            <p>💡 Avize: Tom Dixon</p>
+            <p>🖼️ TV Ünitesi: Custom MDF</p>
+            <p>🪟 Stor Perde: Somfy Motorlu</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="font-size: 12px; color: rgba(255,255,255,0.5);">* Aksesuarlar örnek gösterim amaçlıdır.</p>
         </div>
         <div id="html_scene4_cam2_left">
-            <h3>Bathroom</h3>
-            <p>Left panel for Bathroom view.</p>
+            <h3>🍳 Mutfak</h3>
+            <p><strong>Alan:</strong> 16 m²</p>
+            <p><strong>Tezgah:</strong> Silestone Quartz</p>
+            <p><strong>Dolap:</strong> Lake Boyalı MDF</p>
+            <p><strong>Zemin:</strong> Antrasit Seramik</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">✅ Ankastre cihazlar dahil</p>
         </div>
         <div id="html_scene4_cam2_right">
-            <h3>Bathroom (R)</h3>
-            <p>Right panel for Bathroom view.</p>
+            <h3>Mutfak Ekipmanları</h3>
+            <p>🔧 Davlumbaz: Bosch Series 6</p>
+            <p>🔧 Fırın: Siemens iQ700</p>
+            <p>🔧 Bulaşık Makinesi: Miele G7000</p>
+            <p>🔧 Buzdolabı: Samsung French Door</p>
         </div>
         <div id="html_scene4_cam3_left">
-            <h3>Bedroom 1</h3>
-            <p>Left panel for Bedroom 1 view.</p>
+            <h3>🛏️ Yatak Odası 1</h3>
+            <p><strong>Alan:</strong> 18 m²</p>
+            <p><strong>Zemin:</strong> Meşe Laminat Parke</p>
+            <p><strong>Pencere:</strong> Doğu Yönü</p>
+            <p><strong>Balkon:</strong> Var — 6 m²</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">🌅 Sabah güneşi</p>
         </div>
         <div id="html_scene4_cam3_right">
-            <h3>Bedroom 1 (R)</h3>
-            <p>Right panel for Bedroom 1 view.</p>
+            <h3>Yatak Odası 1 Detayları</h3>
+            <p>🛏️ Yatak: King Size 180×200</p>
+            <p>🪟 Gardırop: Gömme, 4 kanatlı</p>
+            <p>💡 Aydınlatma: LED Bankı</p>
+            <p>❄️ Klima: Daikin Inverter A++</p>
         </div>
         <div id="html_scene4_cam4_left">
-            <h3>Bedroom 1 WC</h3>
-            <p>Left panel for Bedroom 1 WC view.</p>
+            <h3>🚿 Banyo</h3>
+            <p><strong>Alan:</strong> 8 m²</p>
+            <p><strong>Zemin:</strong> Mermer Görünümlü Seramik</p>
+            <p><strong>Duvar:</strong> Geniş Format Beyaz Fayans</p>
+            <p><strong>Duş:</strong> Yağmur Başlık + El Duşu</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">✅ Yerden ısıtma sistemi</p>
         </div>
         <div id="html_scene4_cam4_right">
-            <h3>Bedroom 1 WC (R)</h3>
-            <p>Right panel for Bedroom 1 WC view.</p>
+            <h3>Banyo Armatürleri</h3>
+            <p>🚰 Lavabo: Villeroy & Boch</p>
+            <p>🪞 Ayna: LED Aydınlatmalı</p>
+            <p>🛁 Duş Kabini: 90×90 Cam</p>
+            <p>🔧 Batarya: Hansgrohe Metris</p>
         </div>
 
     <div id="html_scene4_cam5_left">
-            <h3>Bedroom 1 WC</h3>
-            <p>Left panel for Bedroom 1 WC view.</p>
+            <h3>Yatak Odası 2</h3>
+            <p>Alan: 14 m²</p>
+            <p>Zemin: Laminat Parke</p>
+            <p>Pencere: Güney Yönü</p>
         </div>
-        <div id="html_scene5_cam4_right">
-            <h3>Bedroom 1 WC (R)</h3>
-            <p>Right panel for Bedroom 1 WC view.</p>
+        <div id="html_scene4_cam5_right">
+            <h3>Yatak Odası 2 Detayları</h3>
+            <p>Gardırop: Gömme, 3 kanatlı</p>
+            <p>Klima: Daikin Inverter</p>
+            <p>Isı Yalıtımı: 8cm XPS</p>
         </div>
 
     <div id="html_scene4_cam6_left">
-            <h3>Bedroom 1 WC</h3>
-            <p>Left panel for Bedroom 1 WC view.</p>
+            <h3>🚿 Yatak Odası 2 Banyosu</h3>
+            <p><strong>Alan:</strong> 5 m²</p>
+            <p><strong>Zemin:</strong> Taş Doku Seramik</p>
+            <p><strong>Duvar:</strong> Beyaz Fayans</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">✅ Pencereli — doğal havalandırma</p>
         </div>
         <div id="html_scene4_cam6_right">
-            <h3>Bedroom 1 WC (R)</h3>
-            <p>Right panel for Bedroom 1 WC view.</p>
+            <h3>Banyo 2 Armatürleri</h3>
+            <p>🚰 Lavabo: Roca Nexo</p>
+            <p>🪞 Ayna: Standart</p>
+            <p>🚿 Duş: Köşe Duşakabin</p>
+            <p>🔧 Batarya: Grohe Eurosmart</p>
         </div>
 
 
         <!-- Scene 5 --><div id="html_scene5_left">
-            <h3>Scene 5: Walk-Thru</h3>
-            <p>Use W, A, S, D to move. Shift to sprint. Space to jump.</p>
+            <h3>🎮 Kontroller</h3>
+            <p><strong>W / A / S / D</strong> — Hareket et</p>
+            <p><strong>Fare</strong> — Kamera yönü</p>
+            <p><strong>Shift</strong> — Hızlı koş</p>
+            <p><strong>Space</strong> — Zıpla</p>
+            <p><strong>F</strong> — Tam ekran</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: rgba(255,255,255,0.5); font-size: 12px;">📱 Mobil: Sayfayı dokunmatik ekranda döndürün</p>
         </div>
         <div id="html_scene5_right">
-            <h3>Scene 5: Walk-Thru</h3>
-            <p>Explore the interior space freely.</p>
+            <h3>🚶 Walk-Thru Modu</h3>
+            <p>Dairenin içinde serbestçe dolaşın.</p>
+            <p>Tüm odaları gerçekçi ölçülerinde keşfedin.</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p><strong>Toplam Alan:</strong> 110 m²</p>
+            <p><strong>Oda Sayısı:</strong> 3+1</p>
+            <p style="color: #c9a96e; margin-top: 8px;">VR kulaklık bağlıysa tam VR deneyimi için 'Enter VR' seçin.</p>
         </div>
 
     </div>
@@ -462,7 +683,7 @@
         <p><strong>Hints</strong><br><br><br>
             <p><strong>Navigation: Use W, A, S, D to move around... (only in Walk-thru mode).</strong><br>Click F for fullscreen.<br><br><br>
             <p><strong>Links</strong><br>
-                <a href="httpsa://manifold.xyz/@dfw/contract/166699248/1" target="_blank">Manifold</a> → Minted Experience<br>
+                <a href="https://manifold.xyz/@dfw/contract/166699248/1" target="_blank">Manifold</a> → Minted Experience<br>
                 </p>
                 </div>
     <div id="creatorsNotePanel" class="panel">
