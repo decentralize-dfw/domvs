@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>vea-demo1-real estate</title>
+
+    <style>
+        :root {
+            --fg: #fff;
+            --bg: #000;
+            --muted: #9aa0a6;
+            --accent: #e5e5e5;
+            --panel: rgba(0, 0, 0, .55);
+            --panelBlur: 8px;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            color: var(--fg);
+            background: var(--bg);
+            font-family: Helvetica, Arial, sans-serif;
+            cursor: pointer;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .panel {
+            position: fixed;
+            backdrop-filter: blur(var(--panelBlur));
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+            z-index: 10;
+        }
+
+        #loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            z-index: 1000;
+            font-size: 24px;
+        }
+
+        #loading img {
+           display:none;
+        }
+        #sceneLoadingIndicator {
+             position: fixed;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             background: rgba(0,0,0,0.7);
+             color: white;
+             padding: 15px 25px;
+             border-radius: 10px;
+             font-size: 18px;
+             z-index: 1001; /* Show over background JPEG */
+             display: none;
+        }
+
+
+        #backgroundImg {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(1);
+            z-index: 5;
+            display: block; /* Start visible */
+        }
+
+        #instructions {
+            font-family: Helvetica, Arial, sans-serif;
+            inset: auto;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 8px 12px;
+            z-index: 15;
+            pointer-events: none;
+            display: block; /* Start visible */
+        }
+
+        #instructions h1 {
+            margin: 0 0 8px 0;
+            font-size: 25px;
+            font-weight: 700;
+        }
+
+        /* ... other instruction styles ... */
+
+
+        #initiating {
+            /* ... (styles remain the same) ... */
+            display: none;
+        }
+
+        #ended {
+            /* ... (styles remain the same) ... */
+            display: none;
+        }
+
+        /* UPDATED: Description position */
+        #description {
+            position: fixed;
+            bottom: 50px; /* 50px from bottom */
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            width: 500px; /* A bit wider for longer text */
+            text-align: center;
+            padding: 10px 15px;
+            backdrop-filter: blur(var(--panelBlur));
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+            z-index: 10;
+            color: #fff;
+            font-size: 16px;
+            display: none;
+        }
+
+        #hoverText {
+            /* ... (styles remain the same) ... */
+            display: none;
+        }
+        
+        /* --- UPDATED HTML PANEL STYLES --- */
+        #leftHtmlPanel, #rightHtmlPanel {
+            position: fixed;
+            width: 200px;
+            /* UPDATED: Top starts below buttons, bottom respects description */
+            top: 80px; /* 40px for buttons + 40px padding */
+            bottom: 120px; /* 50px for description + 10px padding */
+            overflow-y: auto; 
+            
+            backdrop-filter: blur(var(--panelBlur));
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+            z-index: 10;
+            padding: 15px;
+            box-sizing: border-box;
+            color: #fff;
+            font-size: 14px;
+            
+            display: none; /* Start hidden */
+        }
+
+         #leftHtmlPanel iframe, #rightHtmlPanel iframe {
+             width: 100%;
+             height: 100%;
+             border: none;
+             border-radius: 10px;
+         }
+        
+         #leftHtmlPanel h3, #rightHtmlPanel h3 {
+             margin-top: 0;
+             color: #fff;
+         }
+         #leftHtmlPanel p, #rightHtmlPanel p {
+             color: var(--accent);
+             font-size: 13px;
+         }
+
+
+        #leftHtmlPanel { left: 10px; right: auto; }
+        #rightHtmlPanel { right: 10px; left: auto; }
+        
+        #leftHtmlPanel::-webkit-scrollbar, #rightHtmlPanel::-webkit-scrollbar { width: 3px; }
+        #leftHtmlPanel::-webkit-scrollbar-thumb, #rightHtmlPanel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.5); border-radius: 3px; }
+        #leftHtmlPanel::-webkit-scrollbar-track, #rightHtmlPanel::-webkit-scrollbar-track { background: transparent; }
+
+
+       #projectInfoPanel, #studioInfoPanel, #hintPanel, #creatorsNotePanel {
+            font-style: normal;
+            position: fixed;
+            top: 70px;
+            right: 10px;
+            width: 375px;
+            height: 750px;
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, .55);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+            z-index: 20;
+            padding: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 400;
+            text-align: left;
+            display: none;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        #projectInfoPanel::-webkit-scrollbar, #studioInfoPanel::-webkit-scrollbar, #hintPanel::-webkit-scrollbar, #creatorsNotePanel::-webkit-scrollbar {
+            width: 1px;
+            background: transparent;
+        }
+
+        #projectInfoPanel::-webkit-scrollbar-thumb, #studioInfoPanel::-webkit-scrollbar-thumb, #hintPanel::-webkit-scrollbar-thumb, #creatorsNotePanel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 0.5px;
+        }
+
+        #projectInfoPanel::-webkit-scrollbar-track, #studioInfoPanel::-webkit-scrollbar-track, #hintPanel::-webkit-scrollbar-track, #creatorsNotePanel::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 5px 0;
+        }
+
+        #closeButton, #studioCloseButton, #hintCloseButton, #creatorsCloseButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        #projectInfoPanel p, #studioInfoPanel p, #hintPanel p, #creatorsNotePanel p {
+            margin: 10px 0;
+            text-align: justify;
+            text-align-last: left;
+            hyphens: auto;
+            -webkit-hyphens: auto;
+            -ms-hyphens: auto;
+        }
+
+        #projectInfoPanel i, #studioInfoPanel i, #hintPanel i, #creatorsNotePanel i {
+            font-size: 11px !important;
+            font-weight: 400;
+            line-height: 1.4;
+            font-style: italic;
+            text-align: justify;
+            text-align-last: left;
+            -webkit-hyphens: auto;
+            -ms-hyphens: auto;
+        }
+
+        #projectInfoPanel i strong, #studioInfoPanel i strong, #hintPanel i strong, #creatorsNotePanel i strong {
+            font-size: 13px !important;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        #projectInfoPanel a, #studioInfoPanel a, #hintPanel a, #creatorsNotePanel a {
+            color: #b1c2fa;
+            text-decoration: underline;
+        }
+
+        .selected {
+            background: rgba(255, 255, 255, 0.4) !important;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+        }
+    </style>
+    
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="loading">Loading Experience...</div>
+    
+    <!-- Background image, also used for loading screen --><img id="backgroundImg" src="https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg">
+    
+    <!-- This appears OVER the background image during model load --><div id="sceneLoadingIndicator">Loading Scene Models...</div>
+
+    
+    <!-- Instructions start visible --><div id="instructions" class="panel">
+        <h1>Click to Enter</h1>
+    </div>
+    
+    <div id="initiating">Initializing...</div>
+    <div id="ended">Experience Ended</div>
+    
+    <!-- Start button is hidden initially --><button id="startButton" style="position: absolute; left: 10px; bottom: 10px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 15px; font-weight: 700; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Start</button>
+
+    <p id="modelLabel" style="position: absolute; left: 10px; top: 10px; color: white; font-size: 12px; font-weight: 500; text-align: left; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model</p>
+    <button id="modelToggleBtn1" style="position: absolute; left: 60px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 1</button>
+    <button id="modelToggleBtn2" style="position: absolute; left: 120px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 2</button>
+    <button id="modelToggleBtn3" style="position: absolute; left: 180px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 3</button>
+    <button id="modelToggleBtn4" style="position: absolute; left: 240px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 4</button>
+    <button id="modelToggleBtn5" style="position: absolute; left: 300px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 5</button>
+    <button id="modelToggleBtn6" style="position: absolute; left: 360px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 6</button>
+
+
+<button id="fullscreenButton" style="position: absolute; right: 400px; top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Full Screen</button>
+    <button id="projectInfoButton" style="position: absolute; right: 300px;top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Project Info</button>
+    <button id="studioInfoButton" style="position: absolute; right: 200px; top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Studio Info</button>
+    <button id="hintButton" style="position: absolute; right: 10px; top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Hint</button>
+    <button id="creatorsNoteButton" style="position: absolute; right: 80px;top: -100px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif;">Creators Note</button>
+    
+    
+    <div id="description"></div>
+    <div id="hoverText">Click to open link</div>
+    
+    <!-- Side HTML Panels --><div id="leftHtmlPanel"></div>
+    <div id="rightHtmlPanel"></div>
+
+    <!-- HTML Content Store --><div id="htmlContentStore" style="display: none;">
+        <!-- Scene 0 --><div id="html_scene0_left">
+            <h3>Scene 0: Pre-Start</h3>
+            <p>Left panel for auto-rotate scene.</p>
+        </div>
+        <div id="html_scene0_right">
+            <h3>Scene 0: Pre-Start</h3>
+            <p>Right panel for auto-rotate scene.</p>
+        </div>
+        
+        <!-- Scene 1 --><div id="html_scene1_opt1_left">
+            <h3>Surrounding (L)</h3>
+            <p>Left panel details for 'Surrounding'.</p>
+        </div>
+        <div id="html_scene1_opt1_right">
+            <h3>Surrounding (R)</h3>
+            <p>Right panel details for 'Surrounding'.</p>
+        </div>
+        <div id="html_scene1_opt2_left">
+            <h3>Transportation</h3>
+            <p>Details about the 'Transportation' concept.</p>
+        </div>
+        <div id="html_scene1_opt2_right">
+            <h3>Transportation (R)</h3>
+            <p>Right panel details for 'Transportation'.</p>
+        </div>
+        <div id="html_scene1_opt3_left">
+            <h3>Units</h3>
+            <p>Details about the 'Units' concept.</p>
+        </div>
+        <div id="html_scene1_opt3_right">
+            <h3>Units (R)</h3>
+            <p>Right panel details for 'Units'.</p>
+        </div>
+
+        <!-- Scene 2 --><div id="html_scene2_opt1_left">
+            <h3>Option 1 (M1+M4)</h3>
+            <p>Details for model combination 1.</p>
+        </div>
+        <div id="html_scene2_opt1_right">
+            <h3>Option 1 (R)</h3>
+            <p>Right panel details for model combination 1.</p>
+        </div>
+         <div id="html_scene2_opt2_left">
+            <h3>Option 2 (M3+M5)</h3>
+            <p>Details for model combination 2.</p>
+        </div>
+        <div id="html_scene2_opt2_right">
+            <h3>Option 2 (R)</h3>
+            <p>Right panel details for model combination 2.</p>
+        </div>
+
+        <!-- Scene 3 --><div id="html_scene3_left">
+            <h3>Scene 3: Orbit (M2+M6)</h3>
+            <p>Left panel for orbit scene.</p>
+        </div>
+        <div id="html_scene3_right">
+            <h3>Scene 3: Orbit (R)</h3>
+            <p>Right panel for orbit scene.</p>
+        </div>
+        
+        <!-- Scene 4 --><div id="html_scene4_cam1_left">
+            <h3>Salon</h3>
+            <p>Left panel for Salon view.</p>
+        </div>
+        <div id="html_scene4_cam1_right">
+            <h3>Salon (R)</h3>
+            <p>Right panel for Salon view.</p>
+        </div>
+        <div id="html_scene4_cam2_left">
+            <h3>Bathroom</h3>
+            <p>Left panel for Bathroom view.</p>
+        </div>
+        <div id="html_scene4_cam2_right">
+            <h3>Bathroom (R)</h3>
+            <p>Right panel for Bathroom view.</p>
+        </div>
+        <div id="html_scene4_cam3_left">
+            <h3>Bedroom 1</h3>
+            <p>Left panel for Bedroom 1 view.</p>
+        </div>
+        <div id="html_scene4_cam3_right">
+            <h3>Bedroom 1 (R)</h3>
+            <p>Right panel for Bedroom 1 view.</p>
+        </div>
+        <div id="html_scene4_cam4_left">
+            <h3>Bedroom 1 WC</h3>
+            <p>Left panel for Bedroom 1 WC view.</p>
+        </div>
+        <div id="html_scene4_cam4_right">
+            <h3>Bedroom 1 WC (R)</h3>
+            <p>Right panel for Bedroom 1 WC view.</p>
+        </div>
+
+    <div id="html_scene4_cam5_left">
+            <h3>Bedroom 1 WC</h3>
+            <p>Left panel for Bedroom 1 WC view.</p>
+        </div>
+        <div id="html_scene5_cam4_right">
+            <h3>Bedroom 1 WC (R)</h3>
+            <p>Right panel for Bedroom 1 WC view.</p>
+        </div>
+
+    <div id="html_scene4_cam6_left">
+            <h3>Bedroom 1 WC</h3>
+            <p>Left panel for Bedroom 1 WC view.</p>
+        </div>
+        <div id="html_scene4_cam6_right">
+            <h3>Bedroom 1 WC (R)</h3>
+            <p>Right panel for Bedroom 1 WC view.</p>
+        </div>
+
+
+        <!-- Scene 5 --><div id="html_scene5_left">
+            <h3>Scene 5: Walk-Thru</h3>
+            <p>Use W, A, S, D to move. Shift to sprint. Space to jump.</p>
+        </div>
+        <div id="html_scene5_right">
+            <h3>Scene 5: Walk-Thru</h3>
+            <p>Explore the interior space freely.</p>
+        </div>
+
+    </div>
+
+    <!-- Info Panels remain the same --><div id="projectInfoPanel" class="panel">
+        <button id="closeButton">X</button>
+        <p><strong>Concept Summary:</strong><br><br>
+            Humanity evolves from touch to clicks...
+        </p>
+    </div>
+    <div id="studioInfoPanel" class="panel">
+        <button id="studioCloseButton">X</button>
+        <i><strong>Digital Forgery Workshop</strong></i><br><br>
+        <p><strong>CREATIVE DESIGN STUDIO...</strong><br><br>
+            Digital Forgery Workshop is a design practice...
+        </p>
+    </div>
+    <div id="hintPanel" class="panel">
+        <button id="hintCloseButton">X</button>
+        <p><strong>Hints</strong><br><br><br>
+            <p><strong>Navigation: Use W, A, S, D to move around... (only in Walk-thru mode).</strong><br>Click F for fullscreen.<br><br><br>
+            <p><strong>Links</strong><br>
+                <a href="httpsa://manifold.xyz/@dfw/contract/166699248/1" target="_blank">Manifold</a> → Minted Experience<br>
+                </p>
+                </div>
+    <div id="creatorsNotePanel" class="panel">
+        <button id="creatorsCloseButton">X</button>
+        <p><strong>C2W2 Virtual Runway, 2025</strong><br><br>
+            For 60+ VRM avatars...<br><br>
+            Redefining Digital Art...</p><i><a href="https://youtu.be/nyEjJ9KvnQc" target="_blank">Listen it here.</a></i>
+        </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Added
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { VRButton } from 'three/addons/webxr/VRButton.js';
+        import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+        import { PMREMGenerator } from 'three';
+        import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        
+        // --- GLOBAL VARIABLES ---
+        let scene, renderer, composer, bloomPass, ssaoPass;
+        
+        // --- NEW: Camera Management ---
+        let camera; // The active camera
+        let perspectiveCamera, orthographicCamera; // The two camera types
+        
+        let pointerLockControls, orbitControls, audioListener;
+        let playerRig; // Used for VR and as OrbitControls target
+        let vrControlsActive = false;
+        let vrControllers = [];
+        let clock = new THREE.Clock();
+        let pmremGenerator;
+        
+        // --- STATE MANAGEMENT ---
+        let currentSequenceScene = -1; // -1 = Pre-load, 0 = Pre-Start, 1 = Scene 1, etc.
+        let currentLoadedModels = []; // Array to hold { model, mixer } objects
+        let experienceStarted = false; // Tracks if 'Click to Enter' has been pressed
+
+        // --- DOM ELEMENTS ---
+        const loadingEl = document.getElementById('loading');
+        const sceneLoadingIndicatorEl = document.getElementById('sceneLoadingIndicator');
+        const backgroundImgEl = document.getElementById('backgroundImg');
+        const instructionsEl = document.getElementById('instructions');
+        const startButtonEl = document.getElementById('startButton');
+        const modelLabelEl = document.getElementById('modelLabel');
+        const modelToggleButtons = [
+            document.getElementById('modelToggleBtn1'),
+            document.getElementById('modelToggleBtn2'),
+            document.getElementById('modelToggleBtn3'),
+            document.getElementById('modelToggleBtn4'),
+            document.getElementById('modelToggleBtn5'),
+            document.getElementById('modelToggleBtn6')
+
+        ];
+        const leftHtmlPanel = document.getElementById('leftHtmlPanel');
+        const rightHtmlPanel = document.getElementById('rightHtmlPanel');
+        const descriptionEl = document.getElementById('description');
+
+        // --- NEW MODEL URLS ---
+        const modelUrls = [
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2city-opt-v2.glb', // 0: Model 1
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2city-ghost.glb', // 1: Model 2
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2city-metal-v1.glb', // 2: Model 3
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2city-whitefacade-v3.glb', // 3: Model 4
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2kopuk-normalfacade-opt-v5.glb', // 4: Model 5
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2-sehirici-apartmanici-opt-v6.glb', // 5: Model 6
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2interior-soloapartement-opt-v4.glb',  // 6: Model 7
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/SCENE5-COLLDERd.glb' // 7: Scene 5 Collider
+        ];
+        
+        // --- LOADERS ---
+        let dracoLoader, gltfLoader;
+
+        // --- AUDIO ---
+        let soundBuffers = []; // Array to hold all loaded buffers
+        let activeSounds = []; // Array to hold currently playing THREE.Audio instances
+        const audioLoader = new THREE.AudioLoader();
+        const soundUrlsToLoad = [
+             null, // 0
+             null, // 1
+             null, // 2
+             null, // 3
+             null, // 4
+             null, // 5
+        ];
+
+        // --- WALK-THRU CONTROLS ---
+        let playerOnFloor = false; // Kept in sync by physics loop
+        let playerVelocity = new THREE.Vector3();
+        let playerDirection = new THREE.Vector3();
+        let baseMoveSpeed = 20;
+        let currentMoveSpeed = baseMoveSpeed;
+        const jumpVelocity = 6;
+        const gravity = -20;
+        const keys = {
+            forward: false, backward: false, left: false, right: false, jump: false, sprint: false
+        };
+        let raycaster = new THREE.Raycaster();
+        let colliderMeshes = []; // For Scene 5 collisions
+
+        // --- NEW: Physics constants ---
+        const playerHeight = 1.6; // Player's eye-height from the floor
+        const playerRadius = 0.4; // Player's horizontal "width" for collisions
+        const playerHeadHeight = 1.5; // Y-offset from position for wall checks (not used in new logic)
+
+
+        // --- MAIN FUNCTIONS ---
+
+        function init() {
+            scene = new THREE.Scene();
+            
+            // --- UPDATED: Create both cameras ---
+            perspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            const aspect = window.innerWidth / window.innerHeight;
+            const frustumSize = 40; // Tuned for scene 0
+            orthographicCamera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
+            
+            camera = perspectiveCamera; // Start with perspective
+            // ---
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.physicallyCorrectLights = true;
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            pmremGenerator = new PMREMGenerator(renderer);
+
+            // Rig for VR and OrbitControls target
+            playerRig = new THREE.Group();
+            scene.add(playerRig);
+            playerRig.add(camera); // Camera is part of the rig
+
+            // --- Controls ---
+            // OrbitControls (for cinematic scenes)
+            orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enabled = false;
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.target.set(0, 1, 0); // Default target
+
+            // PointerLockControls (for walk-thru)
+            // *** MUST be bound to perspective camera ***
+            pointerLockControls = new PointerLockControls(perspectiveCamera, renderer.domElement);
+            // We add the camera to the scene when in desktop mode
+            // and back to the rig for VR.
+            scene.add(pointerLockControls.getObject());
+
+
+            // Effect Composer
+            composer = new EffectComposer(renderer);
+            composer.addPass(new RenderPass(scene, camera));
+
+            ssaoPass = new SSAOPass( scene, camera, window.innerWidth, window.innerHeight );
+            ssaoPass.kernelRadius = 0.8;
+            ssaoPass.minDistance = 0.001;
+            ssaoPass.maxDistance = 0.05;
+            composer.addPass( ssaoPass );
+
+            bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.3, 0.88);
+            composer.addPass(bloomPass);
+            
+            const outputPass = new OutputPass();
+            composer.addPass( outputPass );
+
+            // Audio
+            audioListener = new THREE.AudioListener();
+            camera.add(audioListener);
+
+            // Loaders
+            dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+            dracoLoader.setDecoderConfig({ type: 'js' });
+            gltfLoader = new GLTFLoader();
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+
+            setupEnvironment();
+            loadSounds();
+            setupEventListeners();
+            checkVRCapability(); // This will decide desktop/VR and call runSequence(-1)
+
+            renderer.setAnimationLoop(animate);
+        }
+
+        function setupEnvironment() {
+            // HDRI
+            const hdriURL = 'https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/RealismHDRI-_equirectangular-jpg_VR360_neon_drenched_skyscrapers_1656103290_10361044.hdr';
+            new RGBELoader().load(hdriURL, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = pmremGenerator.fromEquirectangular(texture).texture;
+                pmremGenerator.dispose();
+                texture.dispose();
+                scene.environmentIntensity = 0.7;
+                
+                // Finished loading base environment
+                loadingEl.style.display = 'none';
+                backgroundImgEl.style.display = 'block'; // Show background
+                instructionsEl.style.display = 'block'; // Show instructions
+            }, undefined, () => {
+                loadingEl.textContent = 'Error loading environment.';
+            });
+
+            // Lights
+            const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 0.5);
+            hemi.position.set(0, 20, 0);
+            scene.add(hemi);
+
+            const sun = new THREE.DirectionalLight(0xffffff, 3.6);
+            sun.position.set(12, 24, 12);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048); // Smaller shadow map for performance
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 160;
+            sun.shadow.camera.left = -55; sun.shadow.camera.right = 55;
+            sun.shadow.camera.top = 55; sun.shadow.camera.bottom = -55;
+            sun.shadow.bias = -0.0001;
+            sun.shadow.normalBias = 0.025;
+            scene.add(sun);
+        }
+
+        async function checkVRCapability() {
+             try {
+                 const vrSupported = navigator.xr && await navigator.xr.isSessionSupported('immersive-vr');
+                 if (vrSupported) {
+                     setupVRControls();
+                 } else {
+                     setupDesktopControls();
+                 }
+             } catch (e) {
+                 console.error('Error checking VR support:', e);
+                 setupDesktopControls();
+             }
+        }
+
+        function setupDesktopControls() {
+            console.log("Setting up Desktop Controls");
+            vrControlsActive = false;
+            // Ensure camera is parented to the scene, not the rig
+            if (playerRig.children.includes(camera)) {
+                playerRig.remove(camera);
+            }
+            if (!scene.children.includes(pointerLockControls.getObject())) {
+                scene.add(pointerLockControls.getObject());
+            }
+            
+            // This is the "Click to Enter" listener
+            document.body.addEventListener('click', onInitialClick, { once: true });
+        }
+        
+        function onInitialClick() {
+             if (experienceStarted) return;
+             experienceStarted = true;
+             
+             // Resume audio context
+             if (audioListener.context.state === 'suspended') {
+                 audioListener.context.resume();
+             }
+
+             // Start the sequence
+             runSequence(); 
+        }
+
+        function setupVRControls() {
+            console.log("Setting up VR Controls");
+            vrControlsActive = true;
+            document.getElementById('fullscreenButton').style.display = 'none';
+            instructionsEl.style.display = 'none';
+
+            // Ensure camera is parented to the rig
+            if (scene.children.includes(pointerLockControls.getObject())) {
+                scene.remove(pointerLockControls.getObject());
+            }
+            if (!playerRig.children.includes(camera)) {
+                playerRig.add(camera);
+            }
+
+            backgroundImgEl.src = 'https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg';
+            backgroundImgEl.style.display = 'block';
+
+            const vrButton = VRButton.createButton(renderer);
+            vrButton.textContent = 'Touch to Start';
+            vrButton.id = 'VRButton'; // Apply old ID for CSS
+            vrButton.style.top = '15%'; // Match old CSS
+            vrButton.style.left = '40%';
+            vrButton.style.width = '20%';
+            document.body.appendChild(vrButton);
+
+            // ... (Controller setup remains the same) ...
+            const controllerModelFactory = new XRControllerModelFactory();
+            const controller1 = renderer.xr.getController(0);
+            const controllerGrip1 = renderer.xr.getControllerGrip(0);
+            controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+            playerRig.add(controller1);
+            playerRig.add(controllerGrip1);
+            vrControllers.push(controller1);
+
+            const controller2 = renderer.xr.getController(1);
+            const controllerGrip2 = renderer.xr.getControllerGrip(1);
+            controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+            playerRig.add(controller2);
+            playerRig.add(controllerGrip2);
+            vrControllers.push(controller2);
+
+
+            renderer.xr.addEventListener('sessionstart', () => {
+                console.log('VR Session Started');
+                experienceStarted = true;
+                backgroundImgEl.style.display = 'none';
+                document.getElementById('initiating').style.display = 'block';
+                // Start the sequence
+                runSequence(); 
+            });
+
+            renderer.xr.addEventListener('sessionend', () => {
+                console.log('VR Session Ended');
+                window.location.reload();
+            });
+        }
+        
+        function setupEventListeners() {
+            // --- Sequence Control ---
+            startButtonEl.addEventListener('click', (event) => {
+                event.stopPropagation();
+                runSequence(); // Main sequence progression
+            });
+
+            // --- Variant/Camera Control ---
+            modelToggleButtons.forEach((btn, index) => {
+                btn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    handleVariantClick(index); // Context-sensitive click
+                });
+            });
+
+            // --- Keyboard (for Walk-thru) ---
+            document.addEventListener('keydown', (event) => {
+                if (vrControlsActive || !pointerLockControls.isLocked) return;
+                switch (event.code) {
+                    case 'KeyW': keys.forward = true; break;
+                    case 'KeyS': keys.backward = true; break;
+                    case 'KeyA': keys.left = true; break;
+                    case 'KeyD': keys.right = true; break;
+                    // Use global playerOnFloor, which is updated by the physics loop
+                    case 'Space': if (playerOnFloor) { keys.jump = true; } break; 
+                    case 'ShiftLeft': keys.sprint = true; currentMoveSpeed = baseMoveSpeed * 4; break;
+                }
+                if (event.code === 'KeyF') {
+                    toggleFullscreen();
+                }
+            });
+            document.addEventListener('keyup', (event) => {
+                if (vrControlsActive || !pointerLockControls.isLocked) return;
+                switch (event.code) {
+                    case 'KeyW': keys.forward = false; break;
+                    case 'KeyS': keys.backward = false; break;
+                    case 'KeyA': keys.left = false; break;
+                    case 'KeyD': keys.right = false; break;
+                    case 'Space': keys.jump = false; break;
+                    case 'ShiftLeft': keys.sprint = false; currentMoveSpeed = baseMoveSpeed; break;
+                }
+            });
+            
+            // --- PointerLock Listeners (for walk-thru) ---
+            pointerLockControls.addEventListener('lock', () => {
+                console.log("Pointer locked");
+                instructionsEl.style.display = 'none';
+            });
+            pointerLockControls.addEventListener('unlock', () => {
+                console.log("Pointer unlocked");
+                // Show instructions or menu if needed
+            });
+
+
+            // --- UI Panels ---
+            setupInfoPanelToggle('projectInfoButton', 'projectInfoPanel', 'closeButton');
+            setupInfoPanelToggle('studioInfoButton', 'studioInfoPanel', 'studioCloseButton');
+            setupInfoPanelToggle('hintButton', 'hintPanel', 'hintCloseButton');
+            setupInfoPanelToggle('creatorsNoteButton', 'creatorsNotePanel', 'creatorsCloseButton');
+            document.getElementById('fullscreenButton').addEventListener('click', (e) => { e.stopPropagation(); toggleFullscreen(); });
+            
+            // --- Resize ---
+            window.addEventListener('resize', () => {
+                
+                // --- UPDATED: Resize both cameras ---
+                const aspect = window.innerWidth / window.innerHeight;
+                
+                perspectiveCamera.aspect = aspect;
+                perspectiveCamera.updateProjectionMatrix();
+
+                const frustumSize = 40; // Must match init/setup
+                orthographicCamera.left = frustumSize * aspect / -2;
+                orthographicCamera.right = frustumSize * aspect / 2;
+                orthographicCamera.top = frustumSize / 2;
+                orthographicCamera.bottom = frustumSize / -2;
+                orthographicCamera.updateProjectionMatrix();
+                // ---
+
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        function setupInfoPanelToggle(buttonId, panelId, closeButtonId) {
+             // ... (This function remains unchanged) ...
+             const button = document.getElementById(buttonId);
+             const panel = document.getElementById(panelId);
+             const closeButton = document.getElementById(closeButtonId);
+             const allButtons = [
+                 document.getElementById('projectInfoButton'),
+                 document.getElementById('studioInfoButton'),
+                 document.getElementById('hintButton'),
+                 document.getElementById('creatorsNoteButton')
+             ];
+             const allPanels = [
+                 document.getElementById('projectInfoPanel'),
+                 document.getElementById('studioInfoPanel'),
+                 document.getElementById('hintPanel'),
+                 document.getElementById('creatorsNotePanel')
+             ];
+
+             button.addEventListener('click', (event) => {
+                 event.stopPropagation();
+                 const isPanelOpen = panel.style.display === 'block';
+                 
+                 allPanels.forEach(p => p.style.display = 'none');
+                 allButtons.forEach(b => b.style.opacity = '1');
+                 
+                 if (!isPanelOpen) {
+                     panel.style.display = 'block';
+                     button.style.opacity = '0.5';
+                 }
+             });
+             closeButton.addEventListener('click', (event) => {
+                 event.stopPropagation();
+                 panel.style.display = 'none';
+                 button.style.opacity = '1S';
+             });
+             panel.addEventListener('click', (event) => event.stopPropagation());
+        }
+
+        // --- ADDED (Fix 3): Helper function to show/hide top info buttons ---
+        function showInfoButtons(show) {
+            const buttons = ['fullscreenButton', 'projectInfoButton', 'studioInfoButton', 'hintButton', 'creatorsNoteButton'];
+            const displayStyle = show ? 'block' : 'none';
+            buttons.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.style.display = displayStyle;
+            });
+            
+            // Special case for VR: always hide fullscreen button
+            if (show && vrControlsActive) {
+                const fsBtn = document.getElementById('fullscreenButton');
+                if (fsBtn) fsBtn.style.display = 'none';
+            }
+        }
+
+        // --- NEW: SEQUENCE MANAGER ---
+
+        async function runSequence() {
+            currentSequenceScene++;
+            console.log(`--- Running Sequence Scene: ${currentSequenceScene} ---`);
+            
+            // Defaults for each scene
+            sceneLoadingIndicatorEl.style.display = 'block'; // Show loading text
+            backgroundImgEl.style.display = 'block'; // --- ADDED (Fix 2)
+            showInfoButtons(false); // --- ADDED (Fix 3)
+            updateHtmlPanels(null, null); // Clear HTML panels
+            descriptionEl.style.display = 'none'; // Clear description
+            stopAllAudio(); // Stop previous audio
+
+            try { 
+                switch (currentSequenceScene) {
+                    
+                    // --- SCENE 0: Pre-Start (Auto-Rotate) ---
+                    case 0:
+                        instructionsEl.style.display = 'none'; 
+                        
+                        // --- UPDATED: Keep loading JPEG visible ---
+                        backgroundImgEl.src = 'https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg'; // Explicitly set loading JPEG
+                        // backgroundImgEl.style.display = 'block'; // --- REMOVED (Moved to top of function)
+                        // ---
+                        
+                        document.getElementById('initiating').style.display = 'none';
+                        startButtonEl.textContent = "Start";
+                        startButtonEl.style.display = 'block';
+                        
+                        await unloadSceneModels();
+                        // Load Model 1 (City) and Model 5 (Kopuk)
+                        await Promise.all([
+                            loadModel(modelUrls[0], { pos: {x:0, y:0, z:0}, visible: true }),
+                            loadModel(modelUrls[4], { pos: {x:0, y:0, z:0}, visible: true })
+                        ]);
+                        
+                        setupSceneCamera({
+                            type: 'orbit',
+                            cameraType: 'orthographic', // --- UPDATED ---
+                            pos: { x: 0, y: 20, z: 15 }, 
+                            lookAt: { x: 0, y: 1, z: 0 },
+                            // fov: 27, // Not needed for Ortho
+                            autoRotate: true,
+                            autoRotateSpeed: 1.0,
+                            enablePan: false,
+                            enableZoom: false,
+                            enableRotate: false // Allow user override
+                        });
+                        
+                        updateHtmlPanels('html_scene0_left', 'html_scene0_right'); // --- ADDED ---
+                        playAudio(0, true); // Play sound 0
+                        break;
+
+                    // --- SCENE 1: Post-Start (Fixed Cam, Conceptual Toggles) ---
+                    case 1:
+                        startButtonEl.textContent = "Next Scene";
+                        
+                        // Models 1 and 5 are already loaded, just update camera
+                        setupSceneCamera({
+                            type: 'orbit',
+                            cameraType: 'orthographic', // --- UPDATED ---
+                            pos: { x: 0, y: 30, z: 15 }, 
+                            lookAt: { x: 0, y: 4, z: 0 },
+                            // fov: 27, // Not needed for Ortho
+                            autoRotate: true,
+                            autoRotateSpeed: 1.0,
+                            enablePan: false,
+                            enableZoom: true,
+                            enableRotate: true // Allow user override
+                        });
+                        
+                        updateToggleButtons([
+                            { name: "Surrounding", id: "surrounding" },
+                            { name: "Transportation", id: "transportation" },
+                            { name: "Units", id: "units" }
+                        ]);
+                        
+                        handleVariantClick(0); // --- ADDED: Show default panels ---
+                        playAudio(1, true); // Play sound 1
+                        break;
+                        
+                    // --- SCENE 2: Two Views (M1+M4 vs M3+M5) ---
+                    case 2:
+                        await unloadSceneModels();
+                        // Pre-load all 4 models for this scene
+                        await Promise.all([
+                            loadModel(modelUrls[0], { id: 'm1', visible: false }), // Model 1
+                            loadModel(modelUrls[3], { id: 'm4', visible: false }), // Model 4
+                            loadModel(modelUrls[2], { id: 'm3', visible: false }), // Model 3
+                            loadModel(modelUrls[4], { id: 'm5', visible: false })  // Model 5
+                        ]);
+
+                        updateToggleButtons([
+                            { name: "Option 1 (M1+M4)", id: "view1" },
+                            { name: "Option 2 (M3+M5)", id: "view2" }
+                        ]);
+                        
+                        setupSceneCamera({
+                           type: 'orbit',
+                            cameraType: 'orthographic', // --- UPDATED ---
+                            pos: { x: 0, y: 30, z: 15 }, 
+                            lookAt: { x: 0, y: 4, z: 0 },
+                            // fov: 27, // Not needed for Ortho
+                            autoRotate: true,
+                            autoRotateSpeed: 1.0,
+                            enablePan: false,
+                            enableZoom: true,
+                            enableRotate: true // Allow user override
+                        });
+                        
+                        handleVariantClick(0); // Show "Option 1" by default
+                        playAudio(2, true); // Play sound 2
+                        break;
+
+                    // --- SCENE 3: Orbit (M2+M6) ---
+                    case 3:
+                        await unloadSceneModels();
+                        await Promise.all([
+                            loadModel(modelUrls[2], { visible: true }), // Model 2
+                            loadModel(modelUrls[5], { visible: true })  // Model 6
+                        ]);
+                        
+                        updateToggleButtons(null); // Hide toggles
+                        
+                        setupSceneCamera({
+                           type: 'orbit',
+                            cameraType: 'orthographic', // --- UPDATED ---
+                            pos: { x: 15, y: 8, z: -15 }, 
+                            lookAt: { x: 0, y: 4, z: 0 },
+                            // fov: 27, // Not needed for Ortho
+                            
+
+                            autoRotate: false,
+                            autoRotateSpeed: 1.0,
+                            enablePan: false,
+                            enableZoom: true,
+                            enableRotate: true // Allow user override
+                        });
+                        
+                        updateHtmlPanels('html_scene3_left', 'html_scene3_right'); // --- ADDED ---
+                        playAudio(3, true); // Play sound 3
+                        break;
+
+                    // --- SCENE 4: Interior (Model 7) - Camera Positions ---
+                    case 4:
+                        await unloadSceneModels();
+                        await loadModel(modelUrls[6], { visible: true }); // Model 7
+                        
+                        updateToggleButtons([
+                            { name: "Salon", id: "cam1" },
+                            { name: "Bathroom", id: "cam2" },
+                            { name: "Bedroom 1", id: "cam3" },
+                            { name: "Bedroom 1 WC", id: "cam4" },
+                             { name: "Bedroom 2", id: "cam5" },
+                              { name: "Bedroom 2 WC", id: "cam6" },
+                            // Note: Only 4 buttons available in HTML
+                        ]);
+                        
+                        // Go to first camera position by default
+                        handleVariantClick(0); 
+                        playAudio(4, true); // Play sound 4
+                        break;
+
+                    // --- SCENE 5: Walk-thru (Model 7) ---
+                    case 5:
+                        await unloadSceneModels(); // Clear previous scene
+                        
+                        // Load visible model AND invisible collider model
+                        await Promise.all([
+                            loadModel(modelUrls[6], { visible: true }), // Model 7 (visible)
+                            loadColliderModel(modelUrls[7])             // Collider (invisible)
+                        ]);
+                        
+                        updateToggleButtons(null); // Hide toggles
+                        startButtonEl.textContent = "Restart";
+                        
+                        setupSceneCamera({
+                            type: 'pointerlock',
+                            // cameraType is forced to perspective
+                            pos: { x: 1.4, y: 1.6, z: -0.6 } // Start in Salon
+                        });
+                        
+                        updateHtmlPanels('html_scene5_left', 'html_scene5_right'); // --- ADDED ---
+                        playAudio(5, true); // Play sound 5
+                        break;
+                        
+                    // --- SCENE 6: Restart ---
+                    case 6:
+                        window.location.reload();
+                        break;
+                }
+            } catch (error) { 
+                console.error(`Error during sequence scene ${currentSequenceScene}:`, error);
+                loadingEl.textContent = "Error loading scene. Please refresh.";
+                loadingEl.style.display = 'flex'; // Show permanent error
+            } finally { 
+                sceneLoadingIndicatorEl.style.display = 'none'; // <-- ALWAYS hide loading indicator
+                backgroundImgEl.style.display = 'none'; // --- UPDATED (Fix 1)
+                showInfoButtons(true); // --- ADDED (Fix 3)
+            }
+        }
+        
+        // --- NEW: Context-sensitive Click Handler ---
+        function handleVariantClick(index) {
+            // Update button selection
+            modelToggleButtons.forEach((btn, i) => {
+                btn.classList.toggle('selected', i === index);
+            });
+
+            switch (currentSequenceScene) {
+                case 1: // Conceptual Models
+                    console.log(`Loading conceptual model (stub): ${index}`);
+                    if (index === 0) updateHtmlPanels('html_scene1_opt1_left', 'html_scene1_opt1_right');
+                    else if (index === 1) updateHtmlPanels('html_scene1_opt2_left', 'html_scene1_opt2_right');
+                    else if (index === 2) updateHtmlPanels('html_scene1_opt3_left', 'html_scene1_opt3_right');
+                    
+                    descriptionEl.textContent = `Info for ${modelToggleButtons[index].textContent}`;
+                    descriptionEl.style.display = 'block';
+                    break;
+                    
+                case 2: // Scene 2 Views
+                    const showView1 = (index === 0);
+                    setModelVisibility('m1', showView1);
+                    setModelVisibility('m4', showView1);
+                    setModelVisibility('m3', !showView1);
+                    setModelVisibility('m5', !showView1);
+                    
+                    if (index === 0) updateHtmlPanels('html_scene2_opt1_left', 'html_scene2_opt1_right');
+                    else if (index === 1) updateHtmlPanels('html_scene2_opt2_left', 'html_scene2_opt2_right');
+                    
+                    descriptionEl.textContent = `Showing ${modelToggleButtons[index].textContent}`;
+                    descriptionEl.style.display = 'block';
+                    break;
+                    
+                case 4: // Scene 4 Camera Positions
+                    let camConfig = {};
+                    switch(index) {
+                        case 0: // Salon
+                            camConfig = { pos: { x: 1, y: 1.6, z: 1.6 }, lookAt: { x: 1, y: 1.6, z: 1.5 }, fov: 80 };
+                            updateHtmlPanels('html_scene4_cam1_left', 'html_scene4_cam1_right');
+                            break;
+
+                        case 1: // Kİthen
+                            camConfig = { pos: { x: -2, y: 1.6, z: 3.1 }, lookAt: { x: -2.1, y: 1.6, z: 3.2 }, fov: 80 };
+                            updateHtmlPanels('html_scene4_cam2_left', 'html_scene4_cam2_right');
+                            break;
+
+                        case 2: // Bedroom 1
+                            camConfig = {  pos: { x: -2, y: 1.6, z: 0 }, lookAt: { x: -2.1, y: 1.6, z: -.1 }, fov: 80 };
+                            updateHtmlPanels('html_scene4_cam3_left', 'html_scene4_cam3_right');
+                            break;
+
+                        case 3: // Bedroom 1 WC
+                            camConfig = { pos: { x: -2, y: 1.6, z: 2.1 }, lookAt: { x: -2.1, y: 1.6, z: 2.2 }, fov: 80 };
+                            updateHtmlPanels('html_scene4_cam2_left', 'html_scene4_cam2_right');
+                            break;
+
+                            case 4: // Bedroom 2
+                            camConfig = {  pos: { x: 4.4, y: 1.6, z: 0 }, lookAt: { x: 4.5, y: 1.6, z: -.1 }, fov: 80 };
+                            updateHtmlPanels('html_scene4_cam4_left', 'html_scene4_cam4_right');
+                            break;
+                            case 5: // Bedroom 2 WC
+                            camConfig = {  pos: { x: 3.9, y: 1.6, z: 3.7 }, lookAt: { x: 4.0, y: 1.6, z: 3.8 }, fov: 80 };
+                            updateHtmlPanels('html_scene4_cam4_left', 'html_scene4_cam4_right');
+                            break;
+                        // Add cases for Camera 5 & 6 if buttons are added
+                    }
+                    
+                    setupSceneCamera({
+                        type: 'static_orbit', // Tipi 'orbit' veya 'static_orbit' kalabilir
+                        cameraType: 'perspective',
+                        pos: camConfig.pos,
+                        lookAt: camConfig.lookAt,
+                        fov: camConfig.fov || 50,
+                        autoRotate: false,     // --- DEĞİŞTİ: Otomatik dönmeyi kapat
+                        autoRotateSpeed: 1.0,
+                        enablePan: false,      // Pan kapalı kalsın (kameranın hedefi kaymasın)
+                        enableZoom: true,      // --- DEĞİŞTİ: Zoom açıldı
+                        enableRotate: true     // --- DEĞİŞTİ: Kullanıcı rotasyonu açıldı
+                    });
+                    
+                    descriptionEl.textContent = `Camera: ${modelToggleButtons[index].textContent}`;
+                    descriptionEl.style.display = 'block';
+                    break;
+            }
+        }
+
+        // --- UPDATED: Camera Controller ---
+        function setupSceneCamera(config) {
+            // Disable all controls
+            orbitControls.enabled = false;
+            orbitControls.autoRotate = false;
+            if (pointerLockControls.isLocked) {
+                pointerLockControls.unlock();
+            }
+            
+            // --- Determine and swap camera ---
+            let newCam = (config.cameraType === 'orthographic') ? orthographicCamera : perspectiveCamera;
+            if (config.type === 'pointerlock') {
+                newCam = perspectiveCamera; // Pointerlock MUST use perspective
+            }
+
+            if (camera !== newCam) {
+                if (playerRig.children.includes(camera)) {
+                    playerRig.remove(camera);
+                }
+                camera = newCam; // Swap global camera
+                composer.passes[0].camera = camera;
+                composer.passes[1].camera = camera;
+                ssaoPass.camera = camera;
+                orbitControls.object = camera;
+                
+                playerRig.add(camera);
+                camera.add(audioListener); // Move audio listener
+            }
+            // ---
+
+            // --- ADDED: Enable/Disable SSAO Pass based on camera type ---
+            if (config.cameraType === 'orthographic') {
+                ssaoPass.enabled = false;
+            } else {
+                ssaoPass.enabled = true;
+            }
+            // ---
+
+            // Set camera position
+            const camPos = config.pos || { x: 0, y: 5, z: 10 };
+            const lookAt = config.lookAt || { x: 0, y: 1, z: 0 };
+            
+            // Apply settings based on type
+            if (config.type === 'orbit' || config.type === 'static_orbit') {
+                if (vrControlsActive) {
+                    playerRig.position.set(camPos.x, camPos.y, camPos.z);
+                    // VR camera rotation is controlled by headset
+                } else {
+                    // Move camera directly
+                    camera.position.set(camPos.x, camPos.y, camPos.z);
+                    camera.lookAt(lookAt.x, lookAt.y, lookAt.z);
+                }
+
+                orbitControls.target.set(lookAt.x, lookAt.y, lookAt.z);
+                
+                // Configure OrbitControls
+                orbitControls.autoRotate = config.autoRotate || false;
+                orbitControls.autoRotateSpeed = config.autoRotateSpeed || 1.0;
+                
+                orbitControls.minPolarAngle = config.minPolar || 0;
+                // --- UPDATED: Default maxPolar respects Y=0 limit ---
+                orbitControls.maxPolarAngle = config.maxPolar !== undefined ? config.maxPolar : (Math.PI / 2) * 0.98;
+                // ---
+                orbitControls.minAzimuthAngle = config.minAzimuth || -Infinity;
+                orbitControls.maxAzimuthAngle = config.maxAzimuth || Infinity;
+
+                orbitControls.enablePan = config.enablePan !== undefined ? config.enablePan : true;
+                orbitControls.enableZoom = config.enableZoom !== undefined ? config.enableZoom : true;
+                orbitControls.enableRotate = config.enableRotate !== undefined ? config.enableRotate : true;
+                
+                // --- UPDATED: Set projection properties ---
+                if (config.cameraType === 'orthographic') {
+                    const aspect = window.innerWidth / window.innerHeight;
+                    const frustumSize = 40; // Match init/resize
+                    camera.left = frustumSize * aspect / -2;
+                    camera.right = frustumSize * aspect / 2;
+                    camera.top = frustumSize / 2;
+                    camera.bottom = frustumSize / -2;
+                } else {
+                    camera.fov = config.fov || 75;
+                }
+                camera.updateProjectionMatrix();
+                // ---
+
+                orbitControls.enabled = true; // Enable orbit controls
+                orbitControls.update();
+
+            } else if (config.type === 'pointerlock') {
+                // This block always uses perspectiveCamera
+                if (vrControlsActive) {
+                    playerRig.position.set(camPos.x, camPos.y, camPos.z);
+                    // VR walk-thru logic will be handled in animate()
+                } else {
+                    camera.fov = config.fov || 75; // Set FoV for pointerlock
+                    camera.updateProjectionMatrix();
+                    
+                    pointerLockControls.getObject().position.set(camPos.x, camPos.y, camPos.z);
+                    playerVelocity.set(0,0,0);
+                    playerOnFloor = true;
+                    pointerLockControls.lock();
+                }
+            }
+        }
+        
+        // --- NEW: UI Management ---
+        function updateToggleButtons(buttonsConfig) {
+            modelLabelEl.style.display = (buttonsConfig && buttonsConfig.length > 0) ? 'block' : 'none';
+            
+            modelToggleButtons.forEach((btn, index) => {
+                if (buttonsConfig && index < buttonsConfig.length) {
+                    const config = buttonsConfig[index];
+                    btn.textContent = config.name;
+                    btn.dataset.id = config.id; // Store an ID for logic
+                    btn.style.display = 'block';
+                    btn.classList.remove('selected');
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+            
+            // Select first button by default if config exists
+            if (buttonsConfig && buttonsConfig.length > 0) {
+                 modelToggleButtons[0].classList.add('selected');
+            }
+        }
+
+        // --- NEW: HTML Panel Updater (Function re-added) ---
+        function updateHtmlPanels(leftId, rightId) {
+            const leftContentEl = leftId ? document.getElementById(leftId) : null;
+            if (leftContentEl) {
+                leftHtmlPanel.innerHTML = leftContentEl.innerHTML;
+                leftHtmlPanel.style.display = 'block';
+                leftHtmlPanel.scrollTop = 0; // Scroll to top
+            } else {
+                leftHtmlPanel.innerHTML = '';
+                leftHtmlPanel.style.display = 'none';
+            }
+            
+            const rightContentEl = rightId ? document.getElementById(rightId) : null;
+            if (rightContentEl) {
+                rightHtmlPanel.innerHTML = rightContentEl.innerHTML;
+                rightHtmlPanel.style.display = 'block';
+                rightHtmlPanel.scrollTop = 0; // Scroll to top
+            } else {
+                rightHtmlPanel.innerHTML = '';
+                rightHtmlPanel.style.display = 'none';
+            }
+        }
+
+        // --- MODEL LOADING / UNLOADING ---
+        function loadModel(url, config = {}) {
+            return new Promise((resolve, reject) => {
+                gltfLoader.load(
+                    url,
+                    (gltf) => {
+                        const modelScene = gltf.scene;
+                        modelScene.position.set(config.pos?.x || 0, config.pos?.y || 0, config.pos?.z || 0);
+                        if (config.rot) modelScene.rotation.set(config.rot.x, config.rot.y, config.rot.z);
+                        if (config.scale) modelScene.scale.set(config.scale.x, config.scale.y, config.scale.z);
+                        
+                        modelScene.visible = config.visible !== undefined ? config.visible : false;
+                        modelScene.userData.id = config.id || null; // Assign an ID if provided
+                        
+                        let mixer = null;
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            mixer = new THREE.AnimationMixer(modelScene);
+                            gltf.animations.forEach((clip) => {
+                                mixer.clipAction(clip).play();
+                            });
+                        }
+                        
+                        modelScene.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                                if (child.material && child.material.emissive) {
+                                     child.material.emissiveIntensity = 1;
+                                }
+                            }
+                        });
+
+                        scene.add(modelScene);
+                        const loadedModelEntry = { scene: modelScene, mixer };
+                        currentLoadedModels.push(loadedModelEntry);
+                        console.log(`Model loaded: ${url}`);
+                        resolve(loadedModelEntry);
+                    },
+                    undefined,
+                    (error) => {
+                        console.error(`Error loading model ${url}:`, error);
+                        reject(error);
+                    }
+                );
+            });
+        }
+        
+        // --- NEW: Collider Model Loader ---
+        function loadColliderModel(url) {
+            return new Promise((resolve, reject) => {
+                gltfLoader.load(url, (gltf) => {
+                    const modelScene = gltf.scene;
+                    modelScene.visible = false; // Make invisible
+
+                    modelScene.traverse((child) => {
+                        if (child.isMesh) {
+                            // We don't need shadows or anything, just the geometry
+                            child.material = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }); // Ensure it's invisible and collides from both sides
+                            colliderMeshes.push(child);
+                        }
+                    });
+
+                    scene.add(modelScene); // Add the (invisible) model to the scene
+                    
+                    // Store it in currentLoadedModels so it gets unloaded properly
+                    const loadedModelEntry = { scene: modelScene, mixer: null };
+                    currentLoadedModels.push(loadedModelEntry); 
+
+                    console.log(`Collider model loaded: ${url}`);
+                    resolve(loadedModelEntry);
+                }, undefined, (error) => {
+                    console.error(`Error loading collider model ${url}:`, error);
+                    reject(error);
+                });
+            });
+        }
+        
+        function setModelVisibility(id, visible) {
+            const modelEntry = currentLoadedModels.find(m => m.scene.userData.id === id);
+            if (modelEntry) {
+                modelEntry.scene.visible = visible;
+            } else {
+                console.warn(`Model with id "${id}" not found for visibility toggle.`);
+            }
+        }
+
+        async function unloadSceneModels() {
+            console.log(`Unloading ${currentLoadedModels.length} models.`);
+            currentLoadedModels.forEach(modelEntry => {
+                if (modelEntry.scene) {
+                    if (modelEntry.mixer) {
+                        modelEntry.mixer.stopAllAction();
+                    }
+                    scene.remove(modelEntry.scene);
+                    
+                    modelEntry.scene.traverse((child) => {
+                        if (child.isMesh) {
+                            if(child.geometry) child.geometry.dispose();
+                            if(child.material) {
+                                if (Array.isArray(child.material)) {
+                                    child.material.forEach(mat => { if(mat) mat.dispose(); });
+                                } else {
+                                    child.material.dispose();
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+            currentLoadedModels = [];
+            colliderMeshes = []; // --- NEW: Clear collider list ---
+            return Promise.resolve();
+        }
+
+
+        // --- AUDIO MANAGEMENT ---
+        function loadSounds() {
+             soundUrlsToLoad.forEach((url, index) => {
+                 audioLoader.load(url, (buffer) => {
+                     soundBuffers[index] = buffer;
+                     console.log(`Sound ${index} loaded`);
+                 }, undefined, (err) => {
+                     console.error(`Error loading sound ${index}:`, err);
+                 });
+             });
+        }
+
+        function playAudio(index, loop = false, volume = 0.5) {
+            const buffer = soundBuffers[index];
+            if (!buffer) {
+                console.warn(`Sound buffer ${index} not ready.`);
+                return;
+            }
+            
+            // AudioContext might be suspended
+            if (audioListener.context.state === 'suspended') {
+                 audioListener.context.resume().catch(e => console.error('AudioContext resume failed:', e));
+            }
+            
+            stopAllAudio(); // Stop previous sounds
+
+            let sound = new THREE.Audio(audioListener);
+            sound.setBuffer(buffer);
+            sound.setLoop(loop);
+            sound.setVolume(volume);
+            sound.play();
+            
+            activeSounds.push(sound);
+            console.log(`Playing sound ${index}`);
+        }
+        
+        function stopAllAudio() {
+             activeSounds.forEach(sound => {
+                 if (sound.isPlaying) {
+                     sound.stop();
+                 }
+             });
+             activeSounds = [];
+             // console.log("All active sounds stopped.");
+        }
+        
+        // --- (This fade function is not currently used by runSequence, but kept) ---
+         function fadeOutIntroSound() {
+             activeSounds.forEach(sound => {
+                 if (sound.isPlaying && sound.gain) {
+                     const currentTime = audioListener.context.currentTime;
+                     sound.gain.gain.linearRampToValueAtTime(0, currentTime + 4);
+                     setTimeout(() => sound.stop(), 4000);
+                 }
+             });
+             activeSounds = [];
+         }
+
+
+        // --- REBUILT WALK-THRU PLAYER UPDATE (WITH COLLISION) ---
+        function updatePlayer(delta) {
+            if (!pointerLockControls.isLocked) return;
+
+            const playerPos = pointerLockControls.getObject().position;
+
+            // --- 1. Vertical Movement (Gravity & Floor) ---
+            
+            // Cast ray downwards from player's eye level
+            raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+            const floorIntersections = raycaster.intersectObjects(colliderMeshes);
+            // Check if floor is within (playerHeight + 0.1m)
+            const localOnFloor = floorIntersections.length > 0 && floorIntersections[0].distance < playerHeight + 0.1;
+
+            if (localOnFloor) {
+                // On the floor
+                playerVelocity.y = Math.max(0, playerVelocity.y); // Stop falling
+                
+                // Jump logic
+                if (keys.jump) {
+                    playerVelocity.y = jumpVelocity;
+                    keys.jump = false; // Consume the jump
+                }
+                
+                // Snap to floor if we're slightly sinking
+                const floorDist = floorIntersections[0].distance;
+                if (floorDist < playerHeight) {
+                     playerPos.y += (playerHeight - floorDist);
+                }
+
+            } else {
+                // In the air
+                playerVelocity.y += gravity * delta; // Apply gravity
+            }
+
+            // Apply vertical velocity
+            playerPos.y += playerVelocity.y * delta;
+
+            // --- 2. Horizontal Movement (Friction) ---
+            playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+            playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+
+            // --- 3. Horizontal Input ---
+            playerDirection.z = Number(keys.forward) - Number(keys.backward);
+            playerDirection.x = Number(keys.right) - Number(keys.left);
+            playerDirection.normalize(); // Ensure consistent speed
+
+            if (keys.forward || keys.backward) playerVelocity.z -= playerDirection.z * currentMoveSpeed * delta;
+            if (keys.left || keys.right) playerVelocity.x -= playerDirection.x * currentMoveSpeed * delta;
+
+            // --- 4. Apply Horizontal Movement (via controls) ---
+            // This moves the player *relative* to their view direction
+            pointerLockControls.moveRight(-playerVelocity.x * delta);
+            pointerLockControls.moveForward(-playerVelocity.z * delta);
+
+            // --- 5. Collision Resolution ---
+            // After moving, check if we are *inside* a wall and push back.
+            
+            // Check from "waist" height
+            const horizontalCheckPos = new THREE.Vector3(playerPos.x, playerPos.y - (playerHeight / 2), playerPos.z);
+            
+            const checkDirections = [
+                new THREE.Vector3(1, 0, 0),  // World +X
+                new THREE.Vector3(-1, 0, 0), // World -X
+                new THREE.Vector3(0, 0, 1),  // World +Z
+                new THREE.Vector3(0, 0, -1)  // World -Z
+                // We could also add player-relative directions for more accuracy
+            ];
+
+            for (const dir of checkDirections) {
+                raycaster.set(horizontalCheckPos, dir);
+                const wallIntersections = raycaster.intersectObjects(colliderMeshes);
+
+                if (wallIntersections.length > 0 && wallIntersections[0].distance < playerRadius) {
+                    // Collision! We are inside a wall.
+                    const penetrationDepth = playerRadius - wallIntersections[0].distance;
+                    
+                    // Push the player back out
+                    playerPos.x -= dir.x * (penetrationDepth + 0.01); // Add epsilon
+                    playerPos.z -= dir.z * (penetrationDepth + 0.01);
+                    
+                    // Stop velocity in that direction
+                    if (dir.x !== 0) playerVelocity.x = 0;
+                    if (dir.z !== 0) playerVelocity.z = 0;
+                }
+            }
+            
+            // --- 6. Final Ground Check (Update global playerOnFloor) ---
+            // This ensures the keydown listener has the correct state
+            let finalOnFloor = false;
+            raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+            const finalFloorIntersections = raycaster.intersectObjects(colliderMeshes);
+            if (finalFloorIntersections.length > 0) {
+                 const floorDist = finalFloorIntersections[0].distance;
+                 if (floorDist < playerHeight + 0.1) { // A small tolerance
+                    finalOnFloor = true;
+                    if (floorDist < playerHeight) { // Snap if sinking
+                        playerPos.y = finalFloorIntersections[0].point.y + playerHeight;
+                        if (playerVelocity.y < 0) playerVelocity.y = 0;
+                    }
+                 }
+            }
+            playerOnFloor = finalOnFloor; // Update global
+        }
+        
+        function toggleFullscreen() {
+             if (!document.fullscreenElement) {
+                 document.documentElement.requestFullscreen().catch(err => console.error('Full screen error:', err));
+             } else {
+                 document.exitFullscreen().catch(err => console.error('Exit full screen error:', err));
+             }
+        }
+
+
+        // --- RENDER LOOP ---
+        function animate() {
+            const delta = clock.getDelta();
+            
+            // Update controls
+            if (orbitControls.enabled) {
+                orbitControls.update(delta);
+            }
+            
+            // --- UPDATED: Check for scene 5 for physics ---
+            if (currentSequenceScene === 5) {
+                if (!vrControlsActive && pointerLockControls.isLocked) {
+                    updatePlayer(delta); // Update desktop walk-thru with collision
+                }
+                
+                // Handle VR walk-thru
+                if (vrControlsActive && renderer.xr.isPresenting) {
+                    handleVRWalkThru(delta); // Update VR walk-thru with collision
+                }
+            }
+            
+            // Update Animations
+            currentLoadedModels.forEach(modelEntry => {
+                if (modelEntry.mixer) {
+                    modelEntry.mixer.update(delta);
+                }
+            });
+
+            // Render
+            if (renderer.xr.isPresenting) {
+                renderer.render(scene, camera);
+            } else {
+                composer.render();
+            }
+        }
+        
+        // --- REBUILT VR WALK-THRU (WITH COLLISION) ---
+        function handleVRWalkThru(delta) {
+             let moveGamepad = null;
+             let turnGamepad = null;
+
+             vrControllers.forEach(controller => {
+                 if (controller.userData.gamepad) {
+                     if (controller.userData.hand === 'left') {
+                         moveGamepad = controller.userData.gamepad;
+                     } else if (controller.userData.hand === 'right') {
+                         turnGamepad = controller.userData.gamepad;
+                     }
+                 }
+             });
+
+             const playerPos = playerRig.position; // VR Rig is at floor level
+
+             // --- 1. Vertical Movement (Gravity & Floor) ---
+             // Player rig is at y=0, so check from a small height
+             const rayStart = playerPos.clone().add(new THREE.Vector3(0, 0.1, 0));
+             raycaster.set(rayStart, new THREE.Vector3(0, -1, 0));
+             const floorIntersections = raycaster.intersectObjects(colliderMeshes);
+             // Floor is 0.1m + 0.05m tolerance = 0.15m below raycast start
+             const onFloor = floorIntersections.length > 0 && floorIntersections[0].distance < 0.15; 
+
+             if (onFloor) {
+                 playerVelocity.y = Math.max(0, playerVelocity.y); // Stop falling
+                 
+                 // Snap to 0.05m above floor
+                 const floorDist = floorIntersections[0].distance;
+                 const targetY = floorIntersections[0].point.y + 0.05;
+                 playerPos.y = targetY; // Snap
+
+             } else {
+                 playerVelocity.y += gravity * delta; // Apply gravity
+             }
+
+             // --- 2. Horizontal Movement (Friction) ---
+             playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+             playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+
+             // --- 3. Input & Direction ---
+             let moveSpeed = 80.0;
+             const moveDirection = new THREE.Vector3();
+             
+             if (moveGamepad) {
+                 moveDirection.x = moveGamepad.axes[2] || 0;
+                 moveDirection.z = moveGamepad.axes[3] || 0;
+                 if (moveGamepad.buttons[0] && moveGamepad.buttons[0].value > 0.5) {
+                     moveSpeed *= 4; // Sprint
+                 }
+             }
+
+             if (turnGamepad) {
+                 const turnAxis = turnGamepad.axes[2] || 0;
+                 if (Math.abs(turnAxis) > 0.1) {
+                     playerRig.rotateY(-turnAxis * delta * 2.0); // Dönme
+                 }
+             }
+
+             const cameraDirection = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
+             // moveDirection.z is forward/back, which is *negative* camera Z
+             const forwardVector = cameraDirection.clone().multiplyScalar(-moveDirection.z * moveSpeed * delta);
+             // moveDirection.x is left/right, which is *positive* camera X
+             const rightVector = camera.getWorldDirection(new THREE.Vector3()).cross(camera.up).normalize().multiplyScalar(moveDirection.x * moveSpeed * delta);
+
+             playerVelocity.x += forwardVector.x + rightVector.x;
+             playerVelocity.z += forwardVector.z + rightVector.z;
+
+             // --- 4. POZİSYON UYGULA (Apply all velocities) ---
+             playerRig.position.x += playerVelocity.x * delta;
+             playerRig.position.z += playerVelocity.z * delta;
+             playerRig.position.y += playerVelocity.y * delta;
+             
+             // --- 5. COLLISION RESOLUTION (Correction) ---
+             // Check from "waist" height (approx 1m above rig floor)
+             const horizontalCheckPos = playerRig.position.clone().add(new THREE.Vector3(0, 1.0, 0)); 
+             
+             const checkDirections = [
+                 new THREE.Vector3(1, 0, 0),  // World +X
+                 new THREE.Vector3(-1, 0, 0), // World -X
+                 new THREE.Vector3(0, 0, 1),  // World +Z
+                 new THREE.Vector3(0, 0, -1)  // World -Z
+             ];
+             
+             for (const dir of checkDirections) {
+                 raycaster.set(horizontalCheckPos, dir);
+                 const wallIntersections = raycaster.intersectObjects(colliderMeshes);
+
+                 if (wallIntersections.length > 0 && wallIntersections[0].distance < playerRadius) {
+                     const penetrationDepth = playerRadius - wallIntersections[0].distance;
+                     // Push player back
+                     playerRig.position.x -= dir.x * (penetrationDepth + 0.01);
+                     playerRig.position.z -= dir.z * (penetrationDepth + 0.01);
+                     
+                     // Dampen velocity in that direction
+                     if (dir.x !== 0) playerVelocity.x = 0;
+                     if (dir.z !== 0) playerVelocity.z = 0;
+                 }
+             }
+
+             // --- 6. FİNAL ZEMİN KONTROLÜ (Snap to floor) ---
+             const finalRayStart = playerPos.clone().add(new THREE.Vector3(0, 0.1, 0));
+             raycaster.set(finalRayStart, new THREE.Vector3(0, -1, 0));
+             const finalFloorIntersections = raycaster.intersectObjects(colliderMeshes);
+             
+             if (finalFloorIntersections.length > 0) {
+                 const floorDist = finalFloorIntersections[0].distance; // Dist from 0.1m
+                 if (floorDist < 0.15) { // On floor
+                    const targetY = finalFloorIntersections[0].point.y + 0.05;
+                    playerPos.y = targetY; // Snap
+                    if (playerVelocity.y < 0) playerVelocity.y = 0;
+                 }
+             }
+        }
+        
+        // --- START ---
+        init();
+
+    </script>
+</body>
+</html>
