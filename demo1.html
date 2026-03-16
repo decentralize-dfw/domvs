@@ -105,17 +105,22 @@
            display:none;
         }
         #sceneLoadingIndicator {
-             position: fixed;
-             top: 50%;
-             left: 50%;
-             transform: translate(-50%, -50%);
-             background: rgba(0,0,0,0.7);
-             color: white;
-             padding: 15px 25px;
-             border-radius: 10px;
-             font-size: 18px;
-             z-index: 1001; /* Show over background JPEG */
-             display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.65);
+            color: rgba(255,255,255,0.8);
+            padding: 12px 28px;
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 12px;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            z-index: 1001;
+            display: none;
         }
 
 
@@ -131,25 +136,40 @@
         }
 
         #instructions {
-            font-family: Helvetica, Arial, sans-serif;
-            inset: auto;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            padding: 8px 12px;
+            padding: 24px 36px;
             z-index: 15;
             pointer-events: none;
-            display: block; /* Start visible */
+            display: block;
+            backdrop-filter: blur(12px);
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
         }
 
         #instructions h1 {
-            margin: 0 0 8px 0;
-            font-size: 25px;
+            margin: 0 0 6px 0;
+            font-size: 28px;
             font-weight: 700;
+            font-family: 'Playfair Display', Georgia, serif;
+            letter-spacing: 0.03em;
+            color: #fff;
         }
 
-        /* ... other instruction styles ... */
+        #instructions p {
+            margin: 0;
+            font-size: 13px;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            font-weight: 300;
+            color: rgba(255,255,255,0.55);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
 
 
         #initiating {
@@ -376,8 +396,12 @@
             from { transform: translateY(-60px); opacity: 0; }
             to   { transform: translateY(0);    opacity: 1; }
         }
+        @keyframes slideInRight {
+            from { transform: translateX(120px); opacity: 0; }
+            to   { transform: translateX(0);     opacity: 1; }
+        }
         .btn-slide-in {
-            animation: slideInDown 0.4s ease forwards;
+            animation: slideInRight 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
         /* --- LOADING FADE-OUT --- */
@@ -440,6 +464,50 @@
             background: rgba(255,255,255,0.25) !important;
         }
 
+        /* --- FAB INFO BUTTONS (right side, bottom-right) --- */
+        .fab-info-btn {
+            position: fixed !important;
+            right: 16px !important;
+            top: auto !important;
+            width: 44px;
+            height: 44px;
+            border-radius: 50% !important;
+            padding: 0 !important;
+            font-size: 18px !important;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.62) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+            cursor: pointer;
+            color: #fff !important;
+            transition: background 0.2s ease, transform 0.15s ease;
+            z-index: 10 !important;
+        }
+        .fab-info-btn:hover {
+            background: rgba(201, 169, 110, 0.75) !important;
+            transform: scale(1.08);
+        }
+        /* Individual FAB positions from bottom */
+        #hintButton        { bottom: 20px;  }
+        #creatorsNoteButton{ bottom: 72px;  }
+        #studioInfoButton  { bottom: 124px; }
+        #projectInfoButton { bottom: 176px; }
+        #fullscreenButton  {
+            position: fixed !important;
+            right: 16px !important;
+            top: 16px !important;
+            bottom: auto !important;
+            width: auto !important;
+            height: auto !important;
+            border-radius: 12px !important;
+            padding: 8px 14px !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+        }
+
         /* --- ENDED BUTTON STYLE --- */
         #endedRestartBtn {
             margin-top: 24px;
@@ -483,11 +551,14 @@
     
     <!-- Background image, also used for loading screen --><img id="backgroundImg" src="https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg">
     
-    <!-- This appears OVER the background image during model load --><div id="sceneLoadingIndicator">Loading Scene Models...</div>
+    <!-- This appears OVER the background image during model load -->
+    <div id="sceneLoadingIndicator">Sahne Yükleniyor…</div>
 
     
-    <!-- Instructions start visible --><div id="instructions" class="panel">
-        <h1>Click to Enter</h1>
+    <!-- Instructions start visible -->
+    <div id="instructions">
+        <h1>Nova Residence</h1>
+        <p>Deneyimi başlatmak için tıklayın</p>
     </div>
     
     <div id="initiating">Initializing...</div>
@@ -503,22 +574,24 @@
     <div id="joystickLeft"  class="joystick-zone"></div>
     <div id="joystickRight" class="joystick-zone"></div>
     
-    <!-- Start button is hidden initially --><button id="startButton" style="position: absolute; left: 10px; bottom: 10px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 12px; color: #fff; font-size: 15px; font-weight: 700; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Start</button>
+    <!-- Start button -->
+    <button id="startButton" style="position: fixed; left: 16px; bottom: 20px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.4); z-index: 10; padding: 10px 20px; color: #fff; font-size: 14px; font-weight: 600; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; letter-spacing: 0.05em; cursor: pointer; display: none;">▶ Başla</button>
 
-    <p id="modelLabel" style="position: absolute; left: 10px; top: 10px; color: white; font-size: 12px; font-weight: 500; text-align: left; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model</p>
-    <button id="modelToggleBtn1" style="position: absolute; left: 60px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 1</button>
-    <button id="modelToggleBtn2" style="position: absolute; left: 120px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 2</button>
-    <button id="modelToggleBtn3" style="position: absolute; left: 180px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 3</button>
-    <button id="modelToggleBtn4" style="position: absolute; left: 240px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 4</button>
-    <button id="modelToggleBtn5" style="position: absolute; left: 300px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 5</button>
-    <button id="modelToggleBtn6" style="position: absolute; left: 360px; top: 9px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 4px 8px; color: #fff; font-size: 11px; font-weight: 500; text-align: center; margin: 0; font-family: Helvetica, Arial, sans-serif; display: none;">Model 6</button>
+    <!-- Scene variant / camera selector buttons -->
+    <p id="modelLabel" style="position: fixed; left: 16px; top: 16px; color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 500; text-align: left; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; display: none;"></p>
+    <button id="modelToggleBtn1" style="position: fixed; left: 16px;  top: 34px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; z-index: 10; padding: 6px 12px; color: #fff; font-size: 11px; font-weight: 500; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; cursor: pointer; display: none;">1</button>
+    <button id="modelToggleBtn2" style="position: fixed; left: 72px;  top: 34px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; z-index: 10; padding: 6px 12px; color: #fff; font-size: 11px; font-weight: 500; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; cursor: pointer; display: none;">2</button>
+    <button id="modelToggleBtn3" style="position: fixed; left: 128px; top: 34px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; z-index: 10; padding: 6px 12px; color: #fff; font-size: 11px; font-weight: 500; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; cursor: pointer; display: none;">3</button>
+    <button id="modelToggleBtn4" style="position: fixed; left: 184px; top: 34px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; z-index: 10; padding: 6px 12px; color: #fff; font-size: 11px; font-weight: 500; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; cursor: pointer; display: none;">4</button>
+    <button id="modelToggleBtn5" style="position: fixed; left: 240px; top: 34px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; z-index: 10; padding: 6px 12px; color: #fff; font-size: 11px; font-weight: 500; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; cursor: pointer; display: none;">5</button>
+    <button id="modelToggleBtn6" style="position: fixed; left: 296px; top: 34px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; z-index: 10; padding: 6px 12px; color: #fff; font-size: 11px; font-weight: 500; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; cursor: pointer; display: none;">6</button>
 
 
-<button id="fullscreenButton" style="position: fixed; right: 410px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">⛶ Tam Ekran</button>
-    <button id="projectInfoButton" style="position: fixed; right: 305px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">Proje Bilgisi</button>
-    <button id="studioInfoButton" style="position: fixed; right: 195px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">Stüdyo</button>
-    <button id="creatorsNoteButton" style="position: fixed; right: 95px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">Not</button>
-    <button id="hintButton" style="position: fixed; right: 15px; top: 15px; backdrop-filter: blur(8px); background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); z-index: 10; padding: 8px 14px; color: #fff; font-size: 12px; font-weight: 500; text-align: center; margin: 0; font-family: 'Raleway', Helvetica, Arial, sans-serif; min-height: 44px; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; display: none;">? Yardım</button>
+    <button id="fullscreenButton"  class="fab-info-btn" title="Tam Ekran">⛶</button>
+    <button id="projectInfoButton" class="fab-info-btn" title="Proje Bilgisi">🏢</button>
+    <button id="studioInfoButton"  class="fab-info-btn" title="Stüdyo">✦</button>
+    <button id="creatorsNoteButton"class="fab-info-btn" title="Yaratıcı Notu">📝</button>
+    <button id="hintButton"        class="fab-info-btn" title="Yardım">?</button>
     
     
     <div id="description"></div>
@@ -843,7 +916,9 @@
         let experienceStarted = false; // Tracks if 'Click to Enter' has been pressed
 
         // --- LOADING PROGRESS ---
-        let loadingProgress = 0; // 0-100
+        let loadingProgress = 0;          // 0-100
+        let modelLoadTotal = 0;           // total bytes expected across all models
+        let modelLoadLoaded = 0;          // bytes loaded so far
 
         // --- MOBILE JOYSTICK STATE ---
         let mobileJoystickLeft  = { x: 0, y: 0 };
@@ -1090,17 +1165,40 @@
         }
 
         async function checkVRCapability() {
-             try {
-                 const vrSupported = navigator.xr && await navigator.xr.isSessionSupported('immersive-vr');
-                 if (vrSupported) {
-                     setupVRControls();
-                 } else {
-                     setupDesktopControls();
-                 }
-             } catch (e) {
-                 console.error('Error checking VR support:', e);
-                 setupDesktopControls();
-             }
+            try {
+                const vrSupported = navigator.xr && await navigator.xr.isSessionSupported('immersive-vr');
+                if (vrSupported) {
+                    setupVRControls();
+                } else {
+                    setupDesktopControls();
+                    // Show mobile fallback hint if on mobile and no VR headset
+                    if (isMobile()) {
+                        showMobileVRFallback();
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking VR support:', e);
+                setupDesktopControls();
+            }
+        }
+
+        function showMobileVRFallback() {
+            // Brief non-blocking banner at bottom of screen
+            const banner = document.createElement('div');
+            banner.id = 'vrFallbackBanner';
+            banner.style.cssText = `
+                position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+                background: rgba(0,0,0,0.75); color: rgba(255,255,255,0.85);
+                padding: 8px 18px; border-radius: 20px; font-size: 12px;
+                font-family: 'Raleway', sans-serif; letter-spacing: 0.05em;
+                z-index: 900; pointer-events: none; text-align: center;
+                border: 1px solid rgba(255,255,255,0.12);
+                animation: slideInDown 0.4s ease forwards;
+            `;
+            banner.textContent = '📱 VR kulaklık algılanmadı — dokunmatik & swipe ile keşfedebilirsiniz';
+            document.body.appendChild(banner);
+            // Auto-remove after 5s
+            setTimeout(() => banner.remove(), 5000);
         }
 
         function setupDesktopControls() {
@@ -1351,7 +1449,8 @@
                 const btn = document.getElementById(id);
                 if (!btn) return;
                 if (show) {
-                    btn.style.display = 'block';
+                    // FABs use flex to center icon; fullscreen uses block
+                    btn.style.display = (id === 'fullscreenButton') ? 'block' : 'flex';
                     btn.classList.remove('btn-slide-in');
                     void btn.offsetWidth; // force reflow to restart animation
                     btn.style.animationDelay = (i * 70) + 'ms';
@@ -1379,6 +1478,10 @@
                 sceneTransitionOverlay.classList.add('visible');
                 await new Promise(r => setTimeout(r, 360));
             }
+
+            // Reset model progress counters for this scene
+            modelLoadTotal = 0;
+            modelLoadLoaded = 0;
 
             // Defaults for each scene
             sceneLoadingIndicatorEl.style.display = 'block'; // Show loading text
@@ -1852,7 +1955,16 @@
                         console.log(`Model loaded: ${url}`);
                         resolve(loadedModelEntry);
                     },
-                    undefined,
+                    (xhr) => {
+                        if (xhr.total) {
+                            // Model loading fills 80-100% range
+                            modelLoadLoaded += xhr.loaded;
+                            if (modelLoadTotal > 0) {
+                                const modelPct = Math.min(1, modelLoadLoaded / modelLoadTotal);
+                                setLoadingProgress(80 + Math.round(modelPct * 20));
+                            }
+                        }
+                    },
                     (error) => {
                         console.error(`Error loading model ${url}:`, error);
                         reject(error);
