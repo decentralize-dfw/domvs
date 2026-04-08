@@ -107,6 +107,14 @@
   .btn-ghost::after { content:'→'; font-style:normal; transition:transform 0.3s; }
   .btn-ghost:hover::after { transform:translateX(4px); }
 
+  /* MID CTA STRIP */
+  .mid-cta{background:var(--forest);padding:3.5rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap}
+  .mid-cta-text{font-family:'IM Fell English',serif;font-size:clamp(1.2rem,2.5vw,1.9rem);color:var(--ivory);font-weight:400;line-height:1.2}
+  .mid-cta-text em{font-style:italic;color:var(--sage-light)}
+  .mid-cta-sub{font-family:'Lora',serif;font-style:italic;font-size:0.8rem;color:rgba(184,201,168,0.7);margin-top:0.4rem}
+  .mid-cta-btn{font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;background:var(--ivory);color:var(--forest);border:none;padding:0.95rem 2.2rem;cursor:pointer;transition:all 0.3s;text-decoration:none;white-space:nowrap;flex-shrink:0}
+  .mid-cta-btn:hover{background:var(--parchment);transform:translateY(-1px)}
+
   /* MARQUEE */
   .marquee-strip { border-top:1px solid var(--ecru); border-bottom:1px solid var(--ecru); padding:1rem 0; overflow:hidden; background:var(--linen); }
   .marquee-track { display:flex; gap:3rem; animation:marquee 24s linear infinite; white-space:nowrap; width:max-content; }
@@ -325,7 +333,7 @@
     <li><a href="agents.html">For Agents</a></li>
     <li><a href="about.html">About</a></li>
   </ul>
-  <a href="#contact" class="nav-cta">Request a Demo</a>
+  <a href="#" class="nav-cta" data-mgv-open>Request a Demo</a>
 </nav>
 
 <!-- ═══ HERO ═══ -->
@@ -349,7 +357,7 @@
     <p class="hero-sub">We build cinematic, immersive digital experiences for exceptional properties — turning listings into destinations buyers never want to leave.</p>
     <div class="hero-actions">
       <a href="#properties" class="btn-primary">See Live Demos</a>
-      <a href="#why" class="btn-ghost">Discover the Method</a>
+      <a href="#" class="btn-ghost" data-mgv-open>Request a Presentation</a>
     </div>
   </div>
 
@@ -451,6 +459,15 @@
   </div>
 </section>
 
+<!-- ═══ MID CTA ═══ -->
+<div class="mid-cta">
+  <div>
+    <div class="mid-cta-text">Your property's story is already there.<br><em>We just need to tell it.</em></div>
+    <div class="mid-cta-sub">No templates. No upfront cost for agents. A bespoke experience in 7–10 days.</div>
+  </div>
+  <a href="#" class="mid-cta-btn" data-mgv-open>Request a Presentation →</a>
+</div>
+
 <!-- ═══ CITIES ═══ -->
 <section class="cities-section" id="cities">
   <div class="cities-header">
@@ -494,7 +511,7 @@
   <h2 class="cta-title reveal reveal-delay-1">Your property deserves<br>its own <em>universe.</em></h2>
   <p class="cta-sub reveal reveal-delay-2">Tell us about the property. We will show you what its world could look like — no obligation, no template.</p>
   <div class="cta-actions reveal reveal-delay-3">
-    <a href="/cdn-cgi/l/email-protection#6c04090000032c01091e0b1a1f420f0301" class="btn-light">Begin the Conversation</a>
+    <a href="#" class="btn-light" data-mgv-open>Begin the Conversation</a>
     <a href="#properties" class="btn-ghost-light">See the Work First</a>
   </div>
 </section>
@@ -511,7 +528,7 @@
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About Us</a></li><li><a href="#properties">Properties</a></li></ul></div>
     <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="#">Luxembourg</a></li><li><a href="#">Milan</a></li><li><a href="#">Istanbul</a></li><li><a href="#">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="/cdn-cgi/l/email-protection#5e363b3232311e333b2c39282d703d3133"><span class="__cf_email__" data-cfemail="365e535a5a59765b53445140451855595b">[email&#160;protected]</span></a></li><li><a href="#contact">Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
@@ -570,5 +587,6 @@
   });
   setTimeout(()=>heroPh.classList.add('loaded'), 100);
 </script>
+<script src="mergvs-contact.js"></script>
 </body>
 </html>
