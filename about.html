@@ -106,6 +106,13 @@ nav.scrolled{background:rgba(242,237,223,0.94);backdrop-filter:blur(16px);border
 .stat-source{font-family:'Lora',serif;font-style:italic;font-size:0.62rem;color:var(--sage);line-height:1.5;margin-top:1rem;opacity:0;max-height:0;overflow:hidden;transition:opacity 0.4s,max-height 0.4s}
 .stat-cell:hover .stat-source{opacity:1;max-height:3rem}
 
+/* MID CTA */
+.mid-cta{background:var(--forest);padding:3.5rem;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap}
+.mid-cta-text{font-family:'IM Fell English',serif;font-size:clamp(1.2rem,2.5vw,1.9rem);color:var(--ivory);font-weight:400;line-height:1.2}
+.mid-cta-text em{font-style:italic;color:var(--sage-light)}
+.mid-cta-sub{font-family:'Lora',serif;font-style:italic;font-size:0.8rem;color:rgba(184,201,168,0.7);margin-top:0.4rem}
+.mid-cta-btn{font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;background:var(--ivory);color:var(--forest);border:none;padding:0.95rem 2.2rem;cursor:pointer;transition:all 0.3s;text-decoration:none;white-space:nowrap;flex-shrink:0}
+.mid-cta-btn:hover{background:var(--parchment);transform:translateY(-1px)}
 /* CTA */
 .cta-section{background:var(--forest);padding:10rem 3.5rem;text-align:center;position:relative;overflow:hidden}
 .cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(94,112,80,0.3) 0%,transparent 70%);pointer-events:none}
@@ -160,7 +167,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
     <div class="nav-wordmark"><span class="nav-wordmark-main">MERGVS</span><span class="nav-wordmark-sub">Immersive Property</span></div>
   </a>
   <ul class="nav-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul>
-  <a href="index.html#contact" class="nav-cta">Request a Demo</a>
+  <a href="#" class="nav-cta" data-mgv-open>Request a Demo</a>
 </nav>
 
 <section class="page-hero">
@@ -252,13 +259,21 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   </div>
 </section>
 
+<div class="mid-cta">
+  <div>
+    <div class="mid-cta-text">Architects by training.<br><em>Storytellers by nature.</em></div>
+    <div class="mid-cta-sub">Every property has a hidden story. We've built the tools to reveal it.</div>
+  </div>
+  <a href="#" class="mid-cta-btn" data-mgv-open>Begin the Conversation →</a>
+</div>
+
 <section class="cta-section">
   <img class="cta-crest-wm" src="https://mergvs.com/mergvs-son.png" alt="">
   <div class="cta-eyebrow reveal">Work With Us</div>
   <h2 class="cta-title reveal reveal-delay-1">Ready to see what we can<br>build for <em>your listing?</em></h2>
   <p class="cta-sub reveal reveal-delay-2">We are architects, developers, and storytellers. Tell us about your property and let us show you what's possible.</p>
   <div class="cta-actions reveal reveal-delay-3">
-    <a href="index.html#contact" class="btn-light">Begin the Conversation</a>
+    <a href="#" class="btn-light" data-mgv-open>Begin the Conversation</a>
     <a href="services.html" class="btn-ghost-light">See Our Services</a>
   </div>
 </section>
@@ -274,7 +289,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About Us</a></li><li><a href="index.html#properties">Properties</a></li></ul></div>
     <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="index.html">Luxembourg</a></li><li><a href="index.html">Milan</a></li><li><a href="index.html">Istanbul</a></li><li><a href="index.html">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="index.html#contact">Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
@@ -295,5 +310,6 @@ const revEls=document.querySelectorAll('.reveal');
 const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
 revEls.forEach(el=>obs.observe(el));
 </script>
+<script src="mergvs-contact.js"></script>
 </body>
 </html>
