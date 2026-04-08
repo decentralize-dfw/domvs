@@ -56,6 +56,18 @@ nav.scrolled{background:rgba(242,237,223,0.94);backdrop-filter:blur(16px);border
 /* PILLARS */
 .model-section{background:var(--ivory);padding:9rem 3.5rem}
 .model-header{max-width:1200px;margin:0 auto 5rem}
+/* STATS */
+.stats-bar{background:var(--linen);padding:5rem 3.5rem;border-bottom:1px solid var(--ecru)}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto;border:1px solid var(--ecru)}
+.stat-cell{padding:3rem 2.5rem;border-right:1px solid var(--ecru);transition:background 0.4s}
+.stat-cell:last-child{border-right:none}
+.stat-cell:hover{background:rgba(94,112,80,0.04)}
+.stat-number{font-family:'IM Fell English',serif;font-size:3.2rem;color:var(--forest);line-height:1;margin-bottom:0.6rem}
+.stat-number sup{font-size:1.4rem;color:var(--moss)}
+.stat-label{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:var(--stone);line-height:1.6}
+.stat-source{font-family:'Lora',serif;font-style:italic;font-size:0.62rem;color:var(--sage);line-height:1.5;margin-top:1rem;opacity:0;max-height:0;overflow:hidden;transition:opacity 0.4s,max-height 0.4s}
+.stat-cell:hover .stat-source{opacity:1;max-height:3rem}
+
 .model-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);margin-bottom:1rem}
 .model-title em{font-style:italic;color:var(--sienna)}
 .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto;border-top:1px solid var(--ecru)}
@@ -131,6 +143,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
 
 /* RESPONSIVE */
 @media(max-width:1024px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}.stat-cell:nth-child(2){border-right:none}
   .pillars{grid-template-columns:1fr}.pillar{border-right:none}
   .pricing-grid{grid-template-columns:1fr;max-width:480px}
   .process-steps{grid-template-columns:repeat(2,1fr)}.process-steps::before{display:none}
@@ -139,7 +152,8 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
 @media(max-width:768px){
   nav{padding:1.4rem 1.5rem}.nav-links{display:none}
   .page-hero-content{padding:0 1.5rem 4rem}
-  .model-section,.pricing-section,.process-section,.cta-section{padding:6rem 1.5rem}
+  .stats-bar,.model-section,.pricing-section,.process-section,.cta-section{padding:6rem 1.5rem}
+  .stats-row{grid-template-columns:1fr}.stat-cell{border-right:none!important}
   .cta-actions{flex-direction:column}
   .footer-grid{grid-template-columns:1fr;gap:2.5rem}
   .footer-bottom{flex-direction:column;gap:0.8rem;text-align:center}
@@ -164,6 +178,14 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
     <div class="page-hero-eyebrow">For Real Estate Professionals</div>
     <h1 class="page-hero-title">We don't charge<br>upfront. We <em>earn</em><br>together.</h1>
     <p class="page-hero-sub">Our interests are fully aligned with yours — we invest our craft in your listing and only earn when the property sells. No retainers, no subscriptions, no risk.</p>
+  </div>
+</section>
+
+<section class="stats-bar">
+  <div class="stats-row">
+    <div class="stat-cell reveal"><div class="stat-number">90<sup>%</sup></div><div class="stat-label">Of buyers more likely to purchase<br>with an immersive 3D tour</div><div class="stat-source">Matterport — 2,000 buyer & seller survey</div></div>
+    <div class="stat-cell reveal reveal-delay-1"><div class="stat-number">82<sup>%</sup></div><div class="stat-label">Would switch to an agent<br>who offers 3D tours</div><div class="stat-source">Matterport — 2,000 buyer & seller survey</div></div>
+    <div class="stat-cell reveal reveal-delay-2"><div class="stat-number">9<sup>%</sup></div><div class="stat-label">Higher sale price achieved<br>with immersive virtual tours</div><div class="stat-source">Texas Tech University / Matterport — 143,575 listings</div></div>
   </div>
 </section>
 
