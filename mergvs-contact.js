@@ -421,24 +421,43 @@ function init(){
     const phone=document.getElementById('mgv-phone').value.trim();
     const timeline=document.getElementById('mgv-timeline').value||'Not specified';
 
-    /* Send via mailto as fallback — or replace with fetch() to an endpoint */
-    const subject=encodeURIComponent('MERGVS Inquiry — '+city+' / '+price);
-    const body=encodeURIComponent(
-      'Name: '+name+'\n'+
-      'Email: '+email+'\n'+
-      'Phone: '+(phone||'—')+'\n\n'+
-      'City: '+city+'\n'+
-      'Property Type: '+type+'\n'+
-      'Listing Price: '+price+'\n'+
-      'Services: '+svcs+'\n'+
-      'Timeline: '+timeline
-    );
-    window.location.href='mailto:hello@mergvs.com?subject='+subject+'&body='+body;
+    /* Send to Formspree */
+    var btn=document.getElementById('mgv-submit');
+    btn.disabled=true;
+    btn.textContent='Sending…';
 
-    /* Show success */
-    steps.forEach(function(s){s.style.display='none';});
-    document.querySelector('.mgv-progress').style.display='none';
-    document.getElementById('mgv-success').style.display='flex';
+    fetch('https://formspree.io/f/xeepddyq',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        name:name,
+        email:email,
+        phone:phone||'—',
+        city:city,
+        property_type:type,
+        listing_price:price,
+        services:svcs,
+        timeline:timeline,
+        _subject:'MERGVS Inquiry — '+city+' / '+price,
+        _replyto:email
+      })
+    }).then(function(res){
+      if(res.ok){
+        steps.forEach(function(s){s.style.display='none';});
+        document.querySelector('.mgv-progress').style.display='none';
+        document.getElementById('mgv-success').style.display='flex';
+      }else{
+        btn.disabled=false;
+        btn.textContent='Send Request →';
+        btn.style.background='#8B4A2A';
+        setTimeout(function(){btn.style.background='#2E3D28';},2000);
+      }
+    }).catch(function(){
+      btn.disabled=false;
+      btn.textContent='Send Request →';
+      btn.style.background='#8B4A2A';
+      setTimeout(function(){btn.style.background='#2E3D28';},2000);
+    });
   });
 
   /* Keyboard close */
