@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERGVS — What We Can Do</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+:root{--parchment:#F2EDDF;--linen:#EAE2CE;--ivory:#F7F3EB;--bark:#5C4A32;--umber:#7A5C3E;--clay:#9E6B4A;--moss:#4A5C40;--fern:#5E7050;--sage:#8A9C7A;--sage-light:#B8C9A8;--forest:#2E3D28;--stone:#8A8070;--dust:#A89880;--chalk:#C8BEA8;--sienna:#8B4A2A;--wheat:#D4C4A0;--ecru:#D8CDB8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--parchment);color:var(--bark);font-family:'Lora',Georgia,serif;font-weight:400;overflow-x:hidden;cursor:none}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:1}
+.cursor{position:fixed;width:7px;height:7px;background:var(--moss);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:opacity 0.2s}
+.cursor-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(74,92,64,0.45);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width 0.3s,height 0.3s}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:1.8rem 3.5rem;transition:background 0.5s,border-color 0.5s}
+nav.scrolled{background:rgba(242,237,223,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--ecru)}
+.nav-logo-area{display:flex;align-items:center;gap:1rem;text-decoration:none}
+.nav-crest{width:44px;height:44px;flex-shrink:0}
+.nav-wordmark{display:flex;flex-direction:column;line-height:1}
+.nav-wordmark-main{font-family:'Cinzel',serif;font-size:1.15rem;font-weight:400;letter-spacing:0.35em;color:var(--forest)}
+.nav-wordmark-sub{font-family:'Lora',serif;font-style:italic;font-size:0.5rem;letter-spacing:0.22em;color:var(--stone);margin-top:3px}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{font-family:'Raleway',sans-serif;font-size:0.65rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--umber);text-decoration:none;transition:color 0.3s}
+.nav-links a:hover{color:var(--forest)}
+.nav-cta{font-family:'Raleway',sans-serif;font-size:0.62rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--forest);border:1px solid var(--moss);padding:0.6rem 1.4rem;text-decoration:none;transition:all 0.3s;cursor:none}
+.nav-cta:hover{background:var(--moss);color:var(--ivory)}
+.section-tag{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.32em;text-transform:uppercase;color:var(--moss);margin-bottom:1rem;display:flex;align-items:center;gap:1rem}
+.section-tag::before{content:'';width:20px;height:1px;background:var(--moss);flex-shrink:0}
+.btn-primary{font-family:'Raleway',sans-serif;font-size:0.62rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;background:var(--forest);color:var(--ivory);border:none;padding:1rem 2.5rem;cursor:none;transition:all 0.35s;text-decoration:none}
+.btn-primary:hover{background:var(--moss);transform:translateY(-1px)}
+.btn-ghost{font-family:'Lora',serif;font-style:italic;font-size:0.85rem;color:var(--umber);text-decoration:none;display:flex;align-items:center;gap:0.6rem;transition:color 0.3s;cursor:none}
+.btn-ghost:hover{color:var(--forest)}
+.btn-ghost::after{content:'→';font-style:normal;transition:transform 0.3s}
+.btn-ghost:hover::after{transform:translateX(4px)}
+.btn-light{font-family:'Raleway',sans-serif;font-size:0.62rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;background:var(--ivory);color:var(--forest);border:none;padding:1rem 2.5rem;cursor:none;transition:all 0.35s;text-decoration:none}
+.btn-light:hover{background:var(--parchment);transform:translateY(-1px)}
+.btn-ghost-light{font-family:'Lora',serif;font-style:italic;font-size:0.88rem;color:var(--sage-light);text-decoration:none;display:flex;align-items:center;gap:0.6rem;transition:color 0.3s;cursor:none}
+.btn-ghost-light:hover{color:var(--ivory)}
+.btn-ghost-light::after{content:'→';font-style:normal;transition:transform 0.3s}
+.btn-ghost-light:hover::after{transform:translateX(4px)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.85s ease,transform 0.85s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.12s}.reveal-delay-2{transition-delay:0.24s}.reveal-delay-3{transition-delay:0.36s}.reveal-delay-4{transition-delay:0.48s}
+/* PAGE HERO */
+.page-hero{position:relative;min-height:60vh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;background:radial-gradient(ellipse at 60% 45%,rgba(94,112,80,0.12) 0%,transparent 55%),radial-gradient(ellipse at 25% 75%,rgba(92,74,50,0.08) 0%,transparent 50%),linear-gradient(170deg,#ddd5c0 0%,#c8bfaa 30%,#bdb49e 60%,#a8a090 100%)}
+.page-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(242,237,223,0.97) 0%,rgba(242,237,223,0.5) 35%,rgba(242,237,223,0.08) 65%,transparent 85%)}
+.page-hero-crest{position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);width:clamp(180px,24vw,320px);opacity:0.06;z-index:2;pointer-events:none}
+.page-hero-content{position:relative;z-index:10;padding:0 3.5rem 5rem;max-width:720px}
+.page-hero-eyebrow{font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.35em;text-transform:uppercase;color:var(--moss);margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem;opacity:0;animation:fadeUp 1s 0.4s forwards}
+.page-hero-eyebrow::before{content:'';width:28px;height:1px;background:var(--moss);flex-shrink:0}
+.page-hero-title{font-family:'IM Fell English',serif;font-size:clamp(2.6rem,5.5vw,4.8rem);font-weight:400;line-height:1.08;color:var(--forest);margin-bottom:1.5rem;opacity:0;animation:fadeUp 1.1s 0.6s forwards}
+.page-hero-title em{font-style:italic;color:var(--sienna)}
+.page-hero-sub{font-family:'Lora',serif;font-style:italic;font-size:0.92rem;line-height:1.85;color:var(--umber);max-width:480px;opacity:0;animation:fadeUp 1s 0.8s forwards}
+
+/* MARQUEE */
+.marquee-strip{border-top:1px solid var(--ecru);border-bottom:1px solid var(--ecru);padding:1rem 0;overflow:hidden;background:var(--linen)}
+.marquee-track{display:flex;gap:3rem;animation:marquee 24s linear infinite;white-space:nowrap;width:max-content}
+.marquee-item{font-family:'Lora',serif;font-style:italic;font-size:0.78rem;letter-spacing:0.08em;color:var(--stone);display:flex;align-items:center;gap:2rem}
+.marquee-item::after{content:'✦';font-style:normal;font-size:0.5rem;color:var(--sage)}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* SERVICES GRID */
+.services-section{background:var(--ivory);padding:9rem 3.5rem}
+.services-header{max-width:1200px;margin:0 auto 5rem}
+.services-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);margin-bottom:1rem}
+.services-title em{font-style:italic;color:var(--sienna)}
+.services-intro{font-family:'Lora',serif;font-size:0.88rem;line-height:2;color:var(--umber);max-width:520px}
+.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto;border:1px solid var(--ecru)}
+.svc-card{padding:3rem 2.5rem;border-right:1px solid var(--ecru);border-bottom:1px solid var(--ecru);position:relative;overflow:hidden;transition:background 0.4s}
+.svc-card:nth-child(3n){border-right:none}
+.svc-card:nth-last-child(-n+3){border-bottom:none}
+.svc-card:hover{background:rgba(74,92,64,0.03)}
+.svc-card::before{content:'';position:absolute;top:0;left:0;width:0;height:2px;background:var(--moss);transition:width 0.6s ease}
+.svc-card:hover::before{width:100%}
+.svc-icon{width:40px;height:40px;margin-bottom:1.5rem}
+.svc-title{font-family:'IM Fell English',serif;font-size:1.25rem;line-height:1.25;color:var(--forest);margin-bottom:0.8rem}
+.svc-title em{font-style:italic;color:var(--sienna)}
+.svc-text{font-family:'Lora',serif;font-size:0.8rem;line-height:1.9;color:var(--umber)}
+
+/* QUOTE */
+.quote-section{background:var(--linen);padding:9rem 3.5rem;text-align:center;border-top:1px solid var(--ecru);border-bottom:1px solid var(--ecru);position:relative;overflow:hidden}
+.quote-deco{position:absolute;top:3rem;left:50%;transform:translateX(-50%);font-family:'IM Fell English',serif;font-size:14rem;color:rgba(94,112,80,0.05);line-height:1;pointer-events:none;user-select:none}
+.quote-icon{display:flex;justify-content:center;margin-bottom:2.5rem}
+.quote-text{font-family:'IM Fell English',serif;font-style:italic;font-size:clamp(1.4rem,3vw,2.4rem);line-height:1.5;color:var(--forest);max-width:820px;margin:0 auto 2.5rem;position:relative}
+.quote-text em{font-style:normal;color:var(--sienna)}
+.quote-source{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--stone)}
+
+/* CTA */
+.cta-section{background:var(--forest);padding:10rem 3.5rem;text-align:center;position:relative;overflow:hidden}
+.cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(94,112,80,0.3) 0%,transparent 70%);pointer-events:none}
+.cta-crest-wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:clamp(200px,30vw,400px);opacity:0.055;pointer-events:none}
+.cta-eyebrow{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.32em;text-transform:uppercase;color:var(--sage-light);margin-bottom:2rem;display:flex;align-items:center;justify-content:center;gap:1rem;position:relative}
+.cta-eyebrow::before,.cta-eyebrow::after{content:'';width:32px;height:1px;background:var(--sage)}
+.cta-title{font-family:'IM Fell English',serif;font-size:clamp(2.5rem,5.5vw,5rem);font-weight:400;line-height:1.05;color:var(--ivory);margin-bottom:1.8rem;position:relative}
+.cta-title em{font-style:italic;color:var(--sage-light)}
+.cta-sub{font-family:'Lora',serif;font-style:italic;font-size:0.9rem;line-height:1.9;color:rgba(184,201,168,0.75);max-width:400px;margin:0 auto 3.5rem;position:relative}
+.cta-actions{display:flex;gap:1.5rem;justify-content:center;align-items:center;position:relative}
+
+/* FOOTER */
+footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255,255,255,0.05)}
+.footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:4rem;max-width:1200px;margin:0 auto 5rem}
+.footer-brand-logo{display:flex;align-items:center;gap:0.9rem;margin-bottom:1.5rem;text-decoration:none}
+.footer-crest{width:36px;height:36px}
+.footer-wordmark{font-family:'Cinzel',serif;font-size:1rem;letter-spacing:0.35em;color:var(--sage-light)}
+.footer-tagline{font-family:'Lora',serif;font-style:italic;font-size:0.78rem;line-height:1.85;color:rgba(138,155,122,0.6);max-width:240px}
+.footer-col-title{font-family:'Raleway',sans-serif;font-size:0.55rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--sage);margin-bottom:1.5rem}
+.footer-links{list-style:none;display:flex;flex-direction:column;gap:0.7rem}
+.footer-links a{font-family:'Lora',serif;font-size:0.8rem;color:rgba(138,155,122,0.6);text-decoration:none;transition:color 0.3s;cursor:none}
+.footer-links a:hover{color:var(--sage-light)}
+.footer-bottom{max-width:1200px;margin:0 auto;padding-top:2rem;border-top:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center}
+.footer-legal{font-family:'Raleway',sans-serif;font-size:0.52rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:rgba(138,155,122,0.35)}
+
+/* RESPONSIVE */
+@media(max-width:1024px){
+  .services-grid{grid-template-columns:repeat(2,1fr)}
+  .svc-card:nth-child(3n){border-right:1px solid var(--ecru)}
+  .svc-card:nth-child(2n){border-right:none}
+  .svc-card:nth-last-child(-n+2){border-bottom:none}
+  .svc-card:nth-last-child(3){border-bottom:1px solid var(--ecru)}
+  .footer-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  nav{padding:1.4rem 1.5rem}
+  .nav-links{display:none}
+  .page-hero-content{padding:0 1.5rem 4rem}
+  .services-section,.quote-section,.cta-section{padding:6rem 1.5rem}
+  .services-grid{grid-template-columns:1fr}
+  .svc-card{border-right:none!important}
+  .svc-card:nth-last-child(-n+3){border-bottom:1px solid var(--ecru)}
+  .svc-card:last-child{border-bottom:none}
+  .cta-actions{flex-direction:column}
+  .footer-grid{grid-template-columns:1fr;gap:2.5rem}
+  .footer-bottom{flex-direction:column;gap:0.8rem;text-align:center}
+}
+</style>
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<nav id="mainNav">
+  <a href="index.html" class="nav-logo-area">
+    <svg class="nav-crest" viewBox="0 0 88 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 44 5 L 78 17 L 78 50 Q 78 76 44 92 Q 10 76 10 50 L 10 17 Z" fill="none" stroke="#4A5C40" stroke-width="1.4"/>
+      <path d="M 44 12 L 71 22 L 71 50 Q 71 72 44 86 Q 17 72 17 50 L 17 22 Z" fill="none" stroke="#4A5C40" stroke-width="0.45" opacity="0.35"/>
+      <rect x="31" y="0" width="26" height="8" rx="1" fill="#4A5C40"/>
+      <rect x="32" y="-5" width="5" height="7" rx="0.5" fill="#4A5C40"/>
+      <rect x="40" y="-7" width="5" height="9" rx="0.5" fill="#4A5C40"/>
+      <rect x="48" y="-5" width="5" height="7" rx="0.5" fill="#4A5C40"/>
+      <circle cx="34" cy="-1" r="1" fill="#8a7050"/>
+      <circle cx="42" cy="-3" r="1" fill="#8a7050"/>
+      <circle cx="50" cy="-1" r="1" fill="#8a7050"/>
+      <text x="44" y="60" text-anchor="middle" font-family="'Cinzel',serif" font-size="26" fill="#4A5C40">M</text>
+      <path d="M 28 84 Q 44 90 60 84" stroke="#4A5C40" stroke-width="0.6" fill="none" opacity="0.35"/>
+    </svg>
+    <div class="nav-wordmark"><span class="nav-wordmark-main">MERGVS</span><span class="nav-wordmark-sub">Immersive Property</span></div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="services.html">Services</a></li>
+    <li><a href="agents.html">For Agents</a></li>
+    <li><a href="about.html">About</a></li>
+  </ul>
+  <a href="index.html#contact" class="nav-cta">Request a Demo</a>
+</nav>
+
+<section class="page-hero">
+  <svg class="page-hero-crest" viewBox="0 0 280 330" fill="none"><path d="M 140 10 L 256 50 L 256 158 Q 256 268 140 318 Q 24 268 24 158 L 24 50 Z" fill="none" stroke="#4A5C40" stroke-width="1.5"/><path d="M 140 22 L 244 58 L 244 158 Q 244 256 140 303 Q 36 256 36 158 L 36 58 Z" fill="none" stroke="#4A5C40" stroke-width="0.5" opacity="0.5"/><text x="140" y="118" text-anchor="middle" font-family="'IM Fell English',serif" font-size="72" fill="#4A5C40">M</text><text x="140" y="162" text-anchor="middle" font-family="'Cinzel',serif" font-size="10.5" fill="#4A5C40" letter-spacing="6">ERGVS</text></svg>
+  <div class="page-hero-content">
+    <div class="page-hero-eyebrow">Our Capabilities</div>
+    <h1 class="page-hero-title">Every home deserves<br>a universe of<br><em>possibilities.</em></h1>
+    <p class="page-hero-sub">From immersive 3D tours to cinematic video, from spatial web experiences to architectural presentation boards — we bring every tool to bear on making your property unforgettable.</p>
+  </div>
+</section>
+
+<div class="marquee-strip">
+  <div class="marquee-track">
+    <span class="marquee-item">3D Experiences</span><span class="marquee-item">Cinematic Video</span><span class="marquee-item">Spatial Web</span><span class="marquee-item">Virtual Staging</span><span class="marquee-item">Architectural Photography</span><span class="marquee-item">Presentation Boards</span><span class="marquee-item">Analytics</span><span class="marquee-item">Drone Aerials</span><span class="marquee-item">3D Experiences</span><span class="marquee-item">Cinematic Video</span><span class="marquee-item">Spatial Web</span><span class="marquee-item">Virtual Staging</span><span class="marquee-item">Architectural Photography</span><span class="marquee-item">Presentation Boards</span><span class="marquee-item">Analytics</span><span class="marquee-item">Drone Aerials</span>
+  </div>
+</div>
+
+<section class="services-section">
+  <div class="services-header">
+    <div class="section-tag reveal">What We Deliver</div>
+    <h2 class="services-title reveal reveal-delay-1">A complete toolkit for<br><em>exceptional</em> presentation.</h2>
+    <p class="services-intro reveal reveal-delay-2">Each property is unique. Our services adapt to its story — combining the right tools to create an experience no template could ever match.</p>
+  </div>
+  <div class="services-grid">
+
+    <div class="svc-card reveal">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><path d="M8 28L20 34L32 28V14L20 8L8 14V28Z" stroke="#4A5C40" stroke-width="1.2"/><line x1="20" y1="8" x2="20" y2="22" stroke="#4A5C40" stroke-width="0.8" opacity="0.5"/><line x1="8" y1="14" x2="20" y2="22" stroke="#4A5C40" stroke-width="0.8" opacity="0.5"/><line x1="32" y1="14" x2="20" y2="22" stroke="#4A5C40" stroke-width="0.8" opacity="0.5"/></svg>
+      <h3 class="svc-title">3D Interactive <em>Experiences</em></h3>
+      <p class="svc-text">Fully navigable Three.js virtual tours with spatial audio, room-by-room exploration, and cinematic camera paths. Your buyer walks through the home from anywhere in the world.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-1">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="12" stroke="#4A5C40" stroke-width="1.2"/><circle cx="20" cy="20" r="5" stroke="#4A5C40" stroke-width="0.8"/><line x1="20" y1="8" x2="20" y2="14" stroke="#4A5C40" stroke-width="0.8"/><line x1="20" y1="26" x2="20" y2="32" stroke="#4A5C40" stroke-width="0.8"/><line x1="8" y1="20" x2="14" y2="20" stroke="#4A5C40" stroke-width="0.8"/><line x1="26" y1="20" x2="32" y2="20" stroke="#4A5C40" stroke-width="0.8"/></svg>
+      <h3 class="svc-title">Architectural Photography <em>Curation</em></h3>
+      <p class="svc-text">Expert direction of lighting, angles, and framing. We don't just take photos — we orchestrate visual narratives that reveal a home's true character and atmosphere.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-2">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><rect x="6" y="10" width="28" height="20" rx="2" stroke="#4A5C40" stroke-width="1.2"/><polygon points="17,15 17,25 27,20" fill="none" stroke="#4A5C40" stroke-width="1"/></svg>
+      <h3 class="svc-title">Cinematic Video <em>Production</em></h3>
+      <p class="svc-text">From drone sequences to AI-assisted motion design, we transform still moments into cinematic stories. Each video is crafted to evoke the feeling of arrival.</p>
+    </div>
+
+    <div class="svc-card reveal">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="16" r="8" stroke="#4A5C40" stroke-width="1.2" fill="none"/><path d="M20 24L20 36" stroke="#4A5C40" stroke-width="1.2"/><circle cx="20" cy="36" r="2" fill="#4A5C40" opacity="0.4"/><line x1="20" y1="8" x2="20" y2="12" stroke="#4A5C40" stroke-width="0.8"/><line x1="14" y1="10" x2="16" y2="13" stroke="#4A5C40" stroke-width="0.8"/><line x1="26" y1="10" x2="24" y2="13" stroke="#4A5C40" stroke-width="0.8"/></svg>
+      <h3 class="svc-title">Environment & Context <em>Mapping</em></h3>
+      <p class="svc-text">Neighbourhood mapping, proximity analysis, lifestyle amenities, transit connections, and view simulations. We sell the life, not just the walls.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-1">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><rect x="6" y="6" width="28" height="28" stroke="#4A5C40" stroke-width="1.2"/><line x1="6" y1="16" x2="34" y2="16" stroke="#4A5C40" stroke-width="0.6"/><line x1="6" y1="26" x2="34" y2="26" stroke="#4A5C40" stroke-width="0.6"/><line x1="20" y1="6" x2="20" y2="34" stroke="#4A5C40" stroke-width="0.6"/></svg>
+      <h3 class="svc-title">Presentation <em>Boards</em></h3>
+      <p class="svc-text">Digital architectural sheets — plans, sections, elevations, and material palettes — designed with the precision of a studio and the elegance of a gallery.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-2">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><rect x="10" y="22" width="20" height="12" rx="1" stroke="#4A5C40" stroke-width="1.2"/><rect x="14" y="18" width="12" height="4" stroke="#4A5C40" stroke-width="0.8"/><line x1="14" y1="28" x2="26" y2="28" stroke="#4A5C40" stroke-width="0.6"/><circle cx="20" cy="14" r="4" stroke="#4A5C40" stroke-width="0.8" stroke-dasharray="2 2"/></svg>
+      <h3 class="svc-title">Virtual Staging & <em>Furnishing</em></h3>
+      <p class="svc-text">Digital furniture placement, interior design visualization, and style alternatives. Show buyers the potential of every room without moving a single piece.</p>
+    </div>
+
+    <div class="svc-card reveal">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><circle cx="14" cy="20" r="6" stroke="#4A5C40" stroke-width="1.2"/><path d="M14 14L14 8" stroke="#4A5C40" stroke-width="0.8"/><path d="M8 16L5 13" stroke="#4A5C40" stroke-width="0.8"/><path d="M20 16L23 13" stroke="#4A5C40" stroke-width="0.8"/><path d="M26 20 Q30 16 34 20 Q30 24 26 20Z" fill="none" stroke="#4A5C40" stroke-width="1"/><circle cx="30" cy="20" r="2" fill="#4A5C40" opacity="0.3"/></svg>
+      <h3 class="svc-title">Day & Night <em>Visualization</em></h3>
+      <p class="svc-text">Time-of-day light simulation, golden hour warmth, twilight drama, and seasonal atmosphere. Show how the home lives across every hour.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-1">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><path d="M20 6L20 14" stroke="#4A5C40" stroke-width="1.2"/><path d="M14 10L20 14L26 10" stroke="#4A5C40" stroke-width="1"/><ellipse cx="20" cy="28" rx="14" ry="6" stroke="#4A5C40" stroke-width="0.8" stroke-dasharray="3 2"/><line x1="20" y1="14" x2="20" y2="22" stroke="#4A5C40" stroke-width="0.8" opacity="0.5"/><circle cx="20" cy="28" r="2" fill="#4A5C40" opacity="0.3"/></svg>
+      <h3 class="svc-title">Drone & Aerial <em>Perspectives</em></h3>
+      <p class="svc-text">Bird's-eye context, terrain mapping, property boundaries, and approach sequences. Reveal the scale and setting that ground-level photography cannot.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-2">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="24" height="24" stroke="#4A5C40" stroke-width="1.2"/><line x1="8" y1="20" x2="32" y2="20" stroke="#4A5C40" stroke-width="0.6"/><line x1="20" y1="8" x2="20" y2="32" stroke="#4A5C40" stroke-width="0.6"/><rect x="10" y="10" width="8" height="8" fill="rgba(74,92,64,0.08)"/><rect x="22" y="22" width="8" height="8" fill="rgba(74,92,64,0.08)"/><circle cx="16" cy="24" r="2" fill="none" stroke="#4A5C40" stroke-width="0.6"/></svg>
+      <h3 class="svc-title">Floor Plan <em>Digitization</em></h3>
+      <p class="svc-text">Interactive overlays, precise measurements, room labels, and spatial flow diagrams. Transform static plans into navigable, informative experiences.</p>
+    </div>
+
+    <div class="svc-card reveal">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><rect x="12" y="6" width="16" height="10" rx="1" stroke="#4A5C40" stroke-width="1"/><rect x="6" y="24" width="10" height="10" rx="1" stroke="#4A5C40" stroke-width="1"/><rect x="24" y="26" width="10" height="8" rx="4" stroke="#4A5C40" stroke-width="1"/><line x1="20" y1="16" x2="11" y2="24" stroke="#4A5C40" stroke-width="0.6" opacity="0.5"/><line x1="20" y1="16" x2="29" y2="26" stroke="#4A5C40" stroke-width="0.6" opacity="0.5"/></svg>
+      <h3 class="svc-title">Cross-Platform <em>Spatial Web</em></h3>
+      <p class="svc-text">One codebase, every device. Your property experience runs seamlessly on mobile, desktop, tablet, and VR headsets — a single URL, universally accessible.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-1">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="10" height="10" rx="1" stroke="#4A5C40" stroke-width="1"/><rect x="22" y="8" width="10" height="10" rx="1" stroke="#4A5C40" stroke-width="1" fill="rgba(74,92,64,0.06)"/><rect x="8" y="22" width="10" height="10" rx="1" stroke="#4A5C40" stroke-width="1" fill="rgba(74,92,64,0.1)"/><rect x="22" y="22" width="10" height="10" rx="1" stroke="#4A5C40" stroke-width="1"/></svg>
+      <h3 class="svc-title">Material & Finish <em>Gallery</em></h3>
+      <p class="svc-text">Close-up textures, material swatches, and finish comparisons presented in an interactive gallery. Buyers feel the quality before they touch it.</p>
+    </div>
+
+    <div class="svc-card reveal reveal-delay-2">
+      <svg class="svc-icon" viewBox="0 0 40 40" fill="none"><polyline points="8,30 14,22 20,26 26,16 32,10" stroke="#4A5C40" stroke-width="1.2" fill="none"/><circle cx="32" cy="10" r="2" fill="#4A5C40" opacity="0.4"/><line x1="8" y1="34" x2="34" y2="34" stroke="#4A5C40" stroke-width="0.6"/><line x1="8" y1="6" x2="8" y2="34" stroke="#4A5C40" stroke-width="0.6"/></svg>
+      <h3 class="svc-title">Analytics & Engagement <em>Tracking</em></h3>
+      <p class="svc-text">Buyer heatmaps, dwell time analysis, interaction funnels, and engagement scoring. Know exactly how your listing performs and who is most interested.</p>
+    </div>
+
+  </div>
+</section>
+
+<section class="quote-section">
+  <div class="quote-deco">"</div>
+  <div class="quote-icon reveal">
+    <svg width="48" height="58" viewBox="0 0 88 100" fill="none" opacity="0.22"><path d="M 44 5 L 80 18 L 80 52 Q 80 80 44 95 Q 8 80 8 52 L 8 18 Z" fill="none" stroke="#4A5C40" stroke-width="1.4"/><text x="44" y="60" text-anchor="middle" font-family="serif" font-size="26" fill="#4A5C40">M</text></svg>
+  </div>
+  <blockquote class="quote-text reveal reveal-delay-1">"The difference between a listing and an <em>experience</em> is the difference between informing a buyer and <em>moving</em> them."</blockquote>
+  <p class="quote-source reveal reveal-delay-2">— The MERGVS Approach</p>
+</section>
+
+<section class="cta-section" id="contact">
+  <svg class="cta-crest-wm" viewBox="0 0 280 330" fill="none"><path d="M 140 10 L 256 50 L 256 158 Q 256 268 140 318 Q 24 268 24 158 L 24 50 Z" fill="none" stroke="#B8C9A8" stroke-width="1.5"/><path d="M 140 22 L 244 58 L 244 158 Q 244 256 140 303 Q 36 256 36 158 L 36 58 Z" fill="none" stroke="#B8C9A8" stroke-width="0.5" opacity="0.4"/><text x="140" y="118" text-anchor="middle" font-family="serif" font-size="72" fill="#B8C9A8">M</text><text x="140" y="162" text-anchor="middle" font-family="'Cinzel',serif" font-size="10.5" fill="#B8C9A8" letter-spacing="6">ERGVS</text></svg>
+  <div class="cta-eyebrow reveal">Ready to Transform Your Listing</div>
+  <h2 class="cta-title reveal reveal-delay-1">Let us show you what<br>your property <em>could become.</em></h2>
+  <p class="cta-sub reveal reveal-delay-2">Tell us about the property. We will show you what its world could look like — no obligation, no template.</p>
+  <div class="cta-actions reveal reveal-delay-3">
+    <a href="index.html#contact" class="btn-light">Begin the Conversation</a>
+    <a href="index.html#properties" class="btn-ghost-light">See Live Demos</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-grid">
+    <div>
+      <a href="index.html" class="footer-brand-logo">
+        <svg class="footer-crest" viewBox="0 0 88 100" fill="none"><path d="M 44 5 L 80 18 L 80 52 Q 80 80 44 95 Q 8 80 8 52 L 8 18 Z" fill="none" stroke="#8A9C7A" stroke-width="1.4"/><text x="44" y="60" text-anchor="middle" font-family="serif" font-size="24" fill="#8A9C7A">M</text></svg>
+        <span class="footer-wordmark">MERGVS</span>
+      </a>
+      <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
+    </div>
+    <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About Us</a></li><li><a href="index.html#properties">Properties</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="index.html">Luxembourg</a></li><li><a href="index.html">Milan</a></li><li><a href="index.html">Istanbul</a></li><li><a href="index.html">International</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="index.html#contact">Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
+    <span class="footer-legal">Luxembourg · Milan · Istanbul</span>
+    <span class="footer-legal">Privacy · Terms</span>
+  </div>
+</footer>
+
+<script>
+const cursor=document.getElementById('cursor'),ring=document.getElementById('cursorRing');let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px'});
+(function a(){rx+=(mx-rx)*0.1;ry+=(my-ry)*0.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a)})();
+document.addEventListener('mouseleave',()=>{cursor.style.opacity='0';ring.style.opacity='0'});
+document.addEventListener('mouseenter',()=>{cursor.style.opacity='1';ring.style.opacity='1'});
+const nav=document.getElementById('mainNav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>60));
+const revEls=document.querySelectorAll('.reveal');
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+revEls.forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MERGVS — For Agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+:root{--parchment:#F2EDDF;--linen:#EAE2CE;--ivory:#F7F3EB;--bark:#5C4A32;--umber:#7A5C3E;--clay:#9E6B4A;--moss:#4A5C40;--fern:#5E7050;--sage:#8A9C7A;--sage-light:#B8C9A8;--forest:#2E3D28;--stone:#8A8070;--dust:#A89880;--chalk:#C8BEA8;--sienna:#8B4A2A;--wheat:#D4C4A0;--ecru:#D8CDB8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{background:var(--parchment);color:var(--bark);font-family:'Lora',Georgia,serif;font-weight:400;overflow-x:hidden;cursor:none}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:1}
+.cursor{position:fixed;width:7px;height:7px;background:var(--moss);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:opacity 0.2s}
+.cursor-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(74,92,64,0.45);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width 0.3s,height 0.3s}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:1.8rem 3.5rem;transition:background 0.5s,border-color 0.5s}
+nav.scrolled{background:rgba(242,237,223,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--ecru)}
+.nav-logo-area{display:flex;align-items:center;gap:1rem;text-decoration:none}
+.nav-crest{width:44px;height:44px;flex-shrink:0}
+.nav-wordmark{display:flex;flex-direction:column;line-height:1}
+.nav-wordmark-main{font-family:'Cinzel',serif;font-size:1.15rem;font-weight:400;letter-spacing:0.35em;color:var(--forest)}
+.nav-wordmark-sub{font-family:'Lora',serif;font-style:italic;font-size:0.5rem;letter-spacing:0.22em;color:var(--stone);margin-top:3px}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{font-family:'Raleway',sans-serif;font-size:0.65rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--umber);text-decoration:none;transition:color 0.3s}
+.nav-links a:hover{color:var(--forest)}
+.nav-cta{font-family:'Raleway',sans-serif;font-size:0.62rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--forest);border:1px solid var(--moss);padding:0.6rem 1.4rem;text-decoration:none;transition:all 0.3s;cursor:none}
+.nav-cta:hover{background:var(--moss);color:var(--ivory)}
+.section-tag{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.32em;text-transform:uppercase;color:var(--moss);margin-bottom:1rem;display:flex;align-items:center;gap:1rem}
+.section-tag::before{content:'';width:20px;height:1px;background:var(--moss);flex-shrink:0}
+.btn-primary{font-family:'Raleway',sans-serif;font-size:0.62rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;background:var(--forest);color:var(--ivory);border:none;padding:1rem 2.5rem;cursor:none;transition:all 0.35s;text-decoration:none}
+.btn-primary:hover{background:var(--moss);transform:translateY(-1px)}
+.btn-light{font-family:'Raleway',sans-serif;font-size:0.62rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;background:var(--ivory);color:var(--forest);border:none;padding:1rem 2.5rem;cursor:none;transition:all 0.35s;text-decoration:none}
+.btn-light:hover{background:var(--parchment);transform:translateY(-1px)}
+.btn-ghost-light{font-family:'Lora',serif;font-style:italic;font-size:0.88rem;color:var(--sage-light);text-decoration:none;display:flex;align-items:center;gap:0.6rem;transition:color 0.3s;cursor:none}
+.btn-ghost-light:hover{color:var(--ivory)}
+.btn-ghost-light::after{content:'→';font-style:normal;transition:transform 0.3s}
+.btn-ghost-light:hover::after{transform:translateX(4px)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.85s ease,transform 0.85s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.12s}.reveal-delay-2{transition-delay:0.24s}.reveal-delay-3{transition-delay:0.36s}.reveal-delay-4{transition-delay:0.48s}
+/* PAGE HERO */
+.page-hero{position:relative;min-height:60vh;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;background:radial-gradient(ellipse at 40% 50%,rgba(94,112,80,0.14) 0%,transparent 55%),radial-gradient(ellipse at 70% 30%,rgba(92,74,50,0.08) 0%,transparent 50%),linear-gradient(170deg,#ddd5c0 0%,#c8bfaa 30%,#bdb49e 60%,#a8a090 100%)}
+.page-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(242,237,223,0.97) 0%,rgba(242,237,223,0.5) 35%,rgba(242,237,223,0.08) 65%,transparent 85%)}
+.page-hero-crest{position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);width:clamp(180px,24vw,320px);opacity:0.06;z-index:2;pointer-events:none}
+.page-hero-content{position:relative;z-index:10;padding:0 3.5rem 5rem;max-width:720px}
+.page-hero-eyebrow{font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.35em;text-transform:uppercase;color:var(--moss);margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem;opacity:0;animation:fadeUp 1s 0.4s forwards}
+.page-hero-eyebrow::before{content:'';width:28px;height:1px;background:var(--moss);flex-shrink:0}
+.page-hero-title{font-family:'IM Fell English',serif;font-size:clamp(2.6rem,5.5vw,4.8rem);font-weight:400;line-height:1.08;color:var(--forest);margin-bottom:1.5rem;opacity:0;animation:fadeUp 1.1s 0.6s forwards}
+.page-hero-title em{font-style:italic;color:var(--sienna)}
+.page-hero-sub{font-family:'Lora',serif;font-style:italic;font-size:0.92rem;line-height:1.85;color:var(--umber);max-width:500px;opacity:0;animation:fadeUp 1s 0.8s forwards}
+
+/* PILLARS */
+.model-section{background:var(--ivory);padding:9rem 3.5rem}
+.model-header{max-width:1200px;margin:0 auto 5rem}
+.model-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);margin-bottom:1rem}
+.model-title em{font-style:italic;color:var(--sienna)}
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto;border-top:1px solid var(--ecru)}
+.pillar{padding:4rem 3rem;border-right:1px solid var(--ecru);position:relative;overflow:hidden;transition:background 0.4s}
+.pillar:last-child{border-right:none}
+.pillar:hover{background:rgba(74,92,64,0.03)}
+.pillar::before{content:'';position:absolute;top:0;left:0;width:0;height:2px;background:var(--moss);transition:width 0.6s ease}
+.pillar:hover::before{width:100%}
+.pillar-num{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.3em;color:var(--sage);margin-bottom:2rem}
+.pillar-title{font-family:'IM Fell English',serif;font-size:1.5rem;line-height:1.25;color:var(--forest);margin-bottom:1.2rem}
+.pillar-title em{font-style:italic;color:var(--sienna)}
+.pillar-text{font-family:'Lora',serif;font-size:0.82rem;line-height:1.95;color:var(--umber)}
+
+/* PRICING */
+.pricing-section{background:var(--linen);padding:9rem 3.5rem;border-top:1px solid var(--ecru);border-bottom:1px solid var(--ecru)}
+.pricing-header{max-width:1200px;margin:0 auto 5rem;text-align:center}
+.pricing-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);margin-bottom:1rem}
+.pricing-title em{font-style:italic;color:var(--sienna)}
+.pricing-sub{font-family:'Lora',serif;font-style:italic;font-size:0.88rem;line-height:1.9;color:var(--stone);max-width:460px;margin:0 auto}
+.pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;max-width:900px;margin:0 auto}
+.price-card{background:var(--parchment);border:1px solid var(--ecru);padding:3.5rem 3rem;position:relative;transition:border-color 0.4s,box-shadow 0.4s}
+.price-card:hover{border-color:var(--sage);box-shadow:0 8px 40px rgba(46,61,40,0.07)}
+.price-card.featured{border-top:3px solid var(--moss)}
+.price-card.featured::after{content:'Recommended';position:absolute;top:1.2rem;right:1.2rem;font-family:'Raleway',sans-serif;font-size:0.48rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--moss);border:1px solid var(--sage-light);padding:0.3rem 0.6rem}
+.price-label{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--moss);margin-bottom:1.5rem}
+.price-rate{font-family:'IM Fell English',serif;font-size:4.5rem;line-height:1;color:var(--forest);margin-bottom:0.3rem}
+.price-of{font-family:'Lora',serif;font-style:italic;font-size:0.82rem;color:var(--stone);margin-bottom:1rem}
+.price-condition{font-family:'Lora',serif;font-size:0.82rem;line-height:1.7;color:var(--umber);margin-bottom:0.8rem}
+.price-example{font-family:'Lora',serif;font-style:italic;font-size:0.78rem;color:var(--sage);margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--ecru)}
+.price-features{list-style:none;display:flex;flex-direction:column;gap:0.7rem}
+.price-features li{display:flex;align-items:flex-start;gap:0.8rem;font-family:'Lora',serif;font-size:0.78rem;line-height:1.65;color:var(--umber)}
+.price-features li::before{content:'↳';color:var(--moss);flex-shrink:0;margin-top:0.1rem}
+
+/* PROCESS */
+.process-section{background:var(--parchment);padding:9rem 3.5rem}
+.process-header{max-width:1200px;margin:0 auto 6rem;text-align:center}
+.process-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);margin-bottom:1.5rem}
+.process-title em{font-style:italic;color:var(--sienna)}
+.process-sub{font-family:'Lora',serif;font-style:italic;font-size:0.88rem;line-height:1.9;color:var(--stone);max-width:460px;margin:0 auto}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;max-width:1200px;margin:0 auto;position:relative}
+.process-steps::before{content:'';position:absolute;top:2.8rem;left:15%;right:15%;height:1px;background:linear-gradient(to right,transparent,var(--sage-light),var(--sage-light),transparent)}
+.process-step{padding:0 2rem;text-align:center}
+.step-circle{width:5.6rem;height:5.6rem;border:1px solid var(--sage-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 2rem;background:var(--parchment);transition:all 0.4s}
+.process-step:hover .step-circle{border-color:var(--moss);background:rgba(94,112,80,0.06)}
+.step-n{font-family:'Cinzel',serif;font-size:1rem;letter-spacing:0.1em;color:var(--moss)}
+.step-title{font-family:'IM Fell English',serif;font-size:1.1rem;color:var(--forest);margin-bottom:0.9rem}
+.step-text{font-family:'Lora',serif;font-size:0.78rem;line-height:1.85;color:var(--stone)}
+
+/* CTA */
+.cta-section{background:var(--forest);padding:10rem 3.5rem;text-align:center;position:relative;overflow:hidden}
+.cta-section::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(94,112,80,0.3) 0%,transparent 70%);pointer-events:none}
+.cta-crest-wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:clamp(200px,30vw,400px);opacity:0.055;pointer-events:none}
+.cta-eyebrow{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.32em;text-transform:uppercase;color:var(--sage-light);margin-bottom:2rem;display:flex;align-items:center;justify-content:center;gap:1rem;position:relative}
+.cta-eyebrow::before,.cta-eyebrow::after{content:'';width:32px;height:1px;background:var(--sage)}
+.cta-title{font-family:'IM Fell English',serif;font-size:clamp(2.5rem,5.5vw,5rem);font-weight:400;line-height:1.05;color:var(--ivory);margin-bottom:1.8rem;position:relative}
+.cta-title em{font-style:italic;color:var(--sage-light)}
+.cta-sub{font-family:'Lora',serif;font-style:italic;font-size:0.9rem;line-height:1.9;color:rgba(184,201,168,0.75);max-width:420px;margin:0 auto 3.5rem;position:relative}
+.cta-actions{display:flex;gap:1.5rem;justify-content:center;align-items:center;position:relative}
+
+/* FOOTER */
+footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255,255,255,0.05)}
+.footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:4rem;max-width:1200px;margin:0 auto 5rem}
+.footer-brand-logo{display:flex;align-items:center;gap:0.9rem;margin-bottom:1.5rem;text-decoration:none}
+.footer-crest{width:36px;height:36px}
+.footer-wordmark{font-family:'Cinzel',serif;font-size:1rem;letter-spacing:0.35em;color:var(--sage-light)}
+.footer-tagline{font-family:'Lora',serif;font-style:italic;font-size:0.78rem;line-height:1.85;color:rgba(138,155,122,0.6);max-width:240px}
+.footer-col-title{font-family:'Raleway',sans-serif;font-size:0.55rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--sage);margin-bottom:1.5rem}
+.footer-links{list-style:none;display:flex;flex-direction:column;gap:0.7rem}
+.footer-links a{font-family:'Lora',serif;font-size:0.8rem;color:rgba(138,155,122,0.6);text-decoration:none;transition:color 0.3s;cursor:none}
+.footer-links a:hover{color:var(--sage-light)}
+.footer-bottom{max-width:1200px;margin:0 auto;padding-top:2rem;border-top:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center}
+.footer-legal{font-family:'Raleway',sans-serif;font-size:0.52rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:rgba(138,155,122,0.35)}
+
+/* RESPONSIVE */
+@media(max-width:1024px){
+  .pillars{grid-template-columns:1fr}.pillar{border-right:none}
+  .pricing-grid{grid-template-columns:1fr;max-width:480px}
+  .process-steps{grid-template-columns:repeat(2,1fr)}.process-steps::before{display:none}
+  .footer-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  nav{padding:1.4rem 1.5rem}.nav-links{display:none}
+  .page-hero-content{padding:0 1.5rem 4rem}
+  .model-section,.pricing-section,.process-section,.cta-section{padding:6rem 1.5rem}
+  .cta-actions{flex-direction:column}
+  .footer-grid{grid-template-columns:1fr;gap:2.5rem}
+  .footer-bottom{flex-direction:column;gap:0.8rem;text-align:center}
+}
+</style>
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<nav id="mainNav">
+  <a href="index.html" class="nav-logo-area">
+    <svg class="nav-crest" viewBox="0 0 88 100" fill="none"><path d="M 44 5 L 78 17 L 78 50 Q 78 76 44 92 Q 10 76 10 50 L 10 17 Z" fill="none" stroke="#4A5C40" stroke-width="1.4"/><path d="M 44 12 L 71 22 L 71 50 Q 71 72 44 86 Q 17 72 17 50 L 17 22 Z" fill="none" stroke="#4A5C40" stroke-width="0.45" opacity="0.35"/><rect x="31" y="0" width="26" height="8" rx="1" fill="#4A5C40"/><rect x="32" y="-5" width="5" height="7" rx="0.5" fill="#4A5C40"/><rect x="40" y="-7" width="5" height="9" rx="0.5" fill="#4A5C40"/><rect x="48" y="-5" width="5" height="7" rx="0.5" fill="#4A5C40"/><circle cx="34" cy="-1" r="1" fill="#8a7050"/><circle cx="42" cy="-3" r="1" fill="#8a7050"/><circle cx="50" cy="-1" r="1" fill="#8a7050"/><text x="44" y="60" text-anchor="middle" font-family="'Cinzel',serif" font-size="26" fill="#4A5C40">M</text><path d="M 28 84 Q 44 90 60 84" stroke="#4A5C40" stroke-width="0.6" fill="none" opacity="0.35"/></svg>
+    <div class="nav-wordmark"><span class="nav-wordmark-main">MERGVS</span><span class="nav-wordmark-sub">Immersive Property</span></div>
+  </a>
+  <ul class="nav-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul>
+  <a href="index.html#contact" class="nav-cta">Request a Demo</a>
+</nav>
+
+<section class="page-hero">
+  <svg class="page-hero-crest" viewBox="0 0 280 330" fill="none"><path d="M 140 10 L 256 50 L 256 158 Q 256 268 140 318 Q 24 268 24 158 L 24 50 Z" fill="none" stroke="#4A5C40" stroke-width="1.5"/><path d="M 140 22 L 244 58 L 244 158 Q 244 256 140 303 Q 36 256 36 158 L 36 58 Z" fill="none" stroke="#4A5C40" stroke-width="0.5" opacity="0.5"/><text x="140" y="118" text-anchor="middle" font-family="'IM Fell English',serif" font-size="72" fill="#4A5C40">M</text><text x="140" y="162" text-anchor="middle" font-family="'Cinzel',serif" font-size="10.5" fill="#4A5C40" letter-spacing="6">ERGVS</text></svg>
+  <div class="page-hero-content">
+    <div class="page-hero-eyebrow">For Real Estate Professionals</div>
+    <h1 class="page-hero-title">We don't charge<br>upfront. We <em>earn</em><br>together.</h1>
+    <p class="page-hero-sub">Our interests are fully aligned with yours — we invest our craft in your listing and only earn when the property sells. No retainers, no subscriptions, no risk.</p>
+  </div>
+</section>
+
+<section class="model-section">
+  <div class="model-header">
+    <div class="section-tag reveal">The Model</div>
+    <h2 class="model-title reveal reveal-delay-1">A partnership built on<br><em>aligned</em> incentives.</h2>
+  </div>
+  <div class="pillars">
+    <div class="pillar reveal"><div class="pillar-num">I · Zero Upfront</div><h3 class="pillar-title">No fees until<br><em>closing.</em></h3><p class="pillar-text">We produce the full immersive experience — 3D tours, video, microsites, everything — with zero cost to you until the property sells. Our investment is our confidence in what we build.</p></div>
+    <div class="pillar reveal reveal-delay-1"><div class="pillar-num">II · Commission-Based</div><h3 class="pillar-title">We earn when<br><em>you</em> earn.</h3><p class="pillar-text">Our fee is a small commission on the final sale price. This means we are as motivated as you are to create an experience that attracts serious buyers and accelerates the sale.</p></div>
+    <div class="pillar reveal reveal-delay-2"><div class="pillar-num">III · Full Service</div><h3 class="pillar-title">Everything,<br><em>included.</em></h3><p class="pillar-text">Photography curation, 3D tours, video production, microsite development, analytics — all included in the commission. No add-ons, no surprise invoices, no hidden costs.</p></div>
+  </div>
+</section>
+
+<section class="pricing-section">
+  <div class="pricing-header">
+    <div class="section-tag reveal" style="justify-content:center">The Commission</div>
+    <h2 class="pricing-title reveal reveal-delay-1">Transparent, simple, <em>fair.</em></h2>
+    <p class="pricing-sub reveal reveal-delay-2">A clear commission structure with no hidden fees. We earn only when the property sells.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card featured reveal">
+      <div class="price-label">Premium Properties</div>
+      <div class="price-rate">0.8%</div>
+      <div class="price-of">of final sale price</div>
+      <p class="price-condition">Properties valued at <strong>$2,000,000</strong> and above</p>
+      <p class="price-example">On a $3M sale → $24,000</p>
+      <ul class="price-features">
+        <li>Full immersive microsite</li>
+        <li>3D spatial tour with navigation</li>
+        <li>Cinematic video production</li>
+        <li>Cross-platform deployment</li>
+        <li>Analytics & engagement tracking</li>
+        <li>Unlimited revisions until sale</li>
+      </ul>
+    </div>
+    <div class="price-card reveal reveal-delay-1">
+      <div class="price-label">Standard Properties</div>
+      <div class="price-rate">1.2%</div>
+      <div class="price-of">of final sale price</div>
+      <p class="price-condition">Properties valued under <strong>$2,000,000</strong></p>
+      <p class="price-example">On a $1.2M sale → $14,400</p>
+      <ul class="price-features">
+        <li>Full immersive microsite</li>
+        <li>3D spatial tour with navigation</li>
+        <li>Cinematic video production</li>
+        <li>Cross-platform deployment</li>
+        <li>Analytics & engagement tracking</li>
+        <li>Unlimited revisions until sale</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="process-section">
+  <div class="process-header">
+    <div class="section-tag reveal" style="justify-content:center">The Process</div>
+    <h2 class="process-title reveal reveal-delay-1">From handshake to<br><em>sold</em> in four steps.</h2>
+    <p class="process-sub reveal reveal-delay-2">A streamlined workflow that keeps things simple and lets you focus on what you do best.</p>
+  </div>
+  <div class="process-steps">
+    <div class="process-step reveal"><div class="step-circle"><span class="step-n">I</span></div><h3 class="step-title">Reach Out</h3><p class="step-text">Share your listing details. We assess the property and confirm partnership terms within 24 hours.</p></div>
+    <div class="process-step reveal reveal-delay-1"><div class="step-circle"><span class="step-n">II</span></div><h3 class="step-title">We Build</h3><p class="step-text">Our team produces the complete immersive experience — photography, 3D tour, video, microsite — at no cost to you.</p></div>
+    <div class="process-step reveal reveal-delay-2"><div class="step-circle"><span class="step-n">III</span></div><h3 class="step-title">Go Live</h3><p class="step-text">The experience launches. Share it with buyers globally. We track engagement and provide real-time analytics.</p></div>
+    <div class="process-step reveal reveal-delay-3"><div class="step-circle"><span class="step-n">IV</span></div><h3 class="step-title">Close & Settle</h3><p class="step-text">When the property sells, our commission applies. Simple invoicing, no surprises, no hidden fees.</p></div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <svg class="cta-crest-wm" viewBox="0 0 280 330" fill="none"><path d="M 140 10 L 256 50 L 256 158 Q 256 268 140 318 Q 24 268 24 158 L 24 50 Z" fill="none" stroke="#B8C9A8" stroke-width="1.5"/><path d="M 140 22 L 244 58 L 244 158 Q 244 256 140 303 Q 36 256 36 158 L 36 58 Z" fill="none" stroke="#B8C9A8" stroke-width="0.5" opacity="0.4"/><text x="140" y="118" text-anchor="middle" font-family="serif" font-size="72" fill="#B8C9A8">M</text><text x="140" y="162" text-anchor="middle" font-family="'Cinzel',serif" font-size="10.5" fill="#B8C9A8" letter-spacing="6">ERGVS</text></svg>
+  <div class="cta-eyebrow reveal">Start a Partnership</div>
+  <h2 class="cta-title reveal reveal-delay-1">Your next listing<br>deserves <em>this.</em></h2>
+  <p class="cta-sub reveal reveal-delay-2">No cost, no risk, no obligation. Tell us about the property and we'll show you what we can build.</p>
+  <div class="cta-actions reveal reveal-delay-3">
+    <a href="index.html#contact" class="btn-light">Begin the Conversation</a>
+    <a href="services.html" class="btn-ghost-light">See Our Services</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-grid">
+    <div>
+      <a href="index.html" class="footer-brand-logo">
+        <svg class="footer-crest" viewBox="0 0 88 100" fill="none"><path d="M 44 5 L 80 18 L 80 52 Q 80 80 44 95 Q 8 80 8 52 L 8 18 Z" fill="none" stroke="#8A9C7A" stroke-width="1.4"/><text x="44" y="60" text-anchor="middle" font-family="serif" font-size="24" fill="#8A9C7A">M</text></svg>
+        <span class="footer-wordmark">MERGVS</span>
+      </a>
+      <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
+    </div>
+    <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About Us</a></li><li><a href="index.html#properties">Properties</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="index.html">Luxembourg</a></li><li><a href="index.html">Milan</a></li><li><a href="index.html">Istanbul</a></li><li><a href="index.html">International</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="index.html#contact">Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
+    <span class="footer-legal">Luxembourg · Milan · Istanbul</span>
+    <span class="footer-legal">Privacy · Terms</span>
+  </div>
+</footer>
+
+<script>
+const cursor=document.getElementById('cursor'),ring=document.getElementById('cursorRing');let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px'});
+(function a(){rx+=(mx-rx)*0.1;ry+=(my-ry)*0.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(a)})();
+document.addEventListener('mouseleave',()=>{cursor.style.opacity='0';ring.style.opacity='0'});
+document.addEventListener('mouseenter',()=>{cursor.style.opacity='1';ring.style.opacity='1'});
+const nav=document.getElementById('mainNav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>60));
+const revEls=document.querySelectorAll('.reveal');
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+revEls.forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>
