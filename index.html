@@ -54,7 +54,7 @@
   nav { position:fixed; top:0; left:0; right:0; z-index:500; display:flex; align-items:center; justify-content:space-between; padding:1.8rem 3.5rem; transition:background 0.5s,border-color 0.5s; }
   nav.scrolled { background:rgba(242,237,223,0.94); backdrop-filter:blur(16px); border-bottom:1px solid var(--ecru); }
   .nav-logo-area { display:flex; align-items:center; gap:1rem; text-decoration:none; }
-  .nav-crest { width:44px; height:44px; flex-shrink:0; }
+  .nav-crest { width:44px; height:44px; flex-shrink:0; object-fit:contain; }
   .nav-wordmark { display:flex; flex-direction:column; line-height:1; }
   .nav-wordmark-main { font-family:'Cinzel',serif; font-size:1.15rem; font-weight:400; letter-spacing:0.35em; color:var(--forest); }
   .nav-wordmark-sub { font-family:'Lora',serif; font-style:italic; font-size:0.5rem; letter-spacing:0.22em; color:var(--stone); margin-top:3px; }
@@ -77,7 +77,7 @@
     content:''; position:absolute; inset:0;
     background: linear-gradient(to top, rgba(242,237,223,0.97) 0%, rgba(242,237,223,0.5) 28%, rgba(242,237,223,0.08) 58%, transparent 80%), linear-gradient(to right, rgba(242,237,223,0.28) 0%, transparent 55%);
   }
-  .hero-crest-bg { position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); width:clamp(200px,28vw,370px); opacity:0.07; z-index:2; pointer-events:none; }
+  .hero-crest-bg { position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); width:clamp(200px,28vw,370px); opacity:0.07; z-index:2; pointer-events:none; object-fit:contain; }
   .hero-content { position:relative; z-index:10; padding:0 3.5rem 6rem; max-width:680px; }
   .hero-eyebrow { font-family:'Raleway',sans-serif; font-size:0.6rem; font-weight:300; letter-spacing:0.35em; text-transform:uppercase; color:var(--moss); margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem; opacity:0; animation:fadeUp 1s 0.6s forwards; }
   .hero-eyebrow::before { content:''; width:28px; height:1px; background:var(--moss); flex-shrink:0; }
@@ -234,7 +234,7 @@
   /* CTA */
   .cta-section { background:var(--forest); padding:10rem 3.5rem; text-align:center; position:relative; overflow:hidden; }
   .cta-section::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%, rgba(94,112,80,0.3) 0%, transparent 70%); pointer-events:none; }
-  .cta-crest-wm { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:clamp(200px,30vw,400px); opacity:0.055; pointer-events:none; }
+  .cta-crest-wm { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:clamp(200px,30vw,400px); opacity:0.055; pointer-events:none; filter:brightness(0) invert(1); }
   .cta-eyebrow { font-family:'Raleway',sans-serif; font-size:0.58rem; font-weight:300; letter-spacing:0.32em; text-transform:uppercase; color:var(--sage-light); margin-bottom:2rem; display:flex; align-items:center; justify-content:center; gap:1rem; position:relative; }
   .cta-eyebrow::before,.cta-eyebrow::after { content:''; width:32px; height:1px; background:var(--sage); }
   .cta-title { font-family:'IM Fell English',serif; font-size:clamp(2.5rem,5.5vw,5rem); font-weight:400; line-height:1.05; color:var(--ivory); margin-bottom:1.8rem; position:relative; }
@@ -252,7 +252,7 @@
   footer { background:#2a3524; padding:5rem 3.5rem 3rem; border-top:1px solid rgba(255,255,255,0.05); }
   .footer-grid { display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr; gap:4rem; max-width:1200px; margin:0 auto 5rem; }
   .footer-brand-logo { display:flex; align-items:center; gap:0.9rem; margin-bottom:1.5rem; text-decoration:none; }
-  .footer-crest { width:36px; height:36px; }
+  .footer-crest { width:36px; height:36px; object-fit:contain; filter:brightness(0) invert(0.65) sepia(0.2) hue-rotate(70deg); }
   .footer-wordmark { font-family:'Cinzel',serif; font-size:1rem; letter-spacing:0.35em; color:var(--sage-light); }
   .footer-tagline { font-family:'Lora',serif; font-style:italic; font-size:0.78rem; line-height:1.85; color:rgba(138,155,122,0.6); max-width:240px; }
   .footer-col-title { font-family:'Raleway',sans-serif; font-size:0.55rem; font-weight:300; letter-spacing:0.28em; text-transform:uppercase; color:var(--sage); margin-bottom:1.5rem; }
@@ -311,22 +311,7 @@
 <!-- ═══ NAV ═══ -->
 <nav id="mainNav">
   <a href="#" class="nav-logo-area">
-    <svg class="nav-crest" viewBox="0 0 88 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 44 5 L 78 17 L 78 50 Q 78 76 44 92 Q 10 76 10 50 L 10 17 Z" fill="none" stroke="#4A5C40" stroke-width="1.4"/>
-      <path d="M 44 12 L 71 22 L 71 50 Q 71 72 44 86 Q 17 72 17 50 L 17 22 Z" fill="none" stroke="#4A5C40" stroke-width="0.45" opacity="0.35"/>
-      <!-- Crown -->
-      <rect x="31" y="0" width="26" height="8" rx="1" fill="#4A5C40"/>
-      <rect x="32" y="-5" width="5" height="7" rx="0.5" fill="#4A5C40"/>
-      <rect x="40" y="-7" width="5" height="9" rx="0.5" fill="#4A5C40"/>
-      <rect x="48" y="-5" width="5" height="7" rx="0.5" fill="#4A5C40"/>
-      <circle cx="34" cy="-1" r="1" fill="#8a7050"/>
-      <circle cx="42" cy="-3" r="1" fill="#8a7050"/>
-      <circle cx="50" cy="-1" r="1" fill="#8a7050"/>
-      <!-- M monogram -->
-      <text x="44" y="60" text-anchor="middle" font-family="'Cinzel', 'Trajan Pro', 'Times New Roman', serif" font-size="26" fill="#4A5C40">M</text>
-      <!-- Bottom flourish -->
-      <path d="M 28 84 Q 44 90 60 84" stroke="#4A5C40" stroke-width="0.6" fill="none" opacity="0.35"/>
-    </svg>
+    <img class="nav-crest" src="https://mergvs.com/mergvs-son.png" alt="MERGVS">
     <div class="nav-wordmark">
       <span class="nav-wordmark-main">MERGVS</span>
       <span class="nav-wordmark-sub">Immersive Property</span>
@@ -348,24 +333,7 @@
   </div>
 
   <!-- Hero background crest watermark -->
-  <svg class="hero-crest-bg" viewBox="0 0 280 330" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M 140 10 L 256 50 L 256 158 Q 256 268 140 318 Q 24 268 24 158 L 24 50 Z" fill="none" stroke="#4A5C40" stroke-width="1.5"/>
-    <path d="M 140 22 L 244 58 L 244 158 Q 244 256 140 303 Q 36 256 36 158 L 36 58 Z" fill="none" stroke="#4A5C40" stroke-width="0.5" opacity="0.5"/>
-    <line x1="38" y1="138" x2="242" y2="138" stroke="#4A5C40" stroke-width="0.5" opacity="0.35"/>
-    <path d="M 98 28 L 140 8 L 182 28" stroke="#4A5C40" stroke-width="1.1" fill="none"/>
-    <circle cx="140" cy="6" r="3.5" fill="#4A5C40"/>
-    <circle cx="96" cy="29" r="2.2" fill="#4A5C40" opacity="0.5"/>
-    <circle cx="184" cy="29" r="2.2" fill="#4A5C40" opacity="0.5"/>
-    <text x="140" y="118" text-anchor="middle" font-family="'IM Fell English', Georgia, serif" font-size="72" fill="#4A5C40">M</text>
-    <text x="140" y="162" text-anchor="middle" font-family="'Cinzel', serif" font-size="10.5" fill="#4A5C40" letter-spacing="6">ERGVS</text>
-    <rect x="60" y="196" width="160" height="0.8" fill="#4A5C40" opacity="0.28"/>
-    <text x="140" y="213" text-anchor="middle" font-family="'Lora', Georgia, serif" font-style="italic" font-size="7.5" fill="#4A5C40" letter-spacing="3.5">Est. MMXXV</text>
-    <rect x="60" y="219" width="160" height="0.8" fill="#4A5C40" opacity="0.28"/>
-    <!-- Leaf flourishes -->
-    <path d="M 78 274 Q 98 256 118 270 Q 98 282 78 274Z" fill="#4A5C40" opacity="0.2"/>
-    <path d="M 118 270 Q 140 252 162 270 Q 140 286 118 270Z" fill="#4A5C40" opacity="0.25"/>
-    <path d="M 162 270 Q 182 256 202 274 Q 182 282 162 270Z" fill="#4A5C40" opacity="0.2"/>
-  </svg>
+  <img class="hero-crest-bg" src="https://mergvs.com/mergvs-son.png" alt="">
 
   <div class="city-indicators">
     <div class="city-dot active"><div class="city-dot-bar"></div><span class="city-dot-name">Luxembourg</span></div>
@@ -498,11 +466,7 @@
 <section class="quote-section">
   <div class="quote-deco">"</div>
   <div class="quote-icon reveal">
-    <svg width="48" height="58" viewBox="0 0 88 100" fill="none" opacity="0.22">
-      <path d="M 44 5 L 80 18 L 80 52 Q 80 80 44 95 Q 8 80 8 52 L 8 18 Z" fill="none" stroke="#4A5C40" stroke-width="1.4"/>
-      <path d="M 44 12 L 73 23 L 73 52 Q 73 74 44 87 Q 15 74 15 52 L 15 23 Z" fill="none" stroke="#4A5C40" stroke-width="0.5" opacity="0.4"/>
-      <text x="44" y="60" text-anchor="middle" font-family="serif" font-size="26" fill="#4A5C40">M</text>
-    </svg>
+    <img src="https://mergvs.com/mergvs-son.png" alt="" style="width:48px;height:58px;object-fit:contain;opacity:0.22;">
   </div>
   <blockquote class="quote-text reveal reveal-delay-1">"The buyer of an exceptional home is not looking for a bedroom count — they are looking for a <em>life to inhabit</em>. We make them feel it before they arrive."</blockquote>
   <p class="quote-source reveal reveal-delay-2">— The MERGVS Philosophy</p>
@@ -523,18 +487,7 @@
 
 <!-- ═══ CTA ═══ -->
 <section class="cta-section" id="contact">
-  <svg class="cta-crest-wm" viewBox="0 0 280 330" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M 140 10 L 256 50 L 256 158 Q 256 268 140 318 Q 24 268 24 158 L 24 50 Z" fill="none" stroke="#B8C9A8" stroke-width="1.5"/>
-    <path d="M 140 22 L 244 58 L 244 158 Q 244 256 140 303 Q 36 256 36 158 L 36 58 Z" fill="none" stroke="#B8C9A8" stroke-width="0.5" opacity="0.4"/>
-    <text x="140" y="118" text-anchor="middle" font-family="serif" font-size="72" fill="#B8C9A8">M</text>
-    <text x="140" y="162" text-anchor="middle" font-family="'Cinzel',serif" font-size="10.5" fill="#B8C9A8" letter-spacing="6">ERGVS</text>
-    <rect x="60" y="196" width="160" height="0.8" fill="#B8C9A8" opacity="0.3"/>
-    <text x="140" y="213" text-anchor="middle" font-family="serif" font-style="italic" font-size="7.5" fill="#B8C9A8" letter-spacing="3.5">Est. MMXXV</text>
-    <rect x="60" y="219" width="160" height="0.8" fill="#B8C9A8" opacity="0.3"/>
-    <path d="M 80 274 Q 100 258 120 270 Q 100 282 80 274Z" fill="#B8C9A8" opacity="0.22"/>
-    <path d="M 120 270 Q 140 252 160 270 Q 140 286 120 270Z" fill="#B8C9A8" opacity="0.28"/>
-    <path d="M 160 270 Q 180 258 200 274 Q 180 282 160 270Z" fill="#B8C9A8" opacity="0.22"/>
-  </svg>
+  <img class="cta-crest-wm" src="https://mergvs.com/mergvs-son.png" alt="">
   <div class="cta-eyebrow reveal">Ready to Begin</div>
   <h2 class="cta-title reveal reveal-delay-1">Your property deserves<br>its own <em>universe.</em></h2>
   <p class="cta-sub reveal reveal-delay-2">Tell us about the property. We will show you what its world could look like — no obligation, no template.</p>
@@ -549,7 +502,7 @@
   <div class="footer-grid">
     <div>
       <a href="#" class="footer-brand-logo">
-        <svg class="footer-crest" viewBox="0 0 88 100" fill="none"><path d="M 44 5 L 80 18 L 80 52 Q 80 80 44 95 Q 8 80 8 52 L 8 18 Z" fill="none" stroke="#8A9C7A" stroke-width="1.4"/><text x="44" y="60" text-anchor="middle" font-family="serif" font-size="24" fill="#8A9C7A">M</text></svg>
+        <img class="footer-crest" src="https://mergvs.com/mergvs-son.png" alt="MERGVS">
         <span class="footer-wordmark">MERGVS</span>
       </a>
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
