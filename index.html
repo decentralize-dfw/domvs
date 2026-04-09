@@ -81,13 +81,13 @@
   .hero-video-wrap { position:absolute; inset:0; overflow:hidden; }
   .hero-placeholder {
     position:absolute; inset:0;
-    background: radial-gradient(ellipse at 60% 45%, rgba(94,112,80,0.18) 0%, transparent 55%), radial-gradient(ellipse at 25% 75%, rgba(92,74,50,0.12) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(139,155,122,0.1) 0%, transparent 45%), linear-gradient(170deg, #f5f0e6 0%, #ece5d4 30%, #e0d8ca 60%, #d4ccbf 100%);
+    background: linear-gradient(170deg, #f7f3eb 0%, #f2eddf 45%, #eae2ce 100%);
     transform-origin:center; transition:transform 8s ease-out;
   }
   .hero-placeholder.loaded { transform:scale(1.03); }
   .hero-video-wrap::after {
     content:''; position:absolute; inset:0;
-    background: linear-gradient(to bottom, rgba(242,237,223,0.5) 0%, transparent 18%), linear-gradient(to top, rgba(242,237,223,0.97) 0%, rgba(242,237,223,0.5) 28%, rgba(242,237,223,0.08) 58%, transparent 80%), linear-gradient(to right, rgba(242,237,223,0.28) 0%, transparent 55%);
+    background: linear-gradient(to bottom, rgba(242,237,223,0.35) 0%, transparent 14%), linear-gradient(to top, rgba(242,237,223,0.97) 0%, rgba(242,237,223,0.5) 28%, rgba(242,237,223,0.08) 58%, transparent 80%), linear-gradient(to right, rgba(242,237,223,0.28) 0%, transparent 55%);
   }
   .hero-crest-bg { position:absolute; top:50%; left:50%; transform:translate(-50%,-52%); width:clamp(200px,28vw,370px); opacity:0.07; z-index:2; pointer-events:none; object-fit:contain; }
   .hero-content { position:relative; z-index:10; padding:0 3.5rem 6rem; max-width:680px; }
