@@ -60,7 +60,19 @@
   .nav-wordmark-sub { font-family:'Lora',serif; font-style:italic; font-size:0.5rem; letter-spacing:0.22em; color:var(--stone); margin-top:3px; }
   .nav-links { display:flex; gap:2.5rem; list-style:none; }
   .nav-links a { font-family:'Raleway',sans-serif; font-size:0.65rem; font-weight:300; letter-spacing:0.2em; text-transform:uppercase; color:var(--umber); text-decoration:none; transition:color 0.3s; }
-  .nav-links a:hover { color:var(--forest); }
+  .nav-links a:hover,.nav-links a.active { color:var(--forest); }
+  .nav-hamburger { display:none; flex-direction:column; justify-content:center; gap:5px; background:none; border:none; cursor:pointer; padding:4px; z-index:600; }
+  .nav-hamburger span { display:block; width:22px; height:1px; background:var(--umber); transition:all 0.35s; transform-origin:center; }
+  .nav-hamburger.open span:nth-child(1) { transform:translateY(6px) rotate(45deg); }
+  .nav-hamburger.open span:nth-child(2) { opacity:0; }
+  .nav-hamburger.open span:nth-child(3) { transform:translateY(-6px) rotate(-45deg); }
+  .mobile-menu { display:none; position:fixed; inset:0; background:var(--ivory); z-index:499; flex-direction:column; align-items:center; justify-content:center; gap:2.5rem; }
+  .mobile-menu.open { display:flex; }
+  .mobile-menu-links { list-style:none; display:flex; flex-direction:column; align-items:center; gap:2.2rem; }
+  .mobile-menu-links a { font-family:'Raleway',sans-serif; font-size:0.85rem; font-weight:300; letter-spacing:0.3em; text-transform:uppercase; color:var(--umber); text-decoration:none; transition:color 0.3s; }
+  .mobile-menu-links a:hover,.mobile-menu-links a.active { color:var(--forest); }
+  .mobile-menu-cta { font-family:'Raleway',sans-serif; font-size:0.7rem; font-weight:300; letter-spacing:0.2em; text-transform:uppercase; color:var(--forest); border:1px solid var(--moss); padding:0.8rem 2.2rem; text-decoration:none; transition:all 0.3s; }
+  .mobile-menu-cta:hover { background:var(--moss); color:var(--ivory); }
   .nav-cta { font-family:'Raleway',sans-serif; font-size:0.62rem; font-weight:300; letter-spacing:0.2em; text-transform:uppercase; color:var(--forest); border:1px solid var(--moss); padding:0.6rem 1.4rem; text-decoration:none; transition:all 0.3s; cursor:none; }
   .nav-cta:hover { background:var(--moss); color:var(--ivory); }
 
@@ -299,6 +311,7 @@
   @media(max-width:768px){
     nav{padding:1.4rem 1.5rem;}
     .nav-links{display:none;}
+    .nav-hamburger{display:flex;}
     .hero-content{padding:0 1.5rem 5rem;}
     .why-section,.process-section,.demo-section,.quote-section,.cta-section{padding:6rem 1.5rem;}
     .immersive-section,.cities-section{padding:6rem 0;}
@@ -329,12 +342,23 @@
   </a>
 
   <ul class="nav-links">
-    <li><a href="services.html">Services</a></li>
-    <li><a href="agents.html">For Agents</a></li>
-    <li><a href="about.html">About</a></li>
+    <li><a href="/services">Services</a></li>
+    <li><a href="/agents">For Agents</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog">Journal</a></li>
   </ul>
   <a href="#" class="nav-cta" data-mgv-open>Request a Demo</a>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <ul class="mobile-menu-links">
+    <li><a href="/services">Services</a></li>
+    <li><a href="/agents">For Agents</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog">Journal</a></li>
+  </ul>
+  <a href="#contact" class="mobile-menu-cta" id="mobileCta">Request a Demo</a>
+</div>
 
 <!-- ═══ HERO ═══ -->
 <section class="hero" id="hero">
@@ -526,9 +550,9 @@
       </a>
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
     </div>
-    <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About Us</a></li><li><a href="#properties">Properties</a></li></ul></div>
+    <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="#properties">Properties</a></li></ul></div>
     <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="#">Luxembourg</a></li><li><a href="#">Milan</a></li><li><a href="#">Istanbul</a></li><li><a href="#">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
@@ -586,6 +610,21 @@
     }
   });
   setTimeout(()=>heroPh.classList.add('loaded'), 100);
+
+  // Mobile menu
+  const hamburger = document.getElementById('navHamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const mobileCta = document.getElementById('mobileCta');
+  hamburger.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  });
+  mobileCta.addEventListener('click', () => {
+    mobileMenu.classList.remove('open');
+    hamburger.classList.remove('open');
+    document.body.style.overflow = '';
+  });
 </script>
 <script src="mergvs-contact.js"></script>
 </body>
