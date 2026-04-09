@@ -24,7 +24,19 @@ nav.scrolled{background:rgba(242,237,223,0.94);backdrop-filter:blur(16px);border
 .nav-wordmark-sub{font-family:'Lora',serif;font-style:italic;font-size:0.5rem;letter-spacing:0.22em;color:var(--stone);margin-top:3px}
 .nav-links{display:flex;gap:2.5rem;list-style:none}
 .nav-links a{font-family:'Raleway',sans-serif;font-size:0.65rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--umber);text-decoration:none;transition:color 0.3s}
-.nav-links a:hover{color:var(--forest)}
+.nav-links a:hover,.nav-links a.active{color:var(--forest)}
+.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:4px;z-index:600}
+.nav-hamburger span{display:block;width:22px;height:1px;background:var(--umber);transition:all 0.35s;transform-origin:center}
+.nav-hamburger.open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.nav-hamburger.open span:nth-child(2){opacity:0}
+.nav-hamburger.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+.mobile-menu{display:none;position:fixed;inset:0;background:var(--ivory);z-index:499;flex-direction:column;align-items:center;justify-content:center;gap:2.5rem}
+.mobile-menu.open{display:flex}
+.mobile-menu-links{list-style:none;display:flex;flex-direction:column;align-items:center;gap:2.2rem}
+.mobile-menu-links a{font-family:'Raleway',sans-serif;font-size:0.85rem;font-weight:300;letter-spacing:0.3em;text-transform:uppercase;color:var(--umber);text-decoration:none;transition:color 0.3s}
+.mobile-menu-links a:hover,.mobile-menu-links a.active{color:var(--forest)}
+.mobile-menu-cta{font-family:'Raleway',sans-serif;font-size:0.7rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--forest);border:1px solid var(--moss);padding:0.8rem 2.2rem;text-decoration:none;transition:all 0.3s}
+.mobile-menu-cta:hover{background:var(--moss);color:var(--ivory)}
 .nav-cta{font-family:'Raleway',sans-serif;font-size:0.62rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--forest);border:1px solid var(--moss);padding:0.6rem 1.4rem;text-decoration:none;transition:all 0.3s;cursor:none}
 .nav-cta:hover{background:var(--moss);color:var(--ivory)}
 .section-tag{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.32em;text-transform:uppercase;color:var(--moss);margin-bottom:1rem;display:flex;align-items:center;gap:1rem}
@@ -135,6 +147,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
 @media(max-width:768px){
   nav{padding:1.4rem 1.5rem}
   .nav-links{display:none}
+  .nav-hamburger{display:flex}
   .page-hero-content{padding:0 1.5rem 4rem}
   .services-section,.quote-section,.cta-section{padding:6rem 1.5rem}
   .services-grid{grid-template-columns:1fr}
@@ -151,17 +164,28 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <nav id="mainNav">
-  <a href="index.html" class="nav-logo-area">
+  <a href="/" class="nav-logo-area">
     <img class="nav-crest" src="https://mergvs.com/mergvs-son.png" alt="MERGVS">
     <div class="nav-wordmark"><span class="nav-wordmark-main">MERGVS</span><span class="nav-wordmark-sub">Immersive Property</span></div>
   </a>
   <ul class="nav-links">
-    <li><a href="services.html">Services</a></li>
-    <li><a href="agents.html">For Agents</a></li>
-    <li><a href="about.html">About</a></li>
+    <li><a href="/services" class="active">Services</a></li>
+    <li><a href="/agents">For Agents</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog">Journal</a></li>
   </ul>
   <a href="#" class="nav-cta" data-mgv-open>Request a Demo</a>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu"><span></span><span></span><span></span></button>
 </nav>
+<div class="mobile-menu" id="mobileMenu">
+  <ul class="mobile-menu-links">
+    <li><a href="/services" class="active">Services</a></li>
+    <li><a href="/agents">For Agents</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/blog">Journal</a></li>
+  </ul>
+  <a href="#" class="mobile-menu-cta" data-mgv-open id="mobileCta">Request a Demo</a>
+</div>
 
 <section class="page-hero">
   <img class="page-hero-crest" src="https://mergvs.com/mergvs-son.png" alt="">
@@ -285,22 +309,22 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   <p class="cta-sub reveal reveal-delay-2">Tell us about the property. We will show you what its world could look like — no obligation, no template.</p>
   <div class="cta-actions reveal reveal-delay-3">
     <a href="#" class="btn-light" data-mgv-open>Begin the Conversation</a>
-    <a href="index.html#properties" class="btn-ghost-light">See Live Demos</a>
+    <a href="/#properties" class="btn-ghost-light">See Live Demos</a>
   </div>
 </section>
 
 <footer>
   <div class="footer-grid">
     <div>
-      <a href="index.html" class="footer-brand-logo">
+      <a href="/" class="footer-brand-logo">
         <img class="footer-crest" src="https://mergvs.com/mergvs-son.png" alt="MERGVS">
         <span class="footer-wordmark">MERGVS</span>
       </a>
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
     </div>
-    <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="services.html">Services</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About Us</a></li><li><a href="index.html#properties">Properties</a></li></ul></div>
-    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="index.html">Luxembourg</a></li><li><a href="index.html">Milan</a></li><li><a href="index.html">Istanbul</a></li><li><a href="index.html">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="agents.html">For Agents</a></li><li><a href="about.html">About</a></li></ul></div>
+    <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="/#properties">Properties</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/">Luxembourg</a></li><li><a href="/">Milan</a></li><li><a href="/">Istanbul</a></li><li><a href="/">International</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
@@ -320,6 +344,9 @@ window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scro
 const revEls=document.querySelectorAll('.reveal');
 const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
 revEls.forEach(el=>obs.observe(el));
+const hamburger=document.getElementById('navHamburger');
+const mobileMenu=document.getElementById('mobileMenu');
+hamburger.addEventListener('click',()=>{const open=mobileMenu.classList.toggle('open');hamburger.classList.toggle('open',open);document.body.style.overflow=open?'hidden':'';});
 </script>
 <script src="mergvs-contact.js"></script>
 </body>
