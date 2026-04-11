@@ -1,6 +1,20 @@
 # VEA Demo 2 — central config reference
-# The first non-empty, non-comment line below is the URL to the
-# xlsx config file. Every scene and the cassette player read this
-# file via xlsx-loader.js → resolveXlsxUrl(). Update the line
-# below to point at a different xlsx and all scenes pick it up.
-https://mergvs.com/demo2-xlsx/demo2-input_2.xlsx
+# -----------------------------------------------------------------
+# xlsx-loader.js reads the first non-empty, non-comment line below
+# and treats it as the URL to the config xlsx. Update the active
+# line to switch the whole system to a different source.
+#
+# Supported sources:
+#   1. Local mergvs.com copy (production, stable)
+#   2. Google Sheets live export (development — edits visible
+#      instantly, no redeploy required)
+#
+# To switch sources just comment / uncomment the appropriate line.
+# -----------------------------------------------------------------
+
+# --- [hidden] Local mergvs.com xlsx (production fallback) ---
+# https://mergvs.com/demo2-xlsx/demo2-input_2.xlsx
+
+# --- [active] Google Sheets live export ---
+# Source sheet: https://docs.google.com/spreadsheets/d/1PHlQs_sQdEidhx5drZQrY9flFT0yevKMhOblOzcObks/edit
+https://docs.google.com/spreadsheets/d/1PHlQs_sQdEidhx5drZQrY9flFT0yevKMhOblOzcObks/export?format=xlsx
