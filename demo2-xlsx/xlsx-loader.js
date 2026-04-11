@@ -284,20 +284,32 @@ function parseModelsSection(rows, sceneIdx, sceneEnd, assets) {
         const cStr = String(cCell).trim();
         if (!cStr || cStr.toLowerCase() === 'null') continue;
 
-        // Resolve whatever is in column C to an actual URL.
+        // Resolve whatever is in column C to an actual URL AND, when
+        // possible, remember which Global Assets entry it came from so
+        // consumers can access metadata like the asset type.
         let url = null;
+        let assetRef = null;
         if (/^https?:\/\//i.test(cStr)) {
             url = cStr;
+            // Reverse-lookup: does any Global Assets row advertise this
+            // URL? If so, carry its metadata along.
+            for (const key in assets) {
+                const a = assets[key];
+                if (a && String(a.url || '').trim() === url) {
+                    assetRef = a;
+                    break;
+                }
+            }
         } else {
-            // Anything else is treated as a name to look up in the
-            // Global Assets table (column B → column C). This covers
-            // the Google Sheets case where C43 holds =B9 and renders
-            // as "City Model v2" after export.
+            // Treat the cell as a name lookup into Global Assets.
+            // Covers the Google Sheets case where C holds =B9 and
+            // renders as "City Model v2" after export.
             const needle = cStr.toLowerCase();
             for (const key in assets) {
                 const a = assets[key];
                 if (a && String(a.name || '').trim().toLowerCase() === needle) {
                     url = a.url;
+                    assetRef = a;
                     break;
                 }
             }
@@ -312,6 +324,8 @@ function parseModelsSection(rows, sceneIdx, sceneEnd, assets) {
 
         models.push({
             url,
+            assetType: assetRef ? String(assetRef.type || '') : '',
+            assetName: assetRef ? String(assetRef.name || '') : '',
             visible: yes(row[3]),
             pos:   { x: num(row[4]),  y: num(row[5]),  z: num(row[6])  },
             rot:   { x: num(row[7]),  y: num(row[8]),  z: num(row[9])  },
@@ -330,21 +344,40 @@ function parseButtonsSection(rows, sceneIdx, sceneEnd) {
     const m = findMarker(rows, sceneIdx, sceneEnd, '3 · TOGGLE BUTONLARI');
     if (m < 0) return buttons;
 
+    // Stop before the next "N · ..." section marker (same approach
+    // used by parseModelsSection) so floats / section headers can't
+    // be mistaken for button rows.
+    let stopIdx = sceneEnd;
     for (let i = m + 1; i <= sceneEnd; i++) {
+        const a = rows[i]?.[0];
+        if (!a) continue;
+        if (/^\s*\d+\s*·/.test(String(a))) {
+            stopIdx = i - 1;
+            break;
+        }
+    }
+
+    for (let i = m + 1; i <= stopIdx; i++) {
         const row = rows[i];
         if (!row) continue;
-        const a = row[0];
-        if (a === null || a === undefined) continue;
-        const aStr = String(a).trim();
-        if (aStr.startsWith('↓')) break;
-        if (aStr.toLowerCase().startsWith('slot')) break;
-        if (aStr.includes('·')) break;
-        if (aStr.toLowerCase().includes('bu sahnede')) continue;
-        if (!/^\d+$/.test(aStr)) continue;
+        // A button row has a non-empty label in column B and a
+        // non-empty id in column C. Column A is a # that may come
+        // through from Google Sheets as a float ("1.0"), an int,
+        // or a slot label — we don't care as long as B+C carry data.
+        const name = row[1];
+        const id   = row[2];
+        if (!name || !id) continue;
+        const nameStr = String(name).trim();
+        const idStr   = String(id).trim();
+        if (!nameStr || !idStr) continue;
+        if (nameStr.toLowerCase() === 'null' || idStr.toLowerCase() === 'null') continue;
+        // Skip the header row ("Buton Etiketi" / "Buton ID")
+        if (/^buton\s+(etiketi|id)$/i.test(nameStr)) continue;
+        if (/^buton\s+id$/i.test(idStr)) continue;
 
         buttons.push({
-            name:   row[1] ? String(row[1]).trim() : '',
-            id:     row[2] ? String(row[2]).trim() : '',
+            name:   nameStr,
+            id:     idStr,
             action: row[3] ? String(row[3]).trim() : ''
         });
     }
@@ -408,15 +441,14 @@ export function parseCameraPositionAction(action) {
 }
 
 /**
- * Return true if the given asset row entry refers to a collider-type
- * asset (type contains "Collider"). Used by Scene 5 to distinguish
- * the visible model from the invisible physics collider.
+ * Return true if the given model entry refers to a collider-type
+ * asset. Used by Scene 5 to distinguish the visible model from the
+ * invisible physics collider. parseModelsSection stamps assetType
+ * onto every entry during parse, so we just check that.
  */
-export function isColliderEntry(config, entry) {
-    if (!entry || !entry.assetRow) return false;
-    const asset = config.assets[entry.assetRow];
-    if (!asset) return false;
-    return /collider/i.test(String(asset.type || ''));
+export function isColliderEntry(_config, entry) {
+    if (!entry) return false;
+    return /collider/i.test(String(entry.assetType || ''));
 }
 
 /**
