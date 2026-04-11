@@ -292,6 +292,32 @@
   .reveal-delay-3 { transition-delay:0.36s; }
   .reveal-delay-4 { transition-delay:0.48s; }
 
+  /* TESTIMONIALS */
+  .testimonials-section{background:var(--parchment);padding:9rem 3.5rem;border-top:1px solid var(--ecru)}
+  .testi-header{max-width:1200px;margin:0 auto 5rem;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:end}
+  .testi-header-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);line-height:1.15}
+  .testi-header-title em{font-style:italic;color:var(--sienna)}
+  .testi-header-text{font-family:'Lora',serif;font-size:0.88rem;line-height:2;color:var(--umber)}
+  .testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto 5rem;border:1px solid var(--ecru)}
+  .testi-card{padding:3rem;border-right:1px solid var(--ecru);transition:background 0.4s}
+  .testi-card:last-child{border-right:none}
+  .testi-card:hover{background:rgba(74,92,64,0.025)}
+  .testi-divider{width:20px;height:1px;background:var(--moss);margin-bottom:2rem}
+  .testi-text{font-family:'IM Fell English',serif;font-style:italic;font-size:1rem;line-height:1.75;color:var(--forest);margin-bottom:2rem}
+  .testi-author-name{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:400;letter-spacing:0.18em;text-transform:uppercase;color:var(--forest);margin-bottom:0.3rem}
+  .testi-author-role{font-family:'Lora',serif;font-style:italic;font-size:0.78rem;color:var(--stone)}
+  .testi-author-loc{font-family:'Raleway',sans-serif;font-size:0.5rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:var(--moss);margin-top:0.3rem}
+  .case-study-strip{background:var(--linen);border:1px solid var(--ecru);padding:3.5rem;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;gap:4rem;align-items:center}
+  .cs-stat{text-align:center;flex-shrink:0}
+  .cs-stat-num{font-family:'IM Fell English',serif;font-size:3.5rem;color:var(--forest);line-height:1}
+  .cs-stat-num sup{font-size:1.5rem;color:var(--moss)}
+  .cs-stat-label{font-family:'Raleway',sans-serif;font-size:0.5rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:var(--stone);margin-top:0.4rem}
+  .cs-eyebrow{font-family:'Raleway',sans-serif;font-size:0.55rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--moss);margin-bottom:1rem;display:flex;align-items:center;gap:0.8rem}
+  .cs-eyebrow::before{content:'';width:18px;height:1px;background:var(--moss);flex-shrink:0}
+  .cs-title{font-family:'IM Fell English',serif;font-size:1.5rem;color:var(--forest);margin-bottom:0.8rem;line-height:1.2}
+  .cs-title em{font-style:italic;color:var(--sienna)}
+  .cs-text{font-family:'Lora',serif;font-size:0.85rem;line-height:1.9;color:var(--umber)}
+
   /* RESPONSIVE */
   @media(max-width:1024px){
     .why-header{grid-template-columns:1fr;gap:2rem;}
@@ -417,6 +443,55 @@
     <div class="pillar reveal"><div class="pillar-num">I · The Experience</div><h3 class="pillar-title">The listing <em>is</em><br>the experience.</h3><p class="pillar-text">Nearly half of high-net-worth individuals would choose premium experiences over possessions. Each property gets its own world — a bespoke digital space with spatial navigation, ambient sound, and architectural storytelling. We don't sell a listing — we build an experience that moves people.</p></div>
     <div class="pillar reveal reveal-delay-1"><div class="pillar-num">II · Global Reach</div><h3 class="pillar-title">Built for<br><em>global</em> buyers.</h3><p class="pillar-text">The global population of individuals worth $10M+ surpassed 2.3 million in 2024, and international luxury purchases grew 25% year-on-year. Your buyer is in Geneva, Singapore, or New York. MERGVS makes the digital walkthrough so compelling, trust forms before the first handshake.</p></div>
     <div class="pillar reveal reveal-delay-2"><div class="pillar-num">III · The Market</div><h3 class="pillar-title">Luxury grows<br><em>faster</em> than ever.</h3><p class="pillar-text">Luxury home prices grew 7.6% in 2024 — more than twice the pace of the broader market. Sales of $10M+ properties rose 13.3% in the year to June 2025. Exceptional properties deserve exceptional presentation — because the buyers who seek them are growing in number and expectation.</p></div>
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIALS & CASE STUDY ═══ -->
+<section class="testimonials-section" id="testimonials">
+  <div class="testi-header">
+    <div>
+      <div class="section-tag reveal">Client Voices</div>
+      <h2 class="testi-header-title reveal reveal-delay-1">What agents<br>and sellers <em>say.</em></h2>
+    </div>
+    <p class="testi-header-text reveal reveal-delay-2">We measure our success by the speed of the sale and the price achieved. Here is what professionals who have trusted MERGVS with their most important listings have to say.</p>
+  </div>
+  <div class="testi-grid">
+    <div class="testi-card reveal">
+      <div class="testi-divider"></div>
+      <p class="testi-text">"The immersive microsite MERGVS built for our Brera penthouse generated 340% more qualified enquiries than any listing we had previously run. The property sold in 19 days, 8% above asking. I would not present a prime property without them."</p>
+      <div class="testi-author-name">Sophie Marchetti</div>
+      <div class="testi-author-role">Senior Partner, Marchetti Real Estate</div>
+      <div class="testi-author-loc">Milan, Italy</div>
+    </div>
+    <div class="testi-card reveal reveal-delay-1">
+      <div class="testi-divider"></div>
+      <p class="testi-text">"As a private seller, I was sceptical. MERGVS's model — where they only earn when you sell — entirely changed my perspective. The Kirchberg property sold to an international buyer who made an offer after seeing only the digital experience. Never visited in person."</p>
+      <div class="testi-author-name">Jean-Claude Renard</div>
+      <div class="testi-author-role">Private Seller</div>
+      <div class="testi-author-loc">Luxembourg City</div>
+    </div>
+    <div class="testi-card reveal reveal-delay-2">
+      <div class="testi-divider"></div>
+      <p class="testi-text">"Istanbul's Bosphorus market demands a global reach. The spatial experience MERGVS produced for our Bebek yalı reached buyers in Geneva, Dubai, and London before the property even formally launched. Three competing offers within two weeks."</p>
+      <div class="testi-author-name">Ahmet Güler</div>
+      <div class="testi-author-role">Director, Prime Markets</div>
+      <div class="testi-author-loc">Istanbul, Turkey</div>
+    </div>
+  </div>
+  <div class="case-study-strip reveal">
+    <div class="cs-stat">
+      <div class="cs-stat-num">11<sup>%</sup></div>
+      <div class="cs-stat-label">Above asking</div>
+    </div>
+    <div>
+      <div class="cs-eyebrow">Case Study — Luxembourg · Kirchberg</div>
+      <h3 class="cs-title">Maison du Viaduc: <em>Sold in 23 days</em></h3>
+      <p class="cs-text">A 480 m² contemporary estate listed at €4.2M. MERGVS produced a full immersive microsite with 3D tour, cinematic video, and neighbourhood mapping. The property received 12 qualified international enquiries in the first week — versus 3 from the previous 6-week static listing. Final sale: €4.66M, 23 days on market.</p>
+    </div>
+    <div class="cs-stat">
+      <div class="cs-stat-num">23</div>
+      <div class="cs-stat-label">Days to close</div>
+    </div>
   </div>
 </section>
 
@@ -551,13 +626,13 @@
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="#properties">Properties</a></li></ul></div>
-    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="#">Luxembourg</a></li><li><a href="#">Milan</a></li><li><a href="#">Istanbul</a></li><li><a href="#">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/luxembourg">Luxembourg</a></li><li><a href="/milan">Milan</a></li><li><a href="/istanbul">Istanbul</a></li><li><a href="/about">International Inquiries</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="https://wa.me/352661000000" target="_blank" rel="noopener">WhatsApp Us</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
     <span class="footer-legal">Luxembourg · Milan · Istanbul</span>
-    <span class="footer-legal">Privacy · Terms</span>
+    <span class="footer-legal"><a href="/privacy" style="color:inherit;text-decoration:none;transition:color 0.3s">Privacy Policy</a> · <a href="/terms" style="color:inherit;text-decoration:none;transition:color 0.3s">Terms of Service</a></span>
   </div>
 </footer>
 
