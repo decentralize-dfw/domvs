@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA Demo2 — Scene 5 · Walk-Thru</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="demo2-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/distribution/nipplejs.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="loading">
+        <div class="loading-title">VEA</div>
+        <div class="loading-subtitle">Real Estate Experience · Scene 5</div>
+        <div class="loading-bar-track"><div id="loadingProgressBar"></div></div>
+        <div class="loading-tagline">Walk-Thru Modu</div>
+    </div>
+
+    <img id="backgroundImg" src="https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg">
+    <div id="sceneLoadingIndicator">Sahne Yükleniyor…</div>
+
+    <div id="instructions">
+        <h1>Walk-Thru</h1>
+        <p>Başlamak için ekrana tıklayın · WASD ile gezin</p>
+    </div>
+
+    <div id="sceneTransitionOverlay"></div>
+
+    <div id="joystickLeft"  class="joystick-zone"></div>
+    <div id="joystickRight" class="joystick-zone"></div>
+
+    <div id="leftHtmlPanel">
+        <h3>🎮 Kontroller</h3>
+        <p><strong>W / A / S / D</strong> — Hareket et</p>
+        <p><strong>Fare</strong> — Kamera yönü</p>
+        <p><strong>Shift</strong> — Hızlı koş</p>
+        <p><strong>Space</strong> — Zıpla</p>
+        <p><strong>F</strong> — Tam ekran</p>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+        <p style="color: rgba(255,255,255,0.5); font-size: 12px;">📱 Mobil: Joystick ile kontrol</p>
+    </div>
+    <div id="rightHtmlPanel">
+        <h3>🚶 Walk-Thru Modu</h3>
+        <p>Dairenin içinde serbestçe dolaşın.</p>
+        <p>Tüm odaları gerçekçi ölçülerinde keşfedin.</p>
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+        <p><strong>Toplam Alan:</strong> 110 m²</p>
+        <p><strong>Oda Sayısı:</strong> 3+1</p>
+        <p style="color: #c9a96e; margin-top: 8px;">VR için uyumlu cihaz gereklidir.</p>
+    </div>
+
+    <button id="fullscreenButton" class="fab-info-btn" title="Tam Ekran">⛶</button>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { PMREMGenerator } from 'three';
+
+        const MODEL_URL    = 'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2interior-soloapartement-opt-v4.glb';
+        const COLLIDER_URL = 'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/SCENE5-COLLDERd.glb';
+
+        let scene, renderer, composer, camera, pointerLockControls, pmremGenerator;
+        const clock = new THREE.Clock();
+
+        // --- Walk-thru state ---
+        let colliderMeshes = [];
+        let playerOnFloor = false;
+        const playerVelocity = new THREE.Vector3();
+        const playerDirection = new THREE.Vector3();
+        const baseMoveSpeed = 20;
+        let currentMoveSpeed = baseMoveSpeed;
+        const jumpVelocity = 6;
+        const gravity = -20;
+        const keys = { forward: false, backward: false, left: false, right: false, jump: false, sprint: false };
+        const raycaster = new THREE.Raycaster();
+        const playerHeight = 1.6;
+        const playerRadius = 0.4;
+
+        // --- Mobile joystick state ---
+        const mobileJoystickLeft  = { x: 0, y: 0 };
+        const mobileJoystickRight = { x: 0, y: 0 };
+        let nippleManagerLeft = null;
+        let nippleManagerRight = null;
+
+        const loadingEl = document.getElementById('loading');
+        const backgroundImgEl = document.getElementById('backgroundImg');
+        const sceneLoadingIndicatorEl = document.getElementById('sceneLoadingIndicator');
+        const instructionsEl = document.getElementById('instructions');
+        const leftHtmlPanel = document.getElementById('leftHtmlPanel');
+        const rightHtmlPanel = document.getElementById('rightHtmlPanel');
+
+        function isMobile() {
+            return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+        }
+
+        function setLoadingProgress(pct) {
+            const bar = document.getElementById('loadingProgressBar');
+            if (bar) {
+                bar.style.animation = 'none';
+                bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+                bar.style.background = '#c9a96e';
+            }
+        }
+
+        function fadeOutLoading() {
+            setLoadingProgress(100);
+            setTimeout(() => {
+                loadingEl.classList.add('fading');
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 550);
+            }, 300);
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            document.body.appendChild(renderer.domElement);
+
+            pmremGenerator = new PMREMGenerator(renderer);
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(new RenderPass(scene, camera));
+            composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.3, 0.88));
+            composer.addPass(new OutputPass());
+
+            pointerLockControls = new PointerLockControls(camera, renderer.domElement);
+            pointerLockControls.getObject().position.set(1.4, 1.6, -0.6);
+            scene.add(pointerLockControls.getObject());
+
+            setupEnvironment();
+            setupLoadersAndLoadModels();
+            setupEventListeners();
+
+            renderer.setAnimationLoop(animate);
+        }
+
+        function setupEnvironment() {
+            const hdriURL = 'https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/RealismHDRI-_equirectangular-jpg_VR360_neon_drenched_skyscrapers_1656103290_10361044.hdr';
+            new RGBELoader().load(hdriURL, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = pmremGenerator.fromEquirectangular(texture).texture;
+                pmremGenerator.dispose();
+                texture.dispose();
+                scene.environmentIntensity = 0.7;
+                setLoadingProgress(80);
+            }, (xhr) => {
+                if (xhr.total) setLoadingProgress(Math.round((xhr.loaded / xhr.total) * 60));
+            });
+
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.5));
+
+            const sun = new THREE.DirectionalLight(0xffffff, 3.6);
+            sun.position.set(12, 24, 12);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 160;
+            sun.shadow.camera.left = -55; sun.shadow.camera.right = 55;
+            sun.shadow.camera.top = 55; sun.shadow.camera.bottom = -55;
+            sun.shadow.bias = -0.0001;
+            sun.shadow.normalBias = 0.025;
+            scene.add(sun);
+        }
+
+        function setupLoadersAndLoadModels() {
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+            dracoLoader.setDecoderConfig({ type: 'js' });
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+
+            sceneLoadingIndicatorEl.style.display = 'block';
+
+            const loadVisible = () => new Promise((resolve, reject) => {
+                gltfLoader.load(MODEL_URL, (gltf) => {
+                    const root = gltf.scene;
+                    root.traverse((c) => {
+                        if (c.isMesh) {
+                            c.castShadow = true;
+                            c.receiveShadow = true;
+                            if (c.material && c.material.emissive) c.material.emissiveIntensity = 1;
+                        }
+                    });
+                    scene.add(root);
+                    resolve();
+                }, undefined, reject);
+            });
+
+            const loadCollider = () => new Promise((resolve, reject) => {
+                gltfLoader.load(COLLIDER_URL, (gltf) => {
+                    const root = gltf.scene;
+                    root.visible = false;
+                    root.traverse((c) => {
+                        if (c.isMesh) {
+                            c.material = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+                            colliderMeshes.push(c);
+                        }
+                    });
+                    scene.add(root);
+                    resolve();
+                }, undefined, reject);
+            });
+
+            Promise.all([loadVisible(), loadCollider()]).then(() => {
+                sceneLoadingIndicatorEl.style.display = 'none';
+                backgroundImgEl.style.display = 'none';
+                leftHtmlPanel.style.display = 'block';
+                rightHtmlPanel.style.display = 'block';
+                document.getElementById('fullscreenButton').style.display = 'flex';
+                fadeOutLoading();
+                updateMobileJoystick();
+            }).catch((e) => {
+                console.error(e);
+                sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
+            });
+        }
+
+        function setupEventListeners() {
+            // Initial click to lock pointer
+            document.body.addEventListener('click', (e) => {
+                if (e.target.closest('button') || e.target.closest('#leftHtmlPanel') || e.target.closest('#rightHtmlPanel')) return;
+                if (isMobile()) return;
+                if (!pointerLockControls.isLocked) {
+                    pointerLockControls.lock();
+                }
+            });
+
+            pointerLockControls.addEventListener('lock', () => {
+                instructionsEl.style.display = 'none';
+            });
+            pointerLockControls.addEventListener('unlock', () => {
+                instructionsEl.style.display = 'block';
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (!pointerLockControls.isLocked) return;
+                switch (event.code) {
+                    case 'KeyW': keys.forward = true; break;
+                    case 'KeyS': keys.backward = true; break;
+                    case 'KeyA': keys.left = true; break;
+                    case 'KeyD': keys.right = true; break;
+                    case 'Space': if (playerOnFloor) keys.jump = true; break;
+                    case 'ShiftLeft': keys.sprint = true; currentMoveSpeed = baseMoveSpeed * 4; break;
+                }
+                if (event.code === 'KeyF') {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    } else {
+                        document.exitFullscreen().catch(() => {});
+                    }
+                }
+            });
+            document.addEventListener('keyup', (event) => {
+                if (!pointerLockControls.isLocked) return;
+                switch (event.code) {
+                    case 'KeyW': keys.forward = false; break;
+                    case 'KeyS': keys.backward = false; break;
+                    case 'KeyA': keys.left = false; break;
+                    case 'KeyD': keys.right = false; break;
+                    case 'Space': keys.jump = false; break;
+                    case 'ShiftLeft': keys.sprint = false; currentMoveSpeed = baseMoveSpeed; break;
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            document.getElementById('fullscreenButton').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                    document.exitFullscreen().catch(() => {});
+                }
+            });
+        }
+
+        function updateMobileJoystick() {
+            const leftZone  = document.getElementById('joystickLeft');
+            const rightZone = document.getElementById('joystickRight');
+            const show = isMobile();
+            if (leftZone)  leftZone.style.display  = show ? 'block' : 'none';
+            if (rightZone) rightZone.style.display = show ? 'block' : 'none';
+
+            if (show && !nippleManagerLeft && typeof nipplejs !== 'undefined') {
+                nippleManagerLeft = nipplejs.create({
+                    zone: leftZone, mode: 'static',
+                    position: { left: '50%', top: '50%' },
+                    color: 'white', size: 100
+                });
+                nippleManagerLeft.on('move', (evt, data) => {
+                    mobileJoystickLeft.x = data.vector.x;
+                    mobileJoystickLeft.y = data.vector.y;
+                });
+                nippleManagerLeft.on('end', () => {
+                    mobileJoystickLeft.x = 0;
+                    mobileJoystickLeft.y = 0;
+                });
+
+                nippleManagerRight = nipplejs.create({
+                    zone: rightZone, mode: 'static',
+                    position: { left: '50%', top: '50%' },
+                    color: 'white', size: 100
+                });
+                nippleManagerRight.on('move', (evt, data) => {
+                    mobileJoystickRight.x = data.vector.x;
+                    mobileJoystickRight.y = data.vector.y;
+                });
+                nippleManagerRight.on('end', () => {
+                    mobileJoystickRight.x = 0;
+                    mobileJoystickRight.y = 0;
+                });
+            }
+        }
+
+        function applyMobileJoystickToPlayer() {
+            if (!isMobile()) return;
+            if (mobileJoystickLeft.x !== 0 || mobileJoystickLeft.y !== 0) {
+                keys.forward  = mobileJoystickLeft.y >  0.2;
+                keys.backward = mobileJoystickLeft.y < -0.2;
+                keys.left     = mobileJoystickLeft.x < -0.2;
+                keys.right    = mobileJoystickLeft.x >  0.2;
+            } else {
+                keys.forward = keys.backward = keys.left = keys.right = false;
+            }
+            if (Math.abs(mobileJoystickRight.x) > 0.1 || Math.abs(mobileJoystickRight.y) > 0.1) {
+                camera.rotation.y -= mobileJoystickRight.x * 0.04;
+                camera.rotation.x -= mobileJoystickRight.y * 0.025;
+                camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, camera.rotation.x));
+            }
+        }
+
+        function updatePlayer(delta) {
+            applyMobileJoystickToPlayer();
+
+            const isMobileWalk = isMobile();
+            if (!pointerLockControls.isLocked && !isMobileWalk) return;
+
+            const playerPos = pointerLockControls.getObject().position;
+
+            // Vertical
+            raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+            const floorIntersections = raycaster.intersectObjects(colliderMeshes);
+            const localOnFloor = floorIntersections.length > 0 && floorIntersections[0].distance < playerHeight + 0.1;
+
+            if (localOnFloor) {
+                playerVelocity.y = Math.max(0, playerVelocity.y);
+                if (keys.jump) {
+                    playerVelocity.y = jumpVelocity;
+                    keys.jump = false;
+                }
+                const floorDist = floorIntersections[0].distance;
+                if (floorDist < playerHeight) {
+                    playerPos.y += (playerHeight - floorDist);
+                }
+            } else {
+                playerVelocity.y += gravity * delta;
+            }
+            playerPos.y += playerVelocity.y * delta;
+
+            // Horizontal friction
+            playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+            playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+
+            playerDirection.z = Number(keys.forward) - Number(keys.backward);
+            playerDirection.x = Number(keys.right) - Number(keys.left);
+            playerDirection.normalize();
+
+            if (keys.forward || keys.backward) playerVelocity.z -= playerDirection.z * currentMoveSpeed * delta;
+            if (keys.left || keys.right)       playerVelocity.x -= playerDirection.x * currentMoveSpeed * delta;
+
+            pointerLockControls.moveRight(-playerVelocity.x * delta);
+            pointerLockControls.moveForward(-playerVelocity.z * delta);
+
+            // Collision resolution
+            const horizontalCheckPos = new THREE.Vector3(playerPos.x, playerPos.y - (playerHeight / 2), playerPos.z);
+            const checkDirections = [
+                new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1, 0, 0),
+                new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)
+            ];
+            for (const dir of checkDirections) {
+                raycaster.set(horizontalCheckPos, dir);
+                const wallIntersections = raycaster.intersectObjects(colliderMeshes);
+                if (wallIntersections.length > 0 && wallIntersections[0].distance < playerRadius) {
+                    const penetrationDepth = playerRadius - wallIntersections[0].distance;
+                    playerPos.x -= dir.x * (penetrationDepth + 0.01);
+                    playerPos.z -= dir.z * (penetrationDepth + 0.01);
+                    if (dir.x !== 0) playerVelocity.x = 0;
+                    if (dir.z !== 0) playerVelocity.z = 0;
+                }
+            }
+
+            // Final ground check
+            let finalOnFloor = false;
+            raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+            const finalFloorIntersections = raycaster.intersectObjects(colliderMeshes);
+            if (finalFloorIntersections.length > 0) {
+                const floorDist = finalFloorIntersections[0].distance;
+                if (floorDist < playerHeight + 0.1) {
+                    finalOnFloor = true;
+                    if (floorDist < playerHeight) {
+                        playerPos.y = finalFloorIntersections[0].point.y + playerHeight;
+                        if (playerVelocity.y < 0) playerVelocity.y = 0;
+                    }
+                }
+            }
+            playerOnFloor = finalOnFloor;
+        }
+
+        function animate() {
+            const delta = clock.getDelta();
+            if (colliderMeshes.length > 0) {
+                updatePlayer(delta);
+            }
+            composer.render();
+        }
+
+        init();
+    </script>
+</body>
+</html>
