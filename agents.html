@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MERGVS — For Agents</title>
+<meta name="description" content="Commission-only immersive property marketing for estate agents. No retainer, no exclusivity. MERGVS produces, you close.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MERGVS — For Estate Agents">
+<meta property="og:description" content="Commission-only immersive property marketing for estate agents. No retainer, no exclusivity. MERGVS produces, you close.">
+<meta property="og:url" content="https://mergvs.com/agents">
+<meta property="og:image" content="https://mergvs.com/mergvs-son.png">
+<meta property="og:site_name" content="MERGVS">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="MERGVS — For Estate Agents">
+<meta name="twitter:description" content="Commission-only immersive property marketing. No retainer, no exclusivity. MERGVS produces, you close.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet">
@@ -183,6 +193,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   .pricing-grid{grid-template-columns:1fr;max-width:480px}
   .process-steps{grid-template-columns:repeat(2,1fr)}.process-steps::before{display:none}
   .footer-grid{grid-template-columns:1fr 1fr}
+  .agreement-items{grid-template-columns:1fr 1fr}
 }
 @media(max-width:768px){
   nav{padding:1.4rem 1.5rem}.nav-links{display:none}.nav-hamburger{display:flex}
@@ -192,6 +203,9 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   .cta-actions{flex-direction:column}
   .footer-grid{grid-template-columns:1fr;gap:2.5rem}
   .footer-bottom{flex-direction:column;gap:0.8rem;text-align:center}
+  .agreement-section{padding:6rem 1.5rem}
+  .agreement-items{grid-template-columns:1fr}
+  .agreement-inner{grid-template-columns:1fr;gap:3rem}
 }
 </style>
 </head>
@@ -345,12 +359,45 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   </div>
 </section>
 
+<!-- FAQ -->
+<section style="background:var(--ivory);padding:9rem 3.5rem;border-top:1px solid var(--ecru)">
+  <div style="max-width:860px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+      <div style="width:20px;height:1px;background:var(--moss);flex-shrink:0"></div>
+      <span style="font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:300;letter-spacing:0.32em;text-transform:uppercase;color:var(--moss)">Common Questions</span>
+    </div>
+    <h2 style="font-family:'IM Fell English',serif;font-size:clamp(1.8rem,3vw,2.6rem);color:var(--forest);line-height:1.15;margin-bottom:4rem">What agents ask<br>before they <em>commit.</em></h2>
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="padding:2.5rem 0;border-bottom:1px solid var(--ecru)">
+        <h3 style="font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.18em;color:var(--forest);margin-bottom:1rem">What if the property doesn't sell?</h3>
+        <p style="font-family:'Lora',serif;font-style:italic;font-size:0.88rem;line-height:1.9;color:var(--umber)">You pay nothing. MERGVS absorbs the full production cost. Our commission only applies when the transaction closes. This is not a risk-sharing arrangement — it is entirely our risk. If the property doesn't sell, we bear the loss.</p>
+      </div>
+      <div style="padding:2.5rem 0;border-bottom:1px solid var(--ecru)">
+        <h3 style="font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.18em;color:var(--forest);margin-bottom:1rem">Are there any costs during production?</h3>
+        <p style="font-family:'Lora',serif;font-style:italic;font-size:0.88rem;line-height:1.9;color:var(--umber)">No retainer, no deposit, no monthly fee. Production begins after the partnership agreement is signed — all costs are borne by MERGVS until settlement. The only invoice you will ever receive from us arrives 14 days after closing.</p>
+      </div>
+      <div style="padding:2.5rem 0;border-bottom:1px solid var(--ecru)">
+        <h3 style="font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.18em;color:var(--forest);margin-bottom:1rem">Does MERGVS require exclusivity?</h3>
+        <p style="font-family:'Lora',serif;font-style:italic;font-size:0.88rem;line-height:1.9;color:var(--umber)">No. We do not require exclusivity on the listing. You may continue to market the property through other channels. The MERGVS partnership agreement covers our production and commission terms only — your agency relationship with the seller remains entirely your own.</p>
+      </div>
+      <div style="padding:2.5rem 0;border-bottom:1px solid var(--ecru)">
+        <h3 style="font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.18em;color:var(--forest);margin-bottom:1rem">What geographies do you cover?</h3>
+        <p style="font-family:'Lora',serif;font-style:italic;font-size:0.88rem;line-height:1.9;color:var(--umber)">MERGVS operates in Luxembourg, Milan, and Istanbul. We also work internationally on a case-by-case basis for properties of sufficient distinction. If your listing falls outside these markets, contact us — we will assess it individually and confirm within 24 hours whether we can engage.</p>
+      </div>
+      <div style="padding:2.5rem 0">
+        <h3 style="font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.18em;color:var(--forest);margin-bottom:1rem">How long does production take?</h3>
+        <p style="font-family:'Lora',serif;font-style:italic;font-size:0.88rem;line-height:1.9;color:var(--umber)">A standard engagement — 3D environment, photography, video — is typically delivered within 10–15 working days of the site visit. Complex or multi-unit properties may require additional time. We confirm a precise timeline in the partnership agreement, and we commit to it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <div class="mid-cta">
   <div>
     <div class="mid-cta-text">No risk. No upfront.<br><em>Only results.</em></div>
     <div class="mid-cta-sub">We earn when your listing sells. That's the only way we work.</div>
   </div>
-  <a href="#" class="mid-cta-btn" data-mgv-open>Start a Partnership →</a>
+  <a href="#" class="mid-cta-btn" data-mgv-open>Begin the Conversation →</a>
 </div>
 
 <section class="cta-section">
@@ -375,7 +422,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="/#properties">Properties</a></li></ul></div>
     <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/luxembourg">Luxembourg</a></li><li><a href="/milan">Milan</a></li><li><a href="/istanbul">Istanbul</a></li><li><a href="/about">International Inquiries</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="https://wa.me/352661000000" target="_blank" rel="noopener">WhatsApp Us</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
