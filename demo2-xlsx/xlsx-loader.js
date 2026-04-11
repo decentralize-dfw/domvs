@@ -384,7 +384,32 @@ function parseButtonsSection(rows, sceneIdx, sceneEnd) {
     return buttons;
 }
 
-/* ---------- Panels section ---------- */
+/* ---------- Panels section ----------
+ *
+ * A panel is a stack of media items. The top "title" row and the ten
+ * slot rows below it all share one schema:
+ *     A: slot / heading label  (on the title row this is the h3 text)
+ *     B: Tip                   (text | html | image | video | youtube |
+ *                               drive | iframe | link | glb)
+ *     C: İçerik / URL          (plain text or an http/https URL)
+ *     D: Genişlik              ("300px", "100%", "auto", "" = default)
+ *     E: Yükseklik             (same)
+ *     F: Caption               (optional — used as the tab label too)
+ *     G: Extra                 (optional CSS class / raw attrs)
+ *
+ * A panel's items[] is built from the title row (first item) + any
+ * filled slot rows. Panels with one item render inline; panels with
+ * two or more items render as small tabs at the top of the panel.
+ *
+ * Backward compat: older panel data had plain-text content in column
+ * B and nothing in C. If column B isn't a recognised Tip token we
+ * fall back to treating the whole row as a text item.
+ */
+const KNOWN_TIPS = new Set([
+    'text', 'html', 'image', 'video',
+    'youtube', 'drive', 'iframe', 'link', 'glb'
+]);
+
 function parsePanelsSection(rows, sceneIdx, sceneEnd) {
     const panels = {};
     const m = findMarker(rows, sceneIdx, sceneEnd, '4 · BİLGİ PANELLERİ');
@@ -397,15 +422,75 @@ function parsePanelsSection(rows, sceneIdx, sceneEnd) {
         const idMatch = a.match(/Panel ID:\s*([a-zA-Z0-9_]+)/);
         if (!idMatch) continue;
         const panelId = idMatch[1];
-        // Content row is at i+2 (skip the "Başlık | İçerik" header at i+1)
-        const contentRow = rows[i + 2];
-        if (!contentRow) continue;
 
-        let title = String(contentRow[0] ?? '').trim();
-        title = title.replace(/\s*\[Buton:[^\]]*\]\s*$/, '').trim();
-        const content = String(contentRow[1] ?? '').trim();
+        // Layout beneath a "Panel ID:" row:
+        //   i     : panel marker
+        //   i + 1 : column header row ("Başlık | Tip | İçerik / URL | ...")
+        //   i + 2 : title / first item row
+        //   i + 3 : "↓ Bu panel için ek içerik slotları" separator
+        //   i + 4 : slot01   …   i + 13 : slot10
+        const titleRow = rows[i + 2];
+        if (!titleRow) continue;
 
-        panels[panelId] = { title, content };
+        // Panel heading: column A of the title row, stripped of
+        // "[Buton: X]" / "[camN]" / any trailing [..] annotation.
+        let heading = String(titleRow[0] ?? '').trim();
+        heading = heading.replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+
+        const items = [];
+        const pushItem = (r) => {
+            if (!r) return;
+            const rawB = (r[1] !== null && r[1] !== undefined) ? String(r[1]).trim() : '';
+            const rawC = (r[2] !== null && r[2] !== undefined) ? String(r[2]).trim() : '';
+            const bEmpty = !rawB || rawB.toLowerCase() === 'null';
+            const cEmpty = !rawC || rawC.toLowerCase() === 'null';
+            if (bEmpty && cEmpty) return;
+
+            let tip, content;
+            if (!bEmpty && KNOWN_TIPS.has(rawB.toLowerCase())) {
+                // New schema: B = Tip, C = content
+                tip = rawB.toLowerCase();
+                content = cEmpty ? '' : rawC;
+            } else if (!bEmpty) {
+                // Legacy schema: B holds plain text content
+                tip = 'text';
+                content = rawB;
+            } else {
+                return;
+            }
+            if (!content) return;
+
+            const read = (idx) => {
+                const v = r[idx];
+                if (v === null || v === undefined) return '';
+                const s = String(v).trim();
+                return (!s || s.toLowerCase() === 'null') ? '' : s;
+            };
+
+            items.push({
+                tip,
+                content,
+                width:   read(3),
+                height:  read(4),
+                caption: read(5),
+                extra:   read(6)
+            });
+        };
+
+        // First item: the title row
+        pushItem(titleRow);
+
+        // Additional items: slot rows until the next panel / section
+        for (let j = i + 4; j <= sceneEnd; j++) {
+            const slotRow = rows[j];
+            if (!slotRow) continue;
+            const slotA = String(slotRow[0] ?? '').trim();
+            if (slotA.includes('Panel ID:')) break;
+            if (/^\s*\d+\s*·/.test(slotA)) break;
+            pushItem(slotRow);
+        }
+
+        panels[panelId] = { title: heading, items };
     }
     return panels;
 }
@@ -462,22 +547,175 @@ function mdInline(escaped) {
     return String(escaped).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 }
 
+/* ---------- Attribute-safe escape + size normaliser ---------- */
+
+function escapeAttr(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function normalizeSize(s) {
+    const str = String(s || '').trim().toLowerCase();
+    if (!str || str === 'null')  return '';
+    if (str === 'auto')          return 'auto';
+    if (/^\d+(\.\d+)?(px|%|em|rem|vw|vh)$/.test(str)) return str;
+    if (/^\d+(\.\d+)?$/.test(str)) return str + 'px';
+    return str;
+}
+
+function sizeStyleAttr(item) {
+    const parts = [];
+    const w = normalizeSize(item.width);
+    const h = normalizeSize(item.height);
+    if (w) parts.push(`width:${w}`);
+    if (h) parts.push(`height:${h}`);
+    return parts.length ? ` style="${parts.join(';')}"` : '';
+}
+
+function extractYouTubeId(url) {
+    const m = String(url || '').match(
+        /(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
+    );
+    return m ? m[1] : null;
+}
+
+function extractDriveId(url) {
+    const m = String(url || '').match(
+        /drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]{6,})/
+    );
+    return m ? m[1] : null;
+}
+
+/* ---------- Single item renderer ---------- */
+
+function renderItem(item) {
+    const tip    = String(item.tip || 'text').toLowerCase();
+    const raw    = item.content || '';
+    const styleA = sizeStyleAttr(item);
+    const cls    = item.extra ? escapeAttr(item.extra) : '';
+    const cap    = item.caption
+        ? `<div class="vea-item-caption">${escapeHtml(item.caption)}</div>`
+        : '';
+
+    switch (tip) {
+        case 'text': {
+            const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+            const body  = lines.map(l => `<p>${mdInline(escapeHtml(l))}</p>`).join('');
+            return `<div class="vea-item vea-item-text ${cls}"${styleA}>${body}</div>${cap}`;
+        }
+        case 'html':
+            return `<div class="vea-item vea-item-html ${cls}"${styleA}>${raw}</div>${cap}`;
+
+        case 'image':
+            return `<img class="vea-item vea-item-image ${cls}" src="${escapeAttr(raw)}" alt="${escapeAttr(item.caption || '')}"${styleA}>${cap}`;
+
+        case 'video':
+            return `<video class="vea-item vea-item-video ${cls}" src="${escapeAttr(raw)}" controls playsinline${styleA}></video>${cap}`;
+
+        case 'youtube': {
+            const id  = extractYouTubeId(raw);
+            const src = id ? `https://www.youtube.com/embed/${id}` : raw;
+            return `<iframe class="vea-item vea-item-iframe ${cls}" src="${escapeAttr(src)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen${styleA}></iframe>${cap}`;
+        }
+        case 'drive': {
+            const id  = extractDriveId(raw);
+            const src = id ? `https://drive.google.com/file/d/${id}/preview` : raw;
+            return `<iframe class="vea-item vea-item-iframe ${cls}" src="${escapeAttr(src)}" frameborder="0" allowfullscreen${styleA}></iframe>${cap}`;
+        }
+        case 'iframe':
+            return `<iframe class="vea-item vea-item-iframe ${cls}" src="${escapeAttr(raw)}" frameborder="0" allowfullscreen${styleA}></iframe>${cap}`;
+
+        case 'link': {
+            const label = item.caption || raw;
+            return `<a class="vea-item vea-item-link ${cls}" href="${escapeAttr(raw)}" target="_blank" rel="noopener"${styleA}>${escapeHtml(label)}</a>`;
+        }
+        case 'glb': {
+            const label = item.caption || 'GLB Model';
+            return `<a class="vea-item vea-item-glb ${cls}" href="${escapeAttr(raw)}" target="_blank" rel="noopener"${styleA}>📦 ${escapeHtml(label)}</a>`;
+        }
+        default:
+            return `<div class="vea-item vea-item-text"${styleA}>${mdInline(escapeHtml(raw))}</div>${cap}`;
+    }
+}
+
 /**
- * Render a panel object ({ title, content }) into HTML for the
- * left/right side panels. Content lines split on \n become <p>s.
- * Titles and content support **bold** markdown.
+ * Render a panel object ({ title, items }) into the HTML string that
+ * should be dropped into a side-panel container. Multiple items are
+ * rendered as small tabs at the top of the panel; tab switching is
+ * wired up globally via a document-level click delegate installed
+ * at the bottom of this module.
+ *
+ * Backward-compat: legacy `{ title, content }` shape is also accepted
+ * (rendered as a single text item).
  */
 export function renderPanelHtml(panel) {
     if (!panel) return '';
-    let html = '';
-    if (panel.title) {
-        html += `<h3>${mdInline(escapeHtml(panel.title))}</h3>`;
+
+    // Normalise to an items[] array
+    let items = Array.isArray(panel.items) ? panel.items.slice() : null;
+    if (!items && panel.content) {
+        items = [{
+            tip: 'text', content: panel.content,
+            width: '', height: '', caption: '', extra: ''
+        }];
     }
-    if (panel.content) {
-        const lines = panel.content.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        for (const line of lines) {
-            html += `<p>${mdInline(escapeHtml(line))}</p>`;
-        }
+    items = items || [];
+
+    const headingHtml = panel.title
+        ? `<h3 class="vea-panel-heading">${mdInline(escapeHtml(panel.title))}</h3>`
+        : '';
+
+    if (items.length === 0) {
+        return `<div class="vea-panel-root">${headingHtml}</div>`;
     }
-    return html;
+
+    if (items.length === 1) {
+        return `<div class="vea-panel-root">${headingHtml}${renderItem(items[0])}</div>`;
+    }
+
+    // 2+ items → tab bar on top + switchable tab bodies
+    const tabButtons = items.map((it, idx) => {
+        const label = it.caption || String(idx + 1);
+        return `<button class="vea-tab${idx === 0 ? ' active' : ''}" data-idx="${idx}" type="button">${escapeHtml(label)}</button>`;
+    }).join('');
+
+    const tabBodies = items.map((it, idx) =>
+        `<div class="vea-tab-panel${idx === 0 ? ' active' : ''}" data-idx="${idx}">${renderItem(it)}</div>`
+    ).join('');
+
+    return `<div class="vea-panel-root">`
+         + headingHtml
+         + `<div class="vea-tabs">${tabButtons}</div>`
+         + `<div class="vea-tab-body">${tabBodies}</div>`
+         + `</div>`;
+}
+
+/* ---------- Document-level tab click delegate ----------
+ * Installed once per page, on first import of this module. Because
+ * the handler uses event delegation, panels that are re-rendered
+ * (e.g. when scene 2 switches between Klasik / Metal options) keep
+ * working without needing to be re-wired.
+ */
+if (typeof document !== 'undefined' && !document.__veaTabHandlerInstalled) {
+    document.__veaTabHandlerInstalled = true;
+    document.addEventListener('click', (e) => {
+        const tab = e.target && e.target.closest
+            ? e.target.closest('.vea-tab')
+            : null;
+        if (!tab) return;
+        const root = tab.closest('.vea-panel-root');
+        if (!root) return;
+        e.stopPropagation();
+        const idx = tab.dataset.idx;
+        root.querySelectorAll('.vea-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.idx === idx);
+        });
+        root.querySelectorAll('.vea-tab-body > .vea-tab-panel').forEach(p => {
+            p.classList.toggle('active', p.dataset.idx === idx);
+        });
+    });
 }

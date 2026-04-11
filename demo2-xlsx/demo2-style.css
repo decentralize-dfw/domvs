@@ -576,3 +576,154 @@ canvas {
 #modelToggleBtn4 { left: 184px; }
 #modelToggleBtn5 { left: 240px; }
 #modelToggleBtn6 { left: 296px; }
+
+/* =========================================================
+   RICH PANEL SLOTS — tabs + media item renderers
+   Driven by the xlsx slot schema (Tip / İçerik / Genişlik /
+   Yükseklik / Caption / Extra). One item per panel renders
+   inline; two or more items render as selectable tabs on top.
+   ========================================================= */
+
+.vea-panel-root {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+}
+.vea-panel-heading {
+    margin: 0 0 2px 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* --- Tab bar --- */
+.vea-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.vea-tab {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.vea-tab:hover {
+    background: rgba(201, 169, 110, 0.14);
+    color: var(--gold);
+    border-color: rgba(201, 169, 110, 0.45);
+}
+.vea-tab.active {
+    background: rgba(201, 169, 110, 0.22);
+    color: var(--gold);
+    border-color: rgba(201, 169, 110, 0.65);
+}
+
+.vea-tab-body {
+    flex: 1;
+    min-height: 0;
+}
+.vea-tab-panel          { display: none; }
+.vea-tab-panel.active   { display: block; }
+
+/* --- Individual item renderers --- */
+.vea-item {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.vea-item-text p,
+.vea-item-html p {
+    margin: 4px 0;
+    color: var(--accent);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.vea-item-html {
+    color: var(--accent);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.vea-item-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    object-fit: cover;
+    background: #000;
+}
+.vea-item-video {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.vea-item-iframe {
+    display: block;
+    width: 100%;
+    min-height: 160px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #000;
+}
+
+.vea-item-link {
+    display: inline-block;
+    color: var(--gold);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(201, 169, 110, 0.5);
+    padding: 2px 0;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+.vea-item-link:hover {
+    color: #fff;
+    border-bottom-color: #fff;
+}
+
+.vea-item-glb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 12px;
+    font-family: 'Raleway', sans-serif;
+    letter-spacing: 0.05em;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.vea-item-glb:hover {
+    background: rgba(201, 169, 110, 0.18);
+    border-color: rgba(201, 169, 110, 0.5);
+}
+
+.vea-item-caption {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 4px;
+    font-style: italic;
+    line-height: 1.3;
+}
