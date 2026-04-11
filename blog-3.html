@@ -317,6 +317,16 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   </div>
 </section>
 
+<div style="background:var(--ivory);padding:3.5rem;border-top:1px solid var(--ecru)">
+  <div style="max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap">
+    <div>
+      <p style="font-family:'Raleway',sans-serif;font-size:0.55rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--moss);margin-bottom:0.6rem">Luxembourg · MERGVS</p>
+      <p style="font-family:'Lora',serif;font-style:italic;font-size:0.9rem;line-height:1.8;color:var(--umber)">Discover how MERGVS works with Luxembourg's prime residential market — Kirchberg, Limpertsberg, Cloche d'Or and beyond.</p>
+    </div>
+    <a href="/luxembourg" style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--forest);border:1px solid var(--moss);padding:0.7rem 1.8rem;text-decoration:none;white-space:nowrap;flex-shrink:0;transition:all 0.3s" onmouseover="this.style.background='var(--moss)';this.style.color='var(--ivory)'" onmouseout="this.style.background='';this.style.color='var(--forest)'">Explore Luxembourg →</a>
+  </div>
+</div>
+
 <div class="article-nav">
   <div class="article-nav-inner">
     <a href="/blog-2" class="article-nav-back">Previous: Brera, Navigli, Isola</a>
@@ -339,16 +349,17 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="/#properties">Properties</a></li></ul></div>
-    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/">Luxembourg</a></li><li><a href="/">Milan</a></li><li><a href="/">Istanbul</a></li><li><a href="/">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="/#contact">Request a Demo</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/luxembourg">Luxembourg</a></li><li><a href="/milan">Milan</a></li><li><a href="/istanbul">Istanbul</a></li><li><a href="/about">International</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
     <span class="footer-legal">Luxembourg · Milan · Istanbul</span>
-    <span class="footer-legal">Privacy · Terms</span>
+    <span class="footer-legal"><a href="/privacy" style="color:inherit;text-decoration:none">Privacy Policy</a> · <a href="/terms" style="color:inherit;text-decoration:none">Terms of Service</a></span>
   </div>
 </footer>
 
+<script src="mergvs-contact.js"></script>
 <script>
 const cursor=document.getElementById('cursor'),ring=document.getElementById('cursorRing');let mx=0,my=0,rx=0,ry=0;
 document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px'});
