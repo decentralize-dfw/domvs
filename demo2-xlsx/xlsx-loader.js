@@ -355,19 +355,31 @@ export function isColliderEntry(config, entry) {
 }
 
 /**
+ * Convert tiny markdown-ish markup inside an already-escaped string.
+ * Currently supported:
+ *   **text** → <strong>text</strong>
+ * Input MUST already be HTML-escaped; `*` is not touched by escapeHtml
+ * so the pattern survives escape and we get correct HTML out.
+ */
+function mdInline(escaped) {
+    return String(escaped).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
+/**
  * Render a panel object ({ title, content }) into HTML for the
  * left/right side panels. Content lines split on \n become <p>s.
+ * Titles and content support **bold** markdown.
  */
 export function renderPanelHtml(panel) {
     if (!panel) return '';
     let html = '';
     if (panel.title) {
-        html += `<h3>${escapeHtml(panel.title)}</h3>`;
+        html += `<h3>${mdInline(escapeHtml(panel.title))}</h3>`;
     }
     if (panel.content) {
         const lines = panel.content.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
         for (const line of lines) {
-            html += `<p>${escapeHtml(line)}</p>`;
+            html += `<p>${mdInline(escapeHtml(line))}</p>`;
         }
     }
     return html;
