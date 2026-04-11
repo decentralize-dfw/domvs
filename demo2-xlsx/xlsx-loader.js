@@ -330,21 +330,40 @@ function parseButtonsSection(rows, sceneIdx, sceneEnd) {
     const m = findMarker(rows, sceneIdx, sceneEnd, '3 · TOGGLE BUTONLARI');
     if (m < 0) return buttons;
 
+    // Stop before the next "N · ..." section marker (same approach
+    // used by parseModelsSection) so floats / section headers can't
+    // be mistaken for button rows.
+    let stopIdx = sceneEnd;
     for (let i = m + 1; i <= sceneEnd; i++) {
+        const a = rows[i]?.[0];
+        if (!a) continue;
+        if (/^\s*\d+\s*·/.test(String(a))) {
+            stopIdx = i - 1;
+            break;
+        }
+    }
+
+    for (let i = m + 1; i <= stopIdx; i++) {
         const row = rows[i];
         if (!row) continue;
-        const a = row[0];
-        if (a === null || a === undefined) continue;
-        const aStr = String(a).trim();
-        if (aStr.startsWith('↓')) break;
-        if (aStr.toLowerCase().startsWith('slot')) break;
-        if (aStr.includes('·')) break;
-        if (aStr.toLowerCase().includes('bu sahnede')) continue;
-        if (!/^\d+$/.test(aStr)) continue;
+        // A button row has a non-empty label in column B and a
+        // non-empty id in column C. Column A is a # that may come
+        // through from Google Sheets as a float ("1.0"), an int,
+        // or a slot label — we don't care as long as B+C carry data.
+        const name = row[1];
+        const id   = row[2];
+        if (!name || !id) continue;
+        const nameStr = String(name).trim();
+        const idStr   = String(id).trim();
+        if (!nameStr || !idStr) continue;
+        if (nameStr.toLowerCase() === 'null' || idStr.toLowerCase() === 'null') continue;
+        // Skip the header row ("Buton Etiketi" / "Buton ID")
+        if (/^buton\s+(etiketi|id)$/i.test(nameStr)) continue;
+        if (/^buton\s+id$/i.test(idStr)) continue;
 
         buttons.push({
-            name:   row[1] ? String(row[1]).trim() : '',
-            id:     row[2] ? String(row[2]).trim() : '',
+            name:   nameStr,
+            id:     idStr,
             action: row[3] ? String(row[3]).trim() : ''
         });
     }
