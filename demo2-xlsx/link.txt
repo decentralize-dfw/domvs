@@ -1,0 +1,6 @@
+# VEA Demo 2 — central config reference
+# The first non-empty, non-comment line below is the URL to the
+# xlsx config file. Every scene and the cassette player read this
+# file via xlsx-loader.js → resolveXlsxUrl(). Update the line
+# below to point at a different xlsx and all scenes pick it up.
+https://mergvs.com/demo2-xlsx/demo2-input_2.xlsx

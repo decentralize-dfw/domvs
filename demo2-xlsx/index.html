@@ -268,11 +268,13 @@
     </div>
 
     <script type="module">
-        import { loadVeaConfig } from './xlsx-loader.js';
+        import { loadVeaConfig } from 'https://mergvs.com/demo2-xlsx/xlsx-loader.js';
 
-        // Candidate scene files to look for. A file is only added to the
-        // TRACKS list if a HEAD request returns 200, so scenes that haven't
-        // been migrated yet are automatically skipped.
+        // Base URL where scene files live. Candidate scene files are
+        // resolved against this base; a file is only added to TRACKS if
+        // a HEAD request returns 200, so scenes that haven't been
+        // migrated yet are automatically skipped.
+        const SCENES_BASE_URL = 'https://mergvs.com/demo2-xlsx/';
         const SCENE_CANDIDATES = [
             { index: 0, file: 'demo2-scene0.html' },
             { index: 1, file: 'demo2-scene1.html' },
@@ -280,7 +282,7 @@
             { index: 3, file: 'demo2-scene3.html' },
             { index: 4, file: 'demo2-scene4.html' },
             { index: 5, file: 'demo2-scene5.html' }
-        ];
+        ].map(s => ({ ...s, url: SCENES_BASE_URL + s.file }));
 
         let TRACKS = [];
         let currentTrack = 0;
@@ -368,7 +370,7 @@
         (async function bootstrap() {
             let config;
             try {
-                config = await loadVeaConfig('demo2-input_2.xlsx');
+                config = await loadVeaConfig();
             } catch (e) {
                 console.error(e);
                 trackTitle.textContent = 'xlsx load failed';
@@ -379,7 +381,7 @@
             const results = await Promise.all(
                 SCENE_CANDIDATES.map(async (c) => ({
                     ...c,
-                    exists: await fileExists(c.file)
+                    exists: await fileExists(c.url)
                 }))
             );
 
@@ -387,7 +389,7 @@
                 .filter(r => r.exists)
                 .map(r => ({
                     index: r.index,
-                    file:  r.file,
+                    file:  r.url,
                     title: config.scenes[r.index]?.title || `Scene ${r.index}`
                 }));
 
