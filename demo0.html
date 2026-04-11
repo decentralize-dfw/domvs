@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lüksemburg Gayrimenkul Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #000;
+      color: #fff;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .loading-text {
+      color: #fff;
+      font-size: 20px;
+    }
+
+    #stats {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+
+    #navigation {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+
+    .nav-btn {
+      padding: 10px 20px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid #fff;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    #hotspot-info {
+      position: absolute;
+      background: rgba(0,0,0,0.9);
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+      pointer-events: none;
+      max-width: 200px;
+    }
+
+    #furniture-menu {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+
+    #furniture-menu select {
+      margin: 5px 0;
+      padding: 5px;
+      width: 100%;
+    }
+
+    #fps-info {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.8);
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
+      text-align: center;
+    }
+    #fps-crosshair {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      display: none;
+      z-index: 1001;
+    }
+    
+    #fps-crosshair::before,
+    #fps-crosshair::after {
+      content: '';
+      position: absolute;
+      background: white;
+    }
+    
+    #fps-crosshair::before {
+      width: 100%;
+      height: 2px;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
+    
+    #fps-crosshair::after {
+      width: 2px;
+      height: 100%;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="loading-text">Yükleniyor...</div>
+  </div>
+
+  <div id="stats">
+    <div>FPS: <span id="fps">0</span></div>
+    <div>Scene: <span id="scene-info">0-0</span></div>
+    <div id="fps-debug" style="display:none;">
+      <div>Mode: <span id="fps-mode">OFF</span></div>
+      <div>Pos: <span id="player-pos">0,0,0</span></div>
+      <div>Move: <span id="move-state">-</span></div>
+    </div>
+  </div>
+
+  <div id="navigation">
+    <button class="nav-btn" onclick="app.previousScene()">← Geri</button>
+    <button class="nav-btn" onclick="app.nextScene()">İleri →</button>
+  </div>
+
+  <div id="hotspot-info"></div>
+
+  <div id="furniture-menu">
+    <h3>Mobilya Seçimi</h3>
+    <select id="room1-select" onchange="app.updateFurniture('room1', this.value)">
+      <option value="">Oda 1 - Boş</option>
+      <option value="1">Oda 1 - Versiyon 1</option>
+      <option value="2">Oda 1 - Versiyon 2</option>
+      <option value="3">Oda 1 - Versiyon 3</option>
+    </select>
+    <select id="room2-select" onchange="app.updateFurniture('room2', this.value)">
+      <option value="">Oda 2 - Boş</option>
+      <option value="1">Oda 2 - Versiyon 1</option>
+      <option value="2">Oda 2 - Versiyon 2</option>
+      <option value="3">Oda 2 - Versiyon 3</option>
+    </select>
+    <select id="salon-select" onchange="app.updateFurniture('salon', this.value)">
+      <option value="">Salon - Boş</option>
+      <option value="1">Salon - Versiyon 1</option>
+      <option value="2">Salon - Versiyon 2</option>
+      <option value="3">Salon - Versiyon 3</option>
+    </select>
+    <select id="terrace-select" onchange="app.updateFurniture('terrace', this.value)">
+      <option value="">Teras - Boş</option>
+      <option value="1">Teras - Versiyon 1</option>
+      <option value="2">Teras - Versiyon 2</option>
+      <option value="3">Teras - Versiyon 3</option>
+    </select>
+  </div>
+
+  <div id="fps-info">
+    <h3>FPS Modu</h3>
+    <p>WASD veya Ok Tuşları: Hareket</p>
+    <p>Mouse: Bakış</p>
+    <p>Space: Zıpla</p>
+    <p>ESC: Çık</p>
+    <button class="nav-btn" onclick="document.getElementById('fps-info').style.display='none'">Tamam</button>
+  </div>
+
+  <div id="fps-crosshair"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js"></script>
+
+  <script>
+    class RealEstateApp {
+      constructor() {
+        this.BASE_URL = 'https://raw.githubusercontent.com/decentralize-dfw/realestatedemo/main/';
+        this.BUILDING_CENTER = { x: -0.641043, y: -1.24441, z: 9.4028 };
+        
+        this.currentScene = 0;
+        this.currentSubScene = 0;
+        this.models = {};
+        this.hotspots = [];
+        this.furnitureModels = {};
+        this.isFPS = false;
+        this.clock = new THREE.Clock();
+        
+        this.movement = {
+          forward: false,
+          backward: false,
+          left: false,
+          right: false
+        };
+        
+        // Scene definitions
+        this.scenes = [
+          // Scene 0: City overview - 5 SUBSCENE
+          [
+            { model: 'city-opt-v1.glb', layer: 'city' },
+            { model: 'Landmarks.glb', layer: 'kopstal' },
+            { model: 'Landmarks.glb', layer: 'mainroute' },
+            { model: 'Landmarks.glb', layer: 'landmark' },
+            { model: 'Landmarks.glb', layer: 'settlements' }
+          ],
+          // Scene 1: Neighborhood - 5 SUBSCENE
+          [
+            { model: 'mahalle.glb', layer: 'mahalle' },
+            { model: 'bldg_1.glb', layer: 'bldg_1' },
+            { model: 'bldg_highlighted.glb', layer: 'bldg_highlighted' },
+            { model: 'car_parking.glb', layer: 'car_parking' },
+            { model: 'bldg_highlighted.glb', layer: 'bldg_highlighted_market' }
+          ],
+          // Scene 2: Building section - 7 SUBSCENE
+          [
+            { model: 'bldg_section.glb', layer: 'bldg_section' },
+            { model: 'dimensions.glb', layer: 'dimensions' },
+            { model: 'furniture_1.glb', layer: 'furniture_1' },
+            { model: 'furniture_2.glb', layer: 'furniture_2' },
+            { model: 'furniture_3.glb', layer: 'furniture_3' },
+            { model: 'furniture_select.glb', layer: 'furniture_select' },
+            { model: 'bldg_section.glb', layer: 'fps' }
+          ],
+          // Scene 3: Logo
+          [
+            { model: 'logo.glb', layer: 'logo' }
+          ]
+        ];
+
+        // Hotspot data
+        this.hotspotData = {
+          '0_0': [
+            { pos: [13.351, 2, -0.161], info: 'Havalimanı: 15 km' },
+            { pos: [4.644, 2, 0.927], info: 'Kirchberg: 5 km' },
+            { pos: [-1.383, 2, -3.879], info: 'Hamilius: 3 km' },
+            { pos: [-15.376, 2, -0.053], info: 'Belle Etoile: 4 km' },
+            { pos: [-46.814, 2, 4.194], info: 'IKEA Arlon: 25 km' },
+            { pos: [-11.250, 2, 11.934], info: 'Kopstal: 2 km' },
+            { pos: [0.354, 2, -6.425], info: 'Gare Centrale: 7 km' }
+          ],
+          '1_2': [
+            { pos: [-5, 5, 5], info: 'Bar: 4.5 yıldız' },
+            { pos: [8, 5, -3], info: 'Restoran: 4.7 yıldız' },
+            { pos: [-10, 5, -8], info: 'Kafe: 4.3 yıldız' },
+            { pos: [3, 5, 10], info: 'Spor Salonu: 4.6 yıldız' },
+            { pos: [0, 5, -12], info: 'Park: 4.8 yıldız' }
+          ],
+          '1_3': [
+            { pos: [-8, 5, 0], info: 'Place Etoile, Duraklar: 5 dk' },
+            { pos: [12, 5, -5], info: 'Merkez Otobüs, Duraklar: 10 dk' }
+          ],
+          '1_4': [
+            { pos: [-3, 5, 7], info: 'Kiralık: 80 m², 2+1, 1500€/ay' },
+            { pos: [5, 5, -2], info: 'Satılık: 100 m², 3+1, 450,000€' },
+            { pos: [-7, 5, -6], info: 'Kiralık: 60 m², 1+1, 1200€/ay' },
+            { pos: [10, 5, 3], info: 'Satılık: 120 m², 4+1, 600,000€' },
+            { pos: [0, 5, -10], info: 'Kiralık: 90 m², 2+1, 1700€/ay' }
+          ],
+          '2_1': [
+            { pos: [this.BUILDING_CENTER.x - 5, this.BUILDING_CENTER.y + 5, this.BUILDING_CENTER.z], info: 'Oda 1: 25 m²' },
+            { pos: [this.BUILDING_CENTER.x + 5, this.BUILDING_CENTER.y + 5, this.BUILDING_CENTER.z], info: 'Oda 2: 20 m²' },
+            { pos: [this.BUILDING_CENTER.x, this.BUILDING_CENTER.y + 5, this.BUILDING_CENTER.z - 5], info: 'Salon: 40 m²' },
+            { pos: [this.BUILDING_CENTER.x, this.BUILDING_CENTER.y + 8, this.BUILDING_CENTER.z + 5], info: 'Teras: 15 m²' },
+            { pos: [this.BUILDING_CENTER.x + 7, this.BUILDING_CENTER.y + 5, this.BUILDING_CENTER.z - 3], info: 'Mutfak: 12 m²' }
+          ]
+        };
+        
+        this.init();
+      }
+
+      init() {
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        document.body.appendChild(this.renderer.domElement);
+
+        // Scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x87CEEB);
+        this.scene.fog = new THREE.Fog(0x87CEEB, 50, 300);
+
+        // Camera
+        this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(0, 40, 80);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+        this.scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        directionalLight.position.set(50, 50, 50);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 500;
+        directionalLight.shadow.camera.left = -100;
+        directionalLight.shadow.camera.right = 100;
+        directionalLight.shadow.camera.top = 100;
+        directionalLight.shadow.camera.bottom = -100;
+        this.scene.add(directionalLight);
+
+        const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x545454, 0.3);
+        this.scene.add(hemisphereLight);
+
+        // Controls
+        this.orbitControls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        this.orbitControls.enableDamping = true;
+        this.orbitControls.dampingFactor = 0.05;
+        this.orbitControls.minDistance = 5;
+        this.orbitControls.maxDistance = 200;
+        this.orbitControls.target.set(0, 0, 0);
+
+        this.pointerControls = new THREE.PointerLockControls(this.camera, this.renderer.domElement);
+        
+        // Physics
+        this.world = new CANNON.World();
+        this.world.gravity.set(0, -9.81, 0);
+        this.world.broadphase = new CANNON.NaiveBroadphase();
+        this.world.solver.iterations = 10;
+
+        // Ground plane at building level
+        const groundShape = new CANNON.Plane();
+        const groundBody = new CANNON.Body({ mass: 0 });
+        groundBody.addShape(groundShape);
+        groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+        groundBody.position.set(0, this.BUILDING_CENTER.y, 0); // Ground at building level
+        this.world.addBody(groundBody);
+
+        // Player body for FPS
+        this.playerBody = new CANNON.Body({
+          mass: 1,
+          shape: new CANNON.Box(new CANNON.Vec3(0.4, 1, 0.4))
+        });
+        this.playerBody.position.set(0, 5, 0);
+        this.playerBody.angularDamping = 0.999; // Prevent rotation
+        this.world.addBody(this.playerBody);
+
+        // Loaders
+        this.gltfLoader = new THREE.GLTFLoader();
+        const dracoLoader = new THREE.DRACOLoader();
+        dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/');
+        this.gltfLoader.setDRACOLoader(dracoLoader);
+
+        this.textureLoader = new THREE.TextureLoader();
+
+        // Events
+        this.setupEventListeners();
+
+        // Start
+        this.animate();
+        this.loadScene(0, 0);
+
+        // Hide loading
+        setTimeout(() => {
+          document.getElementById('loading').style.display = 'none';
+        }, 1000);
+      }
+
+      setupEventListeners() {
+        window.addEventListener('resize', () => {
+          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // FPS Controls
+        document.addEventListener('keydown', (e) => {
+          if (this.isFPS) {
+            switch(e.code) {
+              case 'KeyW': 
+              case 'ArrowUp':
+                this.movement.forward = true; 
+                break;
+              case 'KeyS': 
+              case 'ArrowDown':
+                this.movement.backward = true; 
+                break;
+              case 'KeyA': 
+              case 'ArrowLeft':
+                this.movement.left = true; 
+                break;
+              case 'KeyD': 
+              case 'ArrowRight':
+                this.movement.right = true; 
+                break;
+              case 'Space': 
+                if (Math.abs(this.playerBody.velocity.y) < 0.1) {
+                  this.playerBody.velocity.y = 8;
+                }
+                break;
+            }
+          }
+          
+          if (e.code === 'Escape' && this.isFPS) {
+            this.exitFPS();
+          }
+        });
+
+        document.addEventListener('keyup', (e) => {
+          if (this.isFPS) {
+            switch(e.code) {
+              case 'KeyW': 
+              case 'ArrowUp':
+                this.movement.forward = false; 
+                break;
+              case 'KeyS': 
+              case 'ArrowDown':
+                this.movement.backward = false; 
+                break;
+              case 'KeyA': 
+              case 'ArrowLeft':
+                this.movement.left = false; 
+                break;
+              case 'KeyD': 
+              case 'ArrowRight':
+                this.movement.right = false; 
+                break;
+            }
+          }
+        });
+
+        // Pointer lock
+        this.pointerControls.addEventListener('lock', () => {
+          this.isFPS = true;
+          this.orbitControls.enabled = false;
+          document.getElementById('fps-info').style.display = 'none';
+          console.log('FPS mode ON');
+        });
+
+        this.pointerControls.addEventListener('unlock', () => {
+          this.isFPS = false;
+          this.orbitControls.enabled = true;
+          this.movement.forward = false;
+          this.movement.backward = false;
+          this.movement.left = false;
+          this.movement.right = false;
+          document.body.style.cursor = 'auto'; // Show cursor
+          console.log('FPS mode OFF');
+        });
+
+        // Click for hotspots and FPS
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+
+        this.renderer.domElement.addEventListener('click', (event) => {
+          if (this.currentScene === 2 && this.currentSubScene === 6) {
+            // Enter FPS mode
+            if (!this.isFPS) {
+              document.getElementById('fps-info').style.display = 'block';
+              document.body.style.cursor = 'none'; // Hide cursor
+              setTimeout(() => {
+                this.pointerControls.lock();
+              }, 100);
+            }
+            return;
+          }
+
+          // Check hotspot clicks
+          this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+          this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+          this.raycaster.setFromCamera(this.mouse, this.camera);
+          const intersects = this.raycaster.intersectObjects(this.hotspots);
+
+          if (intersects.length > 0) {
+            const hotspot = intersects[0].object;
+            this.showHotspotInfo(hotspot.userData.info, event.clientX, event.clientY);
+          }
+        });
+      }
+
+      async loadScene(sceneIndex, subSceneIndex) {
+        // Clear previous scene completely
+        this.clearScene();
+
+        // Update state
+        this.currentScene = sceneIndex;
+        this.currentSubScene = subSceneIndex;
+        document.getElementById('scene-info').textContent = `${sceneIndex}-${subSceneIndex}`;
+
+        // Camera configurations - SCENE 2 BUILDING CENTER'A BAKIYOR!
+        const cameraConfigs = {
+          0: { pos: [0, 40, 80], target: [0, 0, 0] },
+          1: { pos: [0, 30, 60], target: this.BUILDING_CENTER },
+          2: { 
+            pos: [
+              this.BUILDING_CENTER.x + 20, 
+              this.BUILDING_CENTER.y + 25, 
+              this.BUILDING_CENTER.z + 20
+            ],
+            target: this.BUILDING_CENTER // BUILDING CENTER!
+          },
+          3: { pos: [0, 0, 5], target: [0, 0, 0] }
+        };
+
+        try {
+          // Progressive loading based on scene
+          if (sceneIndex === 0) {
+            // Scene 0: Progressive loading - HER SEFERINDE TEMİZLENİP YENİDEN YÜKLENİYOR
+            for (let i = 0; i <= subSceneIndex && i < this.scenes[0].length; i++) {
+              const modelName = `scene0_model_${i}`;
+              await this.loadModel(this.scenes[0][i].model, modelName);
+            }
+            if (subSceneIndex === 0) {
+              this.createHotspots(this.hotspotData['0_0']);
+            }
+          }
+          else if (sceneIndex === 1) {
+            // Scene 1: Progressive loading
+            for (let i = 0; i <= subSceneIndex && i < this.scenes[1].length; i++) {
+              const modelName = `scene1_model_${i}`;
+              await this.loadModel(this.scenes[1][i].model, modelName);
+            }
+            // Add hotspots for specific subscenes
+            if (subSceneIndex === 2 && this.hotspotData['1_2']) {
+              this.createHotspots(this.hotspotData['1_2']);
+            } else if (subSceneIndex === 3 && this.hotspotData['1_3']) {
+              this.createHotspots(this.hotspotData['1_3']);
+            } else if (subSceneIndex === 4 && this.hotspotData['1_4']) {
+              this.createHotspots(this.hotspotData['1_4']);
+            }
+          }
+          else if (sceneIndex === 2) {
+            // Scene 2: Her zaman building section yükle
+            await this.loadModel('bldg_section.glb', 'scene2_building');
+            
+            if (subSceneIndex === 1) {
+              // Dimensions
+              await this.loadModel('dimensions.glb', 'scene2_dimensions');
+              this.createHotspots(this.hotspotData['2_1']);
+            } else if (subSceneIndex === 2) {
+              // Furniture 1
+              await this.loadModel('furniture_1.glb', 'scene2_furniture');
+            } else if (subSceneIndex === 3) {
+              // Furniture 2
+              await this.loadModel('furniture_2.glb', 'scene2_furniture');
+            } else if (subSceneIndex === 4) {
+              // Furniture 3
+              await this.loadModel('furniture_3.glb', 'scene2_furniture');
+            } else if (subSceneIndex === 5) {
+              // Furniture selection
+              document.getElementById('furniture-menu').style.display = 'block';
+            } else if (subSceneIndex === 6) {
+              // FPS mode - BUILDING CENTER'DA SPAWN!
+              this.playerBody.position.set(
+                this.BUILDING_CENTER.x,
+                this.BUILDING_CENTER.y + 2, // Building içinde spawn
+                this.BUILDING_CENTER.z
+              );
+              
+              // Camera'yı da building center'a koy
+              this.camera.position.set(
+                this.BUILDING_CENTER.x,
+                this.BUILDING_CENTER.y + 3.6, // Göz hizası
+                this.BUILDING_CENTER.z
+              );
+              
+              console.log('FPS Mode Ready - Player at:', this.playerBody.position);
+              
+              // Don't animate camera for FPS mode
+              return;
+            }
+          }
+          else if (sceneIndex === 3) {
+            // Scene 3: Logo
+            await this.loadModel('logo.glb', 'scene3_logo');
+          }
+
+          // Set camera with animation (except for FPS mode)
+          if (!(sceneIndex === 2 && subSceneIndex === 6)) {
+            const config = cameraConfigs[sceneIndex];
+            this.animateCamera(config.pos, config.target);
+          }
+
+        } catch (error) {
+          console.error('Error loading scene:', error);
+        }
+      }
+
+      async loadModel(filename, layer) {
+        return new Promise((resolve, reject) => {
+          this.gltfLoader.load(
+            this.BASE_URL + filename,
+            (gltf) => {
+              const model = gltf.scene;
+              
+              // Process model
+              model.traverse((child) => {
+                if (child.isMesh) {
+                  child.castShadow = true;
+                  child.receiveShadow = true;
+                  
+                  if (child.material) {
+                    if (child.material.map) {
+                      child.material.map.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+                    }
+                    // Handle transparency
+                    if (filename === 'dimensions.glb' && child.material.alphaMap) {
+                      child.material.transparent = true;
+                      child.material.alphaTest = 0.1;
+                    }
+                  }
+                }
+              });
+              
+              // Store by layer name for proper cleanup
+              this.models[layer] = model;
+              this.scene.add(model);
+              resolve(model);
+            },
+            undefined,
+            (error) => {
+              console.warn(`Failed to load ${filename}`);
+              resolve(null);
+            }
+          );
+        });
+      }
+
+      clearScene() {
+        console.log('Clearing scene - Models:', Object.keys(this.models).length, 'Hotspots:', this.hotspots.length);
+        
+        // Remove ALL models - more aggressive
+        Object.keys(this.models).forEach(key => {
+          const model = this.models[key];
+          if (model && model.parent) {
+            model.parent.remove(model);
+            // Deep dispose
+            model.traverse((child) => {
+              if (child.isMesh) {
+                if (child.geometry) {
+                  child.geometry.dispose();
+                }
+                if (child.material) {
+                  if (Array.isArray(child.material)) {
+                    child.material.forEach(mat => {
+                      Object.keys(mat).forEach(prop => {
+                        if (mat[prop] && mat[prop].isTexture) {
+                          mat[prop].dispose();
+                        }
+                      });
+                      mat.dispose();
+                    });
+                  } else {
+                    Object.keys(child.material).forEach(prop => {
+                      if (child.material[prop] && child.material[prop].isTexture) {
+                        child.material[prop].dispose();
+                      }
+                    });
+                    child.material.dispose();
+                  }
+                }
+              }
+            });
+          }
+        });
+        this.models = {}; // Clear reference
+
+        // Remove ALL hotspots
+        this.hotspots.forEach(hotspot => {
+          if (hotspot.parent) {
+            hotspot.parent.remove(hotspot);
+          }
+          if (hotspot.geometry) hotspot.geometry.dispose();
+          if (hotspot.material) {
+            if (hotspot.material.map) hotspot.material.map.dispose();
+            hotspot.material.dispose();
+          }
+        });
+        this.hotspots = [];
+
+        // Remove ALL furniture
+        Object.keys(this.furnitureModels).forEach(key => {
+          const model = this.furnitureModels[key];
+          if (model && model.parent) {
+            model.parent.remove(model);
+            model.traverse((child) => {
+              if (child.geometry) child.geometry.dispose();
+              if (child.material) {
+                if (Array.isArray(child.material)) {
+                  child.material.forEach(mat => mat.dispose());
+                } else {
+                  child.material.dispose();
+                }
+              }
+            });
+          }
+        });
+        this.furnitureModels = {};
+
+        // Remove any other meshes that might be lingering
+        const toRemove = [];
+        this.scene.traverse((child) => {
+          if (child.isMesh || child.isGroup) {
+            // Don't remove lights
+            if (!child.isLight) {
+              toRemove.push(child);
+            }
+          }
+        });
+        
+        toRemove.forEach(obj => {
+          if (obj.parent) {
+            obj.parent.remove(obj);
+          }
+        });
+
+        // Hide furniture menu
+        document.getElementById('furniture-menu').style.display = 'none';
+
+        // Exit FPS if active
+        if (this.isFPS) {
+          this.pointerControls.unlock();
+        }
+        
+        console.log('Scene cleared');
+      }
+
+      createHotspots(hotspotData) {
+        // Load pin texture
+        this.textureLoader.load(
+          this.BASE_URL + 'pin.png',
+          (texture) => {
+            hotspotData.forEach(data => {
+              const spriteMaterial = new THREE.SpriteMaterial({
+                map: texture,
+                sizeAttenuation: false
+              });
+              
+              const sprite = new THREE.Sprite(spriteMaterial);
+              sprite.position.set(...data.pos);
+              sprite.scale.set(0.05, 0.05, 1); // Small size
+              sprite.userData = data;
+              
+              this.scene.add(sprite);
+              this.hotspots.push(sprite);
+            });
+          },
+          undefined,
+          () => {
+            // Fallback spheres if texture fails
+            hotspotData.forEach(data => {
+              const geometry = new THREE.SphereGeometry(0.5, 8, 8);
+              const material = new THREE.MeshStandardMaterial({ 
+                color: 0xff0000,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.3
+              });
+              
+              const mesh = new THREE.Mesh(geometry, material);
+              mesh.position.set(...data.pos);
+              mesh.userData = data;
+              
+              this.scene.add(mesh);
+              this.hotspots.push(mesh);
+            });
+          }
+        );
+      }
+
+      animateCamera(targetPos, targetLookAt) {
+        const startPos = this.camera.position.clone();
+        const endPos = new THREE.Vector3(...targetPos);
+        const startTarget = this.orbitControls.target.clone();
+        const endTarget = new THREE.Vector3(targetLookAt.x || 0, targetLookAt.y || 0, targetLookAt.z || 0);
+        
+        const duration = 2000;
+        const startTime = Date.now();
+        
+        const animate = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          
+          this.camera.position.lerpVectors(startPos, endPos, eased);
+          this.orbitControls.target.lerpVectors(startTarget, endTarget, eased);
+          this.orbitControls.update();
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          }
+        };
+        
+        animate();
+      }
+
+      updateFPS(delta) {
+        if (!this.isFPS) return;
+
+        // Fixed time step for physics
+        const fixedTimeStep = 1/60;
+        const speed = 8;
+        
+        // Get camera direction
+        const forward = new THREE.Vector3();
+        this.camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+        
+        const right = new THREE.Vector3();
+        right.crossVectors(forward, new THREE.Vector3(0, 1, 0));
+        right.normalize();
+        
+        // Calculate movement
+        let moveX = 0;
+        let moveZ = 0;
+        
+        if (this.movement.forward) {
+          moveX += forward.x;
+          moveZ += forward.z;
+        }
+        if (this.movement.backward) {
+          moveX -= forward.x;
+          moveZ -= forward.z;
+        }
+        if (this.movement.left) {
+          moveX -= right.x;
+          moveZ -= right.z;
+        }
+        if (this.movement.right) {
+          moveX += right.x;
+          moveZ += right.z;
+        }
+        
+        // Normalize diagonal movement
+        if (moveX !== 0 || moveZ !== 0) {
+          const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+          moveX = (moveX / length) * speed;
+          moveZ = (moveZ / length) * speed;
+        }
+        
+        // Apply velocity
+        this.playerBody.velocity.x = moveX;
+        this.playerBody.velocity.z = moveZ;
+        
+        // Update physics world
+        this.world.step(fixedTimeStep, delta, 3);
+        
+        // Update camera position from player body
+        this.camera.position.x = this.playerBody.position.x;
+        this.camera.position.y = this.playerBody.position.y + 1.6; // Eye height
+        this.camera.position.z = this.playerBody.position.z;
+        
+        // Keep player from falling through floor
+        if (this.playerBody.position.y < this.BUILDING_CENTER.y + 1) {
+          this.playerBody.position.y = this.BUILDING_CENTER.y + 1;
+          this.playerBody.velocity.y = 0;
+        }
+      }
+
+      exitFPS() {
+        this.pointerControls.unlock();
+        document.body.style.cursor = 'auto';
+        
+        // Reset camera to scene 2 view
+        const pos = [
+          this.BUILDING_CENTER.x + 20, 
+          this.BUILDING_CENTER.y + 25, 
+          this.BUILDING_CENTER.z + 20
+        ];
+        this.animateCamera(pos, this.BUILDING_CENTER);
+      }
+
+      updateFurniture(room, version) {
+        // Remove existing furniture for this room
+        if (this.furnitureModels[room]) {
+          this.scene.remove(this.furnitureModels[room]);
+          this.furnitureModels[room].traverse((child) => {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+              if (Array.isArray(child.material)) {
+                child.material.forEach(mat => mat.dispose());
+              } else {
+                child.material.dispose();
+              }
+            }
+          });
+          delete this.furnitureModels[room];
+        }
+
+        if (!version) return;
+
+        // Load new furniture
+        const filename = `${room}_f${version}.glb`;
+        this.gltfLoader.load(
+          this.BASE_URL + filename,
+          (gltf) => {
+            const model = gltf.scene;
+            model.traverse((child) => {
+              if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+              }
+            });
+            
+            this.furnitureModels[room] = model;
+            this.scene.add(model);
+          },
+          undefined,
+          (error) => {
+            console.warn(`Failed to load furniture: ${filename}`);
+          }
+        );
+      }
+
+      showHotspotInfo(info, x, y) {
+        const infoDiv = document.getElementById('hotspot-info');
+        infoDiv.textContent = info;
+        infoDiv.style.left = x + 10 + 'px';
+        infoDiv.style.top = y + 10 + 'px';
+        infoDiv.style.display = 'block';
+        
+        setTimeout(() => {
+          infoDiv.style.display = 'none';
+        }, 3000);
+      }
+
+      nextScene() {
+        const maxSubScenes = [5, 5, 7, 1];
+        
+        if (this.currentSubScene < maxSubScenes[this.currentScene] - 1) {
+          this.loadScene(this.currentScene, this.currentSubScene + 1);
+        } else if (this.currentScene < 3) {
+          this.loadScene(this.currentScene + 1, 0);
+        }
+      }
+
+      previousScene() {
+        if (this.currentSubScene > 0) {
+          this.loadScene(this.currentScene, this.currentSubScene - 1);
+        } else if (this.currentScene > 0) {
+          const maxSubScenes = [5, 5, 7, 1];
+          this.loadScene(this.currentScene - 1, maxSubScenes[this.currentScene - 1] - 1);
+        }
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+
+        const delta = this.clock.getDelta();
+
+        // Update FPS movement
+        this.updateFPS(delta);
+
+        // Update controls
+        if (this.orbitControls.enabled) {
+          this.orbitControls.update();
+        }
+
+        // Update hotspots to face camera
+        this.hotspots.forEach(hotspot => {
+          if (!hotspot.isSprite) {
+            hotspot.lookAt(this.camera.position);
+          }
+        });
+
+        // Update stats
+        const fps = Math.round(1 / delta);
+        document.getElementById('fps').textContent = fps;
+        
+        // FPS debug info
+        if (this.isFPS) {
+          document.getElementById('fps-debug').style.display = 'block';
+          document.getElementById('fps-mode').textContent = 'ON';
+          document.getElementById('player-pos').textContent = 
+            `${this.playerBody.position.x.toFixed(1)}, ${this.playerBody.position.y.toFixed(1)}, ${this.playerBody.position.z.toFixed(1)}`;
+          
+          const moveStates = [];
+          if (this.movement.forward) moveStates.push('W');
+          if (this.movement.backward) moveStates.push('S');
+          if (this.movement.left) moveStates.push('A');
+          if (this.movement.right) moveStates.push('D');
+          document.getElementById('move-state').textContent = moveStates.length > 0 ? moveStates.join('+') : '-';
+        } else {
+          document.getElementById('fps-debug').style.display = 'none';
+        }
+
+        // Render
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    // Start app
+    const app = new RealEstateApp();
+    window.app = app;
+  </script>
+</body>
+</html>
