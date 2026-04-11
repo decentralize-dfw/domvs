@@ -1,0 +1,578 @@
+/* =========================================================
+   DEMO2 — SHARED STYLESHEET
+   Each demo2-sceneN.html file imports this file.
+   All visual information (colors, layout, typography, panels,
+   buttons, joystick zones, overlays) lives here.
+   ========================================================= */
+
+:root {
+    --fg: #fff;
+    --bg: #000;
+    --muted: #9aa0a6;
+    --accent: #e5e5e5;
+    --gold: #c9a96e;
+    --panel: rgba(0, 0, 0, .55);
+    --panelBlur: 8px;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    color: var(--fg);
+    background: var(--bg);
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    cursor: pointer;
+}
+
+canvas {
+    display: block;
+}
+
+.panel {
+    position: fixed;
+    backdrop-filter: blur(var(--panelBlur));
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+    z-index: 10;
+}
+
+/* --- LOADING SCREEN --- */
+#loading {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.92);
+    color: white;
+    z-index: 1000;
+    gap: 12px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    transition: opacity 0.5s ease;
+}
+#loading.fading {
+    opacity: 0;
+    pointer-events: none;
+}
+#loading .loading-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+}
+#loading .loading-subtitle {
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 28px;
+}
+#loading .loading-bar-track {
+    width: 280px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    overflow: hidden;
+}
+#loadingProgressBar {
+    width: 30%;
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    animation: loadingPulse 1.8s ease-in-out infinite;
+}
+@keyframes loadingPulse {
+    0%   { width: 15%; }
+    50%  { width: 75%; }
+    100% { width: 15%; }
+}
+#loading .loading-tagline {
+    margin-top: 16px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 0.12em;
+}
+#loading img { display: none; }
+
+#sceneLoadingIndicator {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.65);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 12px 28px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    z-index: 1001;
+    display: none;
+}
+
+#backgroundImg {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(1);
+    z-index: 5;
+    display: block;
+}
+
+#instructions {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 24px 36px;
+    z-index: 15;
+    pointer-events: none;
+    display: block;
+    backdrop-filter: blur(12px);
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+#instructions h1 {
+    margin: 0 0 6px 0;
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'Playfair Display', Georgia, serif;
+    letter-spacing: 0.03em;
+    color: #fff;
+}
+#instructions p {
+    margin: 0;
+    font-size: 13px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.55);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+#initiating {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 20px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 500;
+    text-align: center;
+}
+
+#ended {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 22px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    letter-spacing: 0.1em;
+    z-index: 500;
+    text-align: center;
+    gap: 20px;
+}
+
+/* --- DESCRIPTION PILL (bottom center) --- */
+#description {
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    text-align: center;
+    padding: 10px 15px;
+    backdrop-filter: blur(var(--panelBlur));
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+    z-index: 10;
+    color: #fff;
+    font-size: 16px;
+    display: none;
+}
+
+#hoverText {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    padding: 6px 16px;
+    border-radius: 20px;
+    pointer-events: none;
+    font-size: 13px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    letter-spacing: 0.05em;
+    z-index: 20;
+    display: none;
+    white-space: nowrap;
+}
+
+/* --- SIDE HTML PANELS --- */
+#leftHtmlPanel,
+#rightHtmlPanel {
+    position: fixed;
+    width: 200px;
+    top: 80px;
+    bottom: 120px;
+    overflow-y: auto;
+    backdrop-filter: blur(var(--panelBlur));
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+    z-index: 10;
+    padding: 15px;
+    box-sizing: border-box;
+    color: #fff;
+    font-size: 14px;
+    display: none;
+}
+#leftHtmlPanel iframe,
+#rightHtmlPanel iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+}
+#leftHtmlPanel h3,
+#rightHtmlPanel h3 {
+    margin-top: 0;
+    color: #fff;
+}
+#leftHtmlPanel p,
+#rightHtmlPanel p {
+    color: var(--accent);
+    font-size: 13px;
+}
+#leftHtmlPanel  { left: 10px; right: auto; }
+#rightHtmlPanel { right: 10px; left: auto; }
+#leftHtmlPanel::-webkit-scrollbar,
+#rightHtmlPanel::-webkit-scrollbar { width: 3px; }
+#leftHtmlPanel::-webkit-scrollbar-thumb,
+#rightHtmlPanel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 3px;
+}
+#leftHtmlPanel::-webkit-scrollbar-track,
+#rightHtmlPanel::-webkit-scrollbar-track { background: transparent; }
+
+/* --- FLOATING INFO PANELS --- */
+#projectInfoPanel,
+#studioInfoPanel,
+#hintPanel,
+#creatorsNotePanel {
+    font-style: normal;
+    position: fixed;
+    top: 70px;
+    right: 10px;
+    width: 375px;
+    height: 750px;
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, .55);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+    z-index: 20;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: left;
+    display: none;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+#projectInfoPanel::-webkit-scrollbar,
+#studioInfoPanel::-webkit-scrollbar,
+#hintPanel::-webkit-scrollbar,
+#creatorsNotePanel::-webkit-scrollbar {
+    width: 1px;
+    background: transparent;
+}
+#projectInfoPanel::-webkit-scrollbar-thumb,
+#studioInfoPanel::-webkit-scrollbar-thumb,
+#hintPanel::-webkit-scrollbar-thumb,
+#creatorsNotePanel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 0.5px;
+}
+#projectInfoPanel::-webkit-scrollbar-track,
+#studioInfoPanel::-webkit-scrollbar-track,
+#hintPanel::-webkit-scrollbar-track,
+#creatorsNotePanel::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 5px 0;
+}
+#closeButton,
+#studioCloseButton,
+#hintCloseButton,
+#creatorsCloseButton {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 20px;
+    cursor: pointer;
+}
+#projectInfoPanel p,
+#studioInfoPanel p,
+#hintPanel p,
+#creatorsNotePanel p {
+    margin: 10px 0;
+    text-align: justify;
+    text-align-last: left;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+}
+#projectInfoPanel i,
+#studioInfoPanel i,
+#hintPanel i,
+#creatorsNotePanel i {
+    font-size: 11px !important;
+    font-weight: 400;
+    line-height: 1.4;
+    font-style: italic;
+    text-align: justify;
+    text-align-last: left;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+}
+#projectInfoPanel i strong,
+#studioInfoPanel i strong,
+#hintPanel i strong,
+#creatorsNotePanel i strong {
+    font-size: 13px !important;
+    font-weight: 700;
+    display: inline-block;
+    margin-bottom: 12px;
+}
+#projectInfoPanel a,
+#studioInfoPanel a,
+#hintPanel a,
+#creatorsNotePanel a {
+    color: #b1c2fa;
+    text-decoration: underline;
+}
+
+.selected {
+    background: rgba(255, 255, 255, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* --- SCENE TRANSITION OVERLAY --- */
+#sceneTransitionOverlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 800;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+#sceneTransitionOverlay.visible { opacity: 1; }
+
+/* --- BUTTON ANIMATIONS --- */
+@keyframes slideInDown {
+    from { transform: translateY(-60px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
+}
+@keyframes slideInRight {
+    from { transform: translateX(120px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+}
+.btn-slide-in { animation: slideInRight 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
+    #leftHtmlPanel,
+    #rightHtmlPanel {
+        width: calc(45vw - 20px);
+        font-size: 12px;
+        padding: 10px;
+    }
+    #description {
+        width: 85vw;
+        bottom: 30px;
+    }
+}
+@media (max-width: 600px) {
+    #leftHtmlPanel,
+    #rightHtmlPanel {
+        width: calc(44vw - 10px);
+        font-size: 11px;
+        padding: 8px;
+        bottom: 160px;
+    }
+    #leftHtmlPanel h3,
+    #rightHtmlPanel h3 {
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+    #description {
+        width: 92vw;
+        font-size: 13px;
+    }
+    #fullscreenButton { display: none !important; }
+}
+
+/* --- MOBILE JOYSTICK --- */
+.joystick-zone {
+    position: fixed;
+    bottom: 30px;
+    width: 120px;
+    height: 120px;
+    border-radius: 60px;
+    z-index: 50;
+    display: none;
+    opacity: 0.45;
+    touch-action: none;
+}
+#joystickLeft  { left: 20px;  }
+#joystickRight { right: 20px; }
+.joystick-zone .nipple .front { background: rgba(255, 255, 255, 0.8) !important; }
+.joystick-zone .nipple .back  { background: rgba(255, 255, 255, 0.25) !important; }
+
+/* --- INFO FABs (right side) --- */
+.fab-info-btn {
+    position: fixed !important;
+    right: 16px !important;
+    top: auto !important;
+    width: 44px;
+    height: 44px;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.62) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    cursor: pointer;
+    color: #fff !important;
+    transition: background 0.2s ease, transform 0.15s ease;
+    z-index: 10 !important;
+}
+.fab-info-btn:hover {
+    background: rgba(201, 169, 110, 0.75) !important;
+    transform: scale(1.08);
+}
+#hintButton         { bottom: 20px;  }
+#creatorsNoteButton { bottom: 72px;  }
+#studioInfoButton   { bottom: 124px; }
+#projectInfoButton  { bottom: 176px; }
+#fullscreenButton {
+    position: fixed !important;
+    right: 16px !important;
+    top: 16px !important;
+    bottom: auto !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 12px !important;
+    padding: 8px 14px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+/* --- RESTART BUTTON --- */
+#endedRestartBtn {
+    margin-top: 24px;
+    padding: 12px 32px;
+    background: var(--gold);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: transform 0.2s ease;
+}
+#endedRestartBtn:hover { transform: scale(1.05); }
+
+/* --- START / TOGGLE BUTTON PRESETS --- */
+.vea-start-btn {
+    position: fixed;
+    left: 16px;
+    bottom: 20px;
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, .55);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .4);
+    z-index: 10;
+    padding: 10px 20px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+}
+.vea-model-label {
+    position: fixed;
+    left: 16px;
+    top: 16px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 10px;
+    font-weight: 500;
+    text-align: left;
+    margin: 0;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+.vea-model-toggle {
+    position: fixed;
+    top: 34px;
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, .55);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 8px;
+    z-index: 10;
+    padding: 6px 12px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 0;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    cursor: pointer;
+}
+#modelToggleBtn1 { left: 16px;  }
+#modelToggleBtn2 { left: 72px;  }
+#modelToggleBtn3 { left: 128px; }
+#modelToggleBtn4 { left: 184px; }
+#modelToggleBtn5 { left: 240px; }
+#modelToggleBtn6 { left: 296px; }

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA Demo 2 — Kasetçalar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deck-bg: linear-gradient(180deg, #2a2a2e 0%, #131316 100%);
+            --deck-metal: linear-gradient(180deg, #4a4a50 0%, #25252a 50%, #1a1a1e 100%);
+            --deck-chrome: linear-gradient(180deg, #e8e8ec 0%, #a0a0a8 50%, #60606a 100%);
+            --lcd-green: #9aff9a;
+            --lcd-bg: #0b1f0b;
+            --gold: #c9a96e;
+            --accent-red: #ff3030;
+        }
+
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #000;
+            color: #fff;
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* ===== DECK HEADER ===== */
+        #deck {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 110px;
+            background: var(--deck-bg);
+            border-bottom: 2px solid #000;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6),
+                        inset 0 -2px 0 rgba(255, 255, 255, 0.04);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 10px 24px;
+            gap: 20px;
+            user-select: none;
+        }
+
+        /* Chrome top-edge highlight */
+        #deck::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+        }
+
+        /* Brand / logo block */
+        .deck-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 140px;
+        }
+        .deck-brand .name {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--gold);
+            line-height: 1;
+        }
+        .deck-brand .model {
+            font-size: 9px;
+            letter-spacing: 0.3em;
+            color: rgba(255,255,255,0.45);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+        .deck-brand .model strong { color: #fff; }
+
+        /* Reels */
+        .reels {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .reel {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 50%,
+                        #1a1a1e 0 18%,
+                        #2a2a2e 18% 22%,
+                        #111 22% 28%,
+                        #1c1c20 28% 100%);
+            position: relative;
+            border: 2px solid #0a0a0a;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.9),
+                        0 2px 6px rgba(0, 0, 0, 0.5);
+            animation: none;
+        }
+        .reel::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border-radius: 50%;
+            background:
+                conic-gradient(
+                    from 0deg,
+                    #2c2c30 0deg 30deg,
+                    #141418 30deg 60deg,
+                    #2c2c30 60deg 90deg,
+                    #141418 90deg 120deg,
+                    #2c2c30 120deg 150deg,
+                    #141418 150deg 180deg,
+                    #2c2c30 180deg 210deg,
+                    #141418 210deg 240deg,
+                    #2c2c30 240deg 270deg,
+                    #141418 270deg 300deg,
+                    #2c2c30 300deg 330deg,
+                    #141418 330deg 360deg);
+            border: 1px solid #000;
+        }
+        .reel::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #555 0%, #222 60%, #000 100%);
+            border: 1px solid #000;
+            z-index: 2;
+        }
+        .reel.spinning { animation: reelSpin 2.6s linear infinite; }
+        .reel.spinning::before { animation: reelSpin 2.6s linear infinite; }
+        @keyframes reelSpin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        /* LCD display */
+        .lcd {
+            flex: 1;
+            min-width: 220px;
+            background: var(--lcd-bg);
+            border: 2px solid #000;
+            border-radius: 4px;
+            padding: 10px 16px;
+            box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.85),
+                        inset 0 0 30px rgba(0, 60, 0, 0.3),
+                        0 0 0 1px rgba(255, 255, 255, 0.08);
+            font-family: 'VT323', monospace;
+            color: var(--lcd-green);
+            text-shadow: 0 0 6px rgba(154, 255, 154, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+        .lcd::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0) 0px,
+                rgba(0, 0, 0, 0) 2px,
+                rgba(0, 0, 0, 0.25) 2px,
+                rgba(0, 0, 0, 0.25) 3px
+            );
+            pointer-events: none;
+        }
+        .lcd-line1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 18px;
+            letter-spacing: 0.1em;
+            position: relative;
+        }
+        .lcd-line1 .track-num {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .lcd-line1 .track-total {
+            font-size: 14px;
+            opacity: 0.75;
+        }
+        .lcd-line1 .mode {
+            font-size: 14px;
+            letter-spacing: 0.2em;
+        }
+        .lcd-line2 {
+            margin-top: 4px;
+            font-size: 20px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+        }
+        .lcd-led {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            box-shadow: 0 0 6px var(--accent-red);
+            margin-right: 8px;
+            vertical-align: middle;
+            animation: ledBlink 1.2s ease-in-out infinite;
+        }
+        .lcd-led.off {
+            background: #300;
+            box-shadow: none;
+            animation: none;
+        }
+        @keyframes ledBlink {
+            0%, 100% { opacity: 1;   }
+            50%      { opacity: 0.3; }
+        }
+
+        /* Transport buttons */
+        .transport {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .btn {
+            width: 56px;
+            height: 46px;
+            background: var(--deck-metal);
+            border: 1px solid #000;
+            border-radius: 4px;
+            color: #e8e8ec;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.5),
+                0 2px 4px rgba(0, 0, 0, 0.6);
+            transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s ease;
+            font-family: 'Raleway', sans-serif;
+            letter-spacing: 0.05em;
+        }
+        .btn:hover {
+            background: linear-gradient(180deg, #5a5a62 0%, #2e2e34 50%, #202024 100%);
+        }
+        .btn:active,
+        .btn.pressed {
+            transform: translateY(1px);
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.6),
+                0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        .btn .label {
+            font-size: 9px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 2px;
+        }
+        .btn .icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+        .btn-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+        .btn.play      { background: linear-gradient(180deg, #4a5a3a 0%, #253020 50%, #151a10 100%); }
+        .btn.play .icon{ color: #9aff9a; }
+        .btn.play.active {
+            background: linear-gradient(180deg, #6ea050 0%, #325024 50%, #1a2a10 100%);
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.6),
+                0 0 12px rgba(154, 255, 154, 0.25);
+        }
+        .btn.stop .icon { color: #ff7070; }
+
+        /* ===== TAPE VIEWPORT (iframe region) ===== */
+        #tape-viewport {
+            position: fixed;
+            top: 110px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            overflow: hidden;
+        }
+        #tape-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background: #000;
+        }
+
+        /* Overlay when stopped */
+        #stop-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, #0a0a0a 0%, #000 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-family: 'VT323', monospace;
+            z-index: 2;
+            gap: 16px;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+        #stop-overlay.hidden { opacity: 0; pointer-events: none; }
+        #stop-overlay .big {
+            font-size: 64px;
+            color: var(--lcd-green);
+            text-shadow: 0 0 20px rgba(154, 255, 154, 0.6);
+            letter-spacing: 0.1em;
+        }
+        #stop-overlay .sub {
+            font-size: 16px;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            opacity: 0.5;
+        }
+
+        /* Transition flash */
+        #flash {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+            z-index: 3;
+        }
+        #flash.visible { opacity: 1; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            #deck {
+                height: auto;
+                flex-wrap: wrap;
+                padding: 8px 10px;
+                gap: 8px;
+            }
+            .deck-brand { min-width: 0; }
+            .deck-brand .name { font-size: 18px; }
+            .reels { order: 3; }
+            .reel { width: 46px; height: 46px; }
+            .lcd { flex: 1 1 100%; order: 2; padding: 6px 10px; }
+            .lcd-line1 { font-size: 14px; }
+            .lcd-line1 .track-num { font-size: 20px; }
+            .lcd-line2 { font-size: 15px; }
+            .transport { order: 4; flex-wrap: wrap; }
+            .btn { width: 44px; height: 38px; }
+            #tape-viewport { top: auto; inset: 0; padding-top: 0; }
+        }
+        @media (max-width: 900px) {
+            body { padding-top: 0; }
+            #tape-viewport { top: 180px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== CASSETTE DECK HEADER ===== -->
+    <div id="deck">
+        <div class="deck-brand">
+            <div class="name">VEA</div>
+            <div class="model"><strong>DEMO · 2</strong> kasetçalar</div>
+        </div>
+
+        <div class="reels">
+            <div class="reel" id="reelLeft"></div>
+            <div class="reel" id="reelRight"></div>
+        </div>
+
+        <div class="lcd">
+            <div class="lcd-line1">
+                <span><span class="track-num" id="trackNum">01</span><span class="track-total" id="trackTotal">/06</span></span>
+                <span class="mode" id="lcdMode">STOP</span>
+            </div>
+            <div class="lcd-line2">
+                <span class="lcd-led off" id="lcdLed"></span><span id="lcdTitle">INSERT TAPE…</span>
+            </div>
+        </div>
+
+        <div class="transport">
+            <button class="btn" id="btnRew" title="Rewind">
+                <div class="btn-stack">
+                    <span class="icon">◂◂</span>
+                    <span class="label">Rew</span>
+                </div>
+            </button>
+            <button class="btn" id="btnPrev" title="Previous">
+                <div class="btn-stack">
+                    <span class="icon">◂◂|</span>
+                    <span class="label">Prev</span>
+                </div>
+            </button>
+            <button class="btn stop" id="btnStop" title="Stop">
+                <div class="btn-stack">
+                    <span class="icon">■</span>
+                    <span class="label">Stop</span>
+                </div>
+            </button>
+            <button class="btn play" id="btnPlay" title="Play">
+                <div class="btn-stack">
+                    <span class="icon">▶</span>
+                    <span class="label">Play</span>
+                </div>
+            </button>
+            <button class="btn" id="btnNext" title="Next">
+                <div class="btn-stack">
+                    <span class="icon">|▸▸</span>
+                    <span class="label">Next</span>
+                </div>
+            </button>
+            <button class="btn" id="btnFF" title="Fast Forward">
+                <div class="btn-stack">
+                    <span class="icon">▸▸</span>
+                    <span class="label">FF</span>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== TAPE VIEWPORT ===== -->
+    <div id="tape-viewport">
+        <iframe id="tape-frame" title="Current Scene" allow="fullscreen; xr-spatial-tracking"></iframe>
+        <div id="stop-overlay">
+            <div class="big">■ STOPPED</div>
+            <div class="sub">Press ▶ to play tape</div>
+        </div>
+        <div id="flash"></div>
+    </div>
+
+    <script>
+        /* ============================================================
+           VEA DEMO 2 — Kasetçalar (Cassette Player)
+           Plays each demo2-sceneN.html in sequence.
+           ============================================================ */
+
+        const TRACKS = [
+            { file: 'demo2-scene0.html', title: 'PRE-START · COVER'      },
+            { file: 'demo2-scene1.html', title: 'CONCEPTUAL TOGGLES'     },
+            { file: 'demo2-scene2.html', title: 'FACADE OPTIONS'         },
+            { file: 'demo2-scene3.html', title: '360° ORBIT'             },
+            { file: 'demo2-scene4.html', title: 'INTERIOR CAMERAS'       },
+            { file: 'demo2-scene5.html', title: 'WALK-THRU'              }
+        ];
+
+        let currentTrack = 0;
+        let isPlaying    = false;
+
+        // DOM
+        const frame       = document.getElementById('tape-frame');
+        const reelLeft    = document.getElementById('reelLeft');
+        const reelRight   = document.getElementById('reelRight');
+        const trackNum    = document.getElementById('trackNum');
+        const trackTotal  = document.getElementById('trackTotal');
+        const lcdMode     = document.getElementById('lcdMode');
+        const lcdTitle    = document.getElementById('lcdTitle');
+        const lcdLed      = document.getElementById('lcdLed');
+        const stopOverlay = document.getElementById('stop-overlay');
+        const flash       = document.getElementById('flash');
+
+        const btnPlay = document.getElementById('btnPlay');
+        const btnStop = document.getElementById('btnStop');
+        const btnNext = document.getElementById('btnNext');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnFF   = document.getElementById('btnFF');
+        const btnRew  = document.getElementById('btnRew');
+
+        // --- Helpers ---
+        function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+        function updateLcd() {
+            trackNum.textContent   = pad2(currentTrack + 1);
+            trackTotal.textContent = '/' + pad2(TRACKS.length);
+            lcdTitle.textContent   = TRACKS[currentTrack].title;
+            lcdMode.textContent    = isPlaying ? 'PLAY ▶' : 'STOP';
+            lcdLed.classList.toggle('off', !isPlaying);
+            reelLeft.classList.toggle('spinning',  isPlaying);
+            reelRight.classList.toggle('spinning', isPlaying);
+            btnPlay.classList.toggle('active', isPlaying);
+            stopOverlay.classList.toggle('hidden', isPlaying);
+        }
+
+        function loadCurrentTrack() {
+            // Tape flash transition
+            flash.classList.add('visible');
+            setTimeout(() => {
+                frame.src = TRACKS[currentTrack].file;
+                setTimeout(() => flash.classList.remove('visible'), 200);
+            }, 320);
+        }
+
+        function play() {
+            if (isPlaying) return;
+            isPlaying = true;
+            loadCurrentTrack();
+            updateLcd();
+        }
+
+        function stop() {
+            isPlaying = false;
+            frame.src = 'about:blank';
+            updateLcd();
+        }
+
+        function nextTrack() {
+            currentTrack = (currentTrack + 1) % TRACKS.length;
+            if (isPlaying) {
+                loadCurrentTrack();
+            }
+            updateLcd();
+        }
+
+        function prevTrack() {
+            currentTrack = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
+            if (isPlaying) {
+                loadCurrentTrack();
+            }
+            updateLcd();
+        }
+
+        function rewindAll() {
+            currentTrack = 0;
+            if (isPlaying) {
+                loadCurrentTrack();
+            }
+            updateLcd();
+        }
+
+        function fastForwardAll() {
+            currentTrack = TRACKS.length - 1;
+            if (isPlaying) {
+                loadCurrentTrack();
+            }
+            updateLcd();
+        }
+
+        // --- Button wiring ---
+        function bindPress(btn, handler) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                btn.classList.add('pressed');
+                setTimeout(() => btn.classList.remove('pressed'), 140);
+                handler();
+            });
+        }
+
+        bindPress(btnPlay, play);
+        bindPress(btnStop, stop);
+        bindPress(btnNext, nextTrack);
+        bindPress(btnPrev, prevTrack);
+        bindPress(btnRew,  rewindAll);
+        bindPress(btnFF,   fastForwardAll);
+
+        // Keyboard shortcuts: arrows, space
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'IFRAME') return;
+            switch (e.code) {
+                case 'Space':      e.preventDefault(); isPlaying ? stop() : play(); break;
+                case 'ArrowRight': nextTrack(); break;
+                case 'ArrowLeft':  prevTrack(); break;
+                case 'Home':       rewindAll(); break;
+                case 'End':        fastForwardAll(); break;
+            }
+        });
+
+        // Initial state
+        updateLcd();
+    </script>
+</body>
+</html>

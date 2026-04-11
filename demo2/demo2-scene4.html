@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA Demo2 — Scene 4 · Interior Cameras</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="demo2-style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="loading">
+        <div class="loading-title">VEA</div>
+        <div class="loading-subtitle">Real Estate Experience · Scene 4</div>
+        <div class="loading-bar-track"><div id="loadingProgressBar"></div></div>
+        <div class="loading-tagline">İç Mekan Turu</div>
+    </div>
+
+    <img id="backgroundImg" src="https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg">
+    <div id="sceneLoadingIndicator">Sahne Yükleniyor…</div>
+
+    <div id="sceneTransitionOverlay"></div>
+
+    <p id="modelLabel" class="vea-model-label">Oda</p>
+    <button id="modelToggleBtn1" class="vea-model-toggle">Salon</button>
+    <button id="modelToggleBtn2" class="vea-model-toggle">Mutfak</button>
+    <button id="modelToggleBtn3" class="vea-model-toggle">Yatak 1</button>
+    <button id="modelToggleBtn4" class="vea-model-toggle">WC 1</button>
+    <button id="modelToggleBtn5" class="vea-model-toggle">Yatak 2</button>
+    <button id="modelToggleBtn6" class="vea-model-toggle">WC 2</button>
+
+    <div id="leftHtmlPanel"></div>
+    <div id="rightHtmlPanel"></div>
+    <div id="description"></div>
+
+    <button id="fullscreenButton" class="fab-info-btn" title="Tam Ekran">⛶</button>
+
+    <div id="htmlContentStore" style="display:none;">
+        <div id="html_scene4_cam1_left">
+            <h3>🛋️ Salon</h3>
+            <p><strong>Alan:</strong> 32 m²</p>
+            <p><strong>Zemin:</strong> Geniş Format Seramik</p>
+            <p><strong>Tavan Yüksekliği:</strong> 2.85m</p>
+            <p><strong>Pencere Yönü:</strong> Güney-Batı</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">☀️ Günün 7 saati doğal ışık</p>
+        </div>
+        <div id="html_scene4_cam1_right">
+            <h3>Salon Aksesuarları</h3>
+            <p>🪑 Koltuk Takımı: Poliform</p>
+            <p>💡 Avize: Tom Dixon</p>
+            <p>🖼️ TV Ünitesi: Custom MDF</p>
+            <p>🪟 Stor Perde: Somfy Motorlu</p>
+        </div>
+        <div id="html_scene4_cam2_left">
+            <h3>🍳 Mutfak</h3>
+            <p><strong>Alan:</strong> 16 m²</p>
+            <p><strong>Tezgah:</strong> Silestone Quartz</p>
+            <p><strong>Dolap:</strong> Lake Boyalı MDF</p>
+            <p><strong>Zemin:</strong> Antrasit Seramik</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">✅ Ankastre cihazlar dahil</p>
+        </div>
+        <div id="html_scene4_cam2_right">
+            <h3>Mutfak Ekipmanları</h3>
+            <p>🔧 Davlumbaz: Bosch Series 6</p>
+            <p>🔧 Fırın: Siemens iQ700</p>
+            <p>🔧 Bulaşık Makinesi: Miele G7000</p>
+            <p>🔧 Buzdolabı: Samsung French Door</p>
+        </div>
+        <div id="html_scene4_cam3_left">
+            <h3>🛏️ Yatak Odası 1</h3>
+            <p><strong>Alan:</strong> 18 m²</p>
+            <p><strong>Zemin:</strong> Meşe Laminat Parke</p>
+            <p><strong>Pencere:</strong> Doğu Yönü</p>
+            <p><strong>Balkon:</strong> Var — 6 m²</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">🌅 Sabah güneşi</p>
+        </div>
+        <div id="html_scene4_cam3_right">
+            <h3>Yatak Odası 1 Detayları</h3>
+            <p>🛏️ Yatak: King Size 180×200</p>
+            <p>🪟 Gardırop: Gömme, 4 kanatlı</p>
+            <p>💡 Aydınlatma: LED Bankı</p>
+            <p>❄️ Klima: Daikin Inverter A++</p>
+        </div>
+        <div id="html_scene4_cam4_left">
+            <h3>🚿 Banyo</h3>
+            <p><strong>Alan:</strong> 8 m²</p>
+            <p><strong>Zemin:</strong> Mermer Görünümlü Seramik</p>
+            <p><strong>Duvar:</strong> Geniş Format Beyaz Fayans</p>
+            <p><strong>Duş:</strong> Yağmur Başlık + El Duşu</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">✅ Yerden ısıtma sistemi</p>
+        </div>
+        <div id="html_scene4_cam4_right">
+            <h3>Banyo Armatürleri</h3>
+            <p>🚰 Lavabo: Villeroy &amp; Boch</p>
+            <p>🪞 Ayna: LED Aydınlatmalı</p>
+            <p>🛁 Duş Kabini: 90×90 Cam</p>
+            <p>🔧 Batarya: Hansgrohe Metris</p>
+        </div>
+        <div id="html_scene4_cam5_left">
+            <h3>Yatak Odası 2</h3>
+            <p>Alan: 14 m²</p>
+            <p>Zemin: Laminat Parke</p>
+            <p>Pencere: Güney Yönü</p>
+        </div>
+        <div id="html_scene4_cam5_right">
+            <h3>Yatak Odası 2 Detayları</h3>
+            <p>Gardırop: Gömme, 3 kanatlı</p>
+            <p>Klima: Daikin Inverter</p>
+            <p>Isı Yalıtımı: 8cm XPS</p>
+        </div>
+        <div id="html_scene4_cam6_left">
+            <h3>🚿 Yatak Odası 2 Banyosu</h3>
+            <p><strong>Alan:</strong> 5 m²</p>
+            <p><strong>Zemin:</strong> Taş Doku Seramik</p>
+            <p><strong>Duvar:</strong> Beyaz Fayans</p>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <p style="color: #c9a96e;">✅ Pencereli — doğal havalandırma</p>
+        </div>
+        <div id="html_scene4_cam6_right">
+            <h3>Banyo 2 Armatürleri</h3>
+            <p>🚰 Lavabo: Roca Nexo</p>
+            <p>🪞 Ayna: Standart</p>
+            <p>🚿 Duş: Köşe Duşakabin</p>
+            <p>🔧 Batarya: Grohe Eurosmart</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { PMREMGenerator } from 'three';
+
+        const MODEL_URL = 'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2interior-soloapartement-opt-v4.glb';
+
+        const CAMERAS = [
+            { name: 'Salon',     pos: { x:  1,   y: 1.6, z:  1.6 }, lookAt: { x:  1,   y: 1.6, z:  1.5 }, left: 'html_scene4_cam1_left', right: 'html_scene4_cam1_right' },
+            { name: 'Mutfak',    pos: { x: -2,   y: 1.6, z:  3.1 }, lookAt: { x: -2.1, y: 1.6, z:  3.2 }, left: 'html_scene4_cam2_left', right: 'html_scene4_cam2_right' },
+            { name: 'Yatak 1',   pos: { x: -2,   y: 1.6, z:  0   }, lookAt: { x: -2.1, y: 1.6, z: -0.1 }, left: 'html_scene4_cam3_left', right: 'html_scene4_cam3_right' },
+            { name: 'WC 1',      pos: { x: -2,   y: 1.6, z:  2.1 }, lookAt: { x: -2.1, y: 1.6, z:  2.2 }, left: 'html_scene4_cam4_left', right: 'html_scene4_cam4_right' },
+            { name: 'Yatak 2',   pos: { x:  4.4, y: 1.6, z:  0   }, lookAt: { x:  4.5, y: 1.6, z: -0.1 }, left: 'html_scene4_cam5_left', right: 'html_scene4_cam5_right' },
+            { name: 'WC 2',      pos: { x:  3.9, y: 1.6, z:  3.7 }, lookAt: { x:  4.0, y: 1.6, z:  3.8 }, left: 'html_scene4_cam6_left', right: 'html_scene4_cam6_right' }
+        ];
+
+        let scene, renderer, composer, camera, orbitControls, pmremGenerator;
+        const clock = new THREE.Clock();
+
+        const loadingEl = document.getElementById('loading');
+        const backgroundImgEl = document.getElementById('backgroundImg');
+        const sceneLoadingIndicatorEl = document.getElementById('sceneLoadingIndicator');
+        const leftHtmlPanel = document.getElementById('leftHtmlPanel');
+        const rightHtmlPanel = document.getElementById('rightHtmlPanel');
+        const descriptionEl = document.getElementById('description');
+        const toggleButtons = [
+            document.getElementById('modelToggleBtn1'),
+            document.getElementById('modelToggleBtn2'),
+            document.getElementById('modelToggleBtn3'),
+            document.getElementById('modelToggleBtn4'),
+            document.getElementById('modelToggleBtn5'),
+            document.getElementById('modelToggleBtn6')
+        ];
+
+        function setLoadingProgress(pct) {
+            const bar = document.getElementById('loadingProgressBar');
+            if (bar) {
+                bar.style.animation = 'none';
+                bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+                bar.style.background = '#c9a96e';
+            }
+        }
+
+        function fadeOutLoading() {
+            setLoadingProgress(100);
+            setTimeout(() => {
+                loadingEl.classList.add('fading');
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 550);
+            }, 300);
+        }
+
+        function updateHtmlPanels(leftId, rightId) {
+            const l = document.getElementById(leftId);
+            const r = document.getElementById(rightId);
+            if (l) {
+                leftHtmlPanel.innerHTML = l.innerHTML;
+                leftHtmlPanel.style.display = 'block';
+                leftHtmlPanel.scrollTop = 0;
+            }
+            if (r) {
+                rightHtmlPanel.innerHTML = r.innerHTML;
+                rightHtmlPanel.style.display = 'block';
+                rightHtmlPanel.scrollTop = 0;
+            }
+        }
+
+        function selectCamera(index) {
+            toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === index));
+            const cfg = CAMERAS[index];
+            camera.position.set(cfg.pos.x, cfg.pos.y, cfg.pos.z);
+            camera.lookAt(cfg.lookAt.x, cfg.lookAt.y, cfg.lookAt.z);
+            orbitControls.target.set(cfg.lookAt.x, cfg.lookAt.y, cfg.lookAt.z);
+            camera.fov = 80;
+            camera.updateProjectionMatrix();
+            orbitControls.update();
+
+            updateHtmlPanels(cfg.left, cfg.right);
+            descriptionEl.textContent = `Camera: ${cfg.name}`;
+            descriptionEl.style.display = 'block';
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(1, 1.6, 1.6);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            document.body.appendChild(renderer.domElement);
+
+            pmremGenerator = new PMREMGenerator(renderer);
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(new RenderPass(scene, camera));
+            composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.3, 0.88));
+            composer.addPass(new OutputPass());
+
+            orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.enablePan = false;
+            orbitControls.enableZoom = true;
+            orbitControls.enableRotate = true;
+            orbitControls.target.set(1, 1.6, 1.5);
+            orbitControls.maxPolarAngle = (Math.PI / 2) * 0.98;
+            orbitControls.update();
+
+            setupEnvironment();
+            setupLoadersAndLoadModel();
+            setupEventListeners();
+
+            renderer.setAnimationLoop(animate);
+        }
+
+        function setupEnvironment() {
+            const hdriURL = 'https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/RealismHDRI-_equirectangular-jpg_VR360_neon_drenched_skyscrapers_1656103290_10361044.hdr';
+            new RGBELoader().load(hdriURL, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = pmremGenerator.fromEquirectangular(texture).texture;
+                pmremGenerator.dispose();
+                texture.dispose();
+                scene.environmentIntensity = 0.7;
+                setLoadingProgress(80);
+            }, (xhr) => {
+                if (xhr.total) setLoadingProgress(Math.round((xhr.loaded / xhr.total) * 60));
+            });
+
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.5));
+
+            const sun = new THREE.DirectionalLight(0xffffff, 3.6);
+            sun.position.set(12, 24, 12);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 160;
+            sun.shadow.camera.left = -55; sun.shadow.camera.right = 55;
+            sun.shadow.camera.top = 55; sun.shadow.camera.bottom = -55;
+            sun.shadow.bias = -0.0001;
+            sun.shadow.normalBias = 0.025;
+            scene.add(sun);
+        }
+
+        function setupLoadersAndLoadModel() {
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+            dracoLoader.setDecoderConfig({ type: 'js' });
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+
+            sceneLoadingIndicatorEl.style.display = 'block';
+
+            gltfLoader.load(MODEL_URL, (gltf) => {
+                const root = gltf.scene;
+                root.traverse((c) => {
+                    if (c.isMesh) {
+                        c.castShadow = true;
+                        c.receiveShadow = true;
+                        if (c.material && c.material.emissive) c.material.emissiveIntensity = 1;
+                    }
+                });
+                scene.add(root);
+
+                sceneLoadingIndicatorEl.style.display = 'none';
+                backgroundImgEl.style.display = 'none';
+                toggleButtons.forEach(b => b.style.display = 'block');
+                document.getElementById('modelLabel').style.display = 'block';
+                document.getElementById('fullscreenButton').style.display = 'flex';
+                selectCamera(0);
+                fadeOutLoading();
+            }, undefined, (e) => {
+                console.error(e);
+                sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
+            });
+        }
+
+        function setupEventListeners() {
+            toggleButtons.forEach((btn, i) => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectCamera(i);
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            document.getElementById('fullscreenButton').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                    document.exitFullscreen().catch(() => {});
+                }
+            });
+        }
+
+        function animate() {
+            const delta = clock.getDelta();
+            orbitControls.update(delta);
+            composer.render();
+        }
+
+        init();
+    </script>
+</body>
+</html>

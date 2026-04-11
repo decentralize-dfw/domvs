@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA Demo2 — Scene 0 · Pre-Start</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="demo2-style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="loading">
+        <div class="loading-title">VEA</div>
+        <div class="loading-subtitle">Real Estate Experience · Scene 0</div>
+        <div class="loading-bar-track"><div id="loadingProgressBar"></div></div>
+        <div class="loading-tagline">Nova Residence</div>
+    </div>
+
+    <img id="backgroundImg" src="https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/VEADEMO1.jpg">
+    <div id="sceneLoadingIndicator">Sahne Yükleniyor…</div>
+
+    <div id="sceneTransitionOverlay"></div>
+
+    <div id="leftHtmlPanel">
+        <h3>VEA Demo</h3>
+        <p>Interaktif 3D gayrimenkul deneyimine hoş geldiniz.</p>
+        <p>Bu demo, yeni nesil konut projesinin tüm detaylarını immersive bir ortamda sunmaktadır.</p>
+        <p style="color: #c9a96e; margin-top: 10px;">▶ Başlamak için ekrana tıklayın</p>
+    </div>
+    <div id="rightHtmlPanel">
+        <h3>Proje Özeti</h3>
+        <p><strong>Proje:</strong> Nova Residence</p>
+        <p><strong>Geliştirici:</strong> VEA Development</p>
+        <p><strong>Konum:</strong> İstanbul, Türkiye</p>
+        <p><strong>Teslim:</strong> Q4 2026</p>
+        <p><strong>Toplam Ünite:</strong> 240</p>
+    </div>
+
+    <button id="fullscreenButton" class="fab-info-btn" title="Tam Ekran">⛶</button>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { PMREMGenerator } from 'three';
+
+        const MODEL_URLS = [
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2city-opt-v2.glb',
+            'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/DEMO2kopuk-normalfacade-opt-v5.glb'
+        ];
+
+        let scene, renderer, composer, camera, orbitControls, pmremGenerator;
+        const clock = new THREE.Clock();
+        const loadingEl = document.getElementById('loading');
+        const backgroundImgEl = document.getElementById('backgroundImg');
+        const sceneLoadingIndicatorEl = document.getElementById('sceneLoadingIndicator');
+        const leftHtmlPanel = document.getElementById('leftHtmlPanel');
+        const rightHtmlPanel = document.getElementById('rightHtmlPanel');
+
+        function setLoadingProgress(pct) {
+            const bar = document.getElementById('loadingProgressBar');
+            if (bar) {
+                bar.style.animation = 'none';
+                bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+                bar.style.background = '#c9a96e';
+            }
+        }
+
+        function fadeOutLoading() {
+            setLoadingProgress(100);
+            setTimeout(() => {
+                loadingEl.classList.add('fading');
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 550);
+            }, 300);
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            const aspect = window.innerWidth / window.innerHeight;
+            const frustumSize = 40;
+            camera = new THREE.OrthographicCamera(
+                frustumSize * aspect / -2, frustumSize * aspect / 2,
+                frustumSize / 2, frustumSize / -2,
+                0.1, 1000
+            );
+            camera.position.set(0, 20, 15);
+            camera.lookAt(0, 1, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            document.body.appendChild(renderer.domElement);
+
+            pmremGenerator = new PMREMGenerator(renderer);
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(new RenderPass(scene, camera));
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.3, 0.88);
+            composer.addPass(bloomPass);
+            composer.addPass(new OutputPass());
+
+            orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.target.set(0, 1, 0);
+            orbitControls.autoRotate = true;
+            orbitControls.autoRotateSpeed = 1.0;
+            orbitControls.enablePan = false;
+            orbitControls.enableZoom = false;
+            orbitControls.enableRotate = false;
+            orbitControls.maxPolarAngle = (Math.PI / 2) * 0.98;
+            orbitControls.update();
+
+            setupEnvironment();
+            setupLoadersAndLoadModels();
+            setupEventListeners();
+
+            renderer.setAnimationLoop(animate);
+        }
+
+        function setupEnvironment() {
+            const hdriURL = 'https://raw.githubusercontent.com/decentralize-dfw/vea_001/main/RealismHDRI-_equirectangular-jpg_VR360_neon_drenched_skyscrapers_1656103290_10361044.hdr';
+            new RGBELoader().load(hdriURL, (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.background = texture;
+                scene.environment = pmremGenerator.fromEquirectangular(texture).texture;
+                pmremGenerator.dispose();
+                texture.dispose();
+                scene.environmentIntensity = 0.7;
+                setLoadingProgress(80);
+            }, (xhr) => {
+                if (xhr.total) setLoadingProgress(Math.round((xhr.loaded / xhr.total) * 60));
+            });
+
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.5));
+
+            const sun = new THREE.DirectionalLight(0xffffff, 3.6);
+            sun.position.set(12, 24, 12);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 160;
+            sun.shadow.camera.left = -55; sun.shadow.camera.right = 55;
+            sun.shadow.camera.top = 55; sun.shadow.camera.bottom = -55;
+            sun.shadow.bias = -0.0001;
+            sun.shadow.normalBias = 0.025;
+            scene.add(sun);
+        }
+
+        function setupLoadersAndLoadModels() {
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+            dracoLoader.setDecoderConfig({ type: 'js' });
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+
+            sceneLoadingIndicatorEl.style.display = 'block';
+
+            const loadOne = (url) => new Promise((resolve, reject) => {
+                gltfLoader.load(url, (gltf) => {
+                    const root = gltf.scene;
+                    root.traverse((c) => {
+                        if (c.isMesh) {
+                            c.castShadow = true;
+                            c.receiveShadow = true;
+                            if (c.material && c.material.emissive) c.material.emissiveIntensity = 1;
+                        }
+                    });
+                    scene.add(root);
+                    resolve(root);
+                }, undefined, reject);
+            });
+
+            Promise.all(MODEL_URLS.map(loadOne)).then(() => {
+                sceneLoadingIndicatorEl.style.display = 'none';
+                backgroundImgEl.style.display = 'none';
+                leftHtmlPanel.style.display = 'block';
+                rightHtmlPanel.style.display = 'block';
+                document.getElementById('fullscreenButton').style.display = 'flex';
+                fadeOutLoading();
+            }).catch((e) => {
+                console.error('Model load error:', e);
+                sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
+            });
+        }
+
+        function setupEventListeners() {
+            window.addEventListener('resize', () => {
+                const aspect = window.innerWidth / window.innerHeight;
+                const frustumSize = 40;
+                camera.left   = frustumSize * aspect / -2;
+                camera.right  = frustumSize * aspect / 2;
+                camera.top    = frustumSize / 2;
+                camera.bottom = frustumSize / -2;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            document.getElementById('fullscreenButton').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                    document.exitFullscreen().catch(() => {});
+                }
+            });
+        }
+
+        function animate() {
+            const delta = clock.getDelta();
+            if (orbitControls) orbitControls.update(delta);
+            composer.render();
+        }
+
+        init();
+    </script>
+</body>
+</html>
