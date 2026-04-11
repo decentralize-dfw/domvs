@@ -117,12 +117,28 @@ function findAssetByType(assets, type) {
 
 /**
  * Resolve a model entry from a scene to its actual asset URL.
- * modelEntry.assetRow refers to an Excel row number in Global Assets.
+ * Column C of a scene's model row may hold any of three forms:
+ *   1. Direct http(s) URL          → modelEntry.url
+ *   2. Legacy "Asset satır N"      → modelEntry.assetRow  (rowNum lookup)
+ *   3. Asset name from Global Assets column B → modelEntry.assetName
+ * The first form that resolves wins.
  */
 export function assetUrlFor(config, modelEntry) {
-    if (!modelEntry || !modelEntry.assetRow) return null;
-    const asset = config.assets[modelEntry.assetRow];
-    return asset ? asset.url : null;
+    if (!modelEntry) return null;
+    if (modelEntry.url) return modelEntry.url;
+    if (modelEntry.assetRow && config.assets[modelEntry.assetRow]) {
+        return config.assets[modelEntry.assetRow].url;
+    }
+    if (modelEntry.assetName) {
+        const needle = String(modelEntry.assetName).trim().toLowerCase();
+        for (const key in config.assets) {
+            const a = config.assets[key];
+            if (a && String(a.name).trim().toLowerCase() === needle) {
+                return a.url;
+            }
+        }
+    }
+    return null;
 }
 
 /* ---------- Global Assets ---------- */
@@ -219,25 +235,47 @@ function parseModelsSection(rows, sceneIdx, sceneEnd) {
     const m = findMarker(rows, sceneIdx, sceneEnd, '2 · KULLANILAN MODELLER');
     if (m < 0) return models;
 
-    // Header row is m+1, data starts m+2
-    for (let i = m + 2; i <= sceneEnd; i++) {
+    // The models section ends right before the next numbered section
+    // marker in column A, e.g. "3 · TOGGLE BUTONLARI" or "4 · ...".
+    let stopIdx = sceneEnd;
+    for (let i = m + 1; i <= sceneEnd; i++) {
+        const a = rows[i]?.[0];
+        if (!a) continue;
+        if (/^\s*\d+\s*·/.test(String(a))) {
+            stopIdx = i - 1;
+            break;
+        }
+    }
+
+    // Header row is m+1, data starts m+2. Walk every row in between —
+    // including the "↓ slotXX" area — and accept any row whose column C
+    // holds a usable URL (direct link or legacy "Asset satır N" ref).
+    for (let i = m + 2; i <= stopIdx; i++) {
         const row = rows[i];
         if (!row) continue;
-        const a = row[0];
-        if (a === null || a === undefined) continue;
-        const aStr = String(a).trim();
-        if (aStr.startsWith('↓')) break;
-        if (aStr.toLowerCase().startsWith('slot')) break;
-        if (aStr.includes('·')) break;
-        if (!/^\d+$/.test(aStr)) continue;
 
-        // Parse "Asset satır 9" → 9
-        const assetRowCell = row[2];
+        const cCell = row[2]; // column C
+        if (cCell === null || cCell === undefined) continue;
+        const cStr = String(cCell).trim();
+        if (!cStr || cStr.toLowerCase() === 'null') continue;
+
+        // Determine what kind of reference column C is holding.
+        //   · http/https URL              → use as-is (preferred)
+        //   · "Asset satır N" (legacy)    → resolve via Global Assets row
+        //   · Asset name ("City Model v2") → resolve via Global Assets B
+        let url = null;
         let assetRow = null;
-        if (assetRowCell) {
-            const mm = String(assetRowCell).match(/(\d+)/);
+        let assetName = null;
+        if (/^https?:\/\//i.test(cStr)) {
+            url = cStr;
+        } else if (/satır\s*\d+/i.test(cStr)) {
+            const mm = cStr.match(/(\d+)/);
             if (mm) assetRow = parseInt(mm[1], 10);
+        } else {
+            // Treat the whole cell as a Global Assets name lookup
+            assetName = cStr;
         }
+        if (!url && !assetRow && !assetName) continue;
 
         // Extract model ID from notes column O (index 14): "m1  |  Option 1"
         const notes = String(row[14] ?? '');
@@ -246,7 +284,9 @@ function parseModelsSection(rows, sceneIdx, sceneEnd) {
         if (modelId && /^modelurls$/i.test(modelId)) modelId = null;
 
         models.push({
+            url,
             assetRow,
+            assetName,
             visible: yes(row[3]),
             pos:   { x: num(row[4]),  y: num(row[5]),  z: num(row[6])  },
             rot:   { x: num(row[7]),  y: num(row[8]),  z: num(row[9])  },
