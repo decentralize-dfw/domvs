@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA · Demo v2 (xlsx)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --fg: #fff;
+            --bg: #000;
+            --muted: #9aa0a6;
+            --accent: #e5e5e5;
+            --gold: #c9a96e;
+            --panel: rgba(0, 0, 0, .55);
+            --panelBlur: 8px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #000;
+            color: var(--fg);
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* ===== THIN TOP BAR ===== */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 0 18px;
+            backdrop-filter: blur(var(--panelBlur));
+            background: var(--panel);
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .35);
+            user-select: none;
+        }
+
+        .brand {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--gold);
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .brand .v {
+            font-family: 'Raleway', sans-serif;
+            font-weight: 400;
+            font-size: 11px;
+            letter-spacing: 0.25em;
+            color: rgba(255, 255, 255, 0.45);
+            margin-left: 6px;
+            text-transform: uppercase;
+            vertical-align: 1px;
+        }
+
+        .divider {
+            width: 1px;
+            height: 22px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+            flex: 1;
+        }
+        .track-num {
+            font-family: 'Raleway', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .track-num .sep { color: rgba(255, 255, 255, 0.3); margin: 0 4px; }
+        .track-title {
+            font-family: 'Raleway', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.18em;
+            color: rgba(255, 255, 255, 0.75);
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dots {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            transition: background 0.25s ease, transform 0.25s ease;
+            cursor: pointer;
+        }
+        .dot.active {
+            background: var(--gold);
+            transform: scale(1.35);
+        }
+        .dot.missing {
+            background: rgba(255, 48, 48, 0.35);
+        }
+
+        .nav {
+            display: flex;
+            gap: 8px;
+        }
+        .nav button {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: #fff;
+            padding: 7px 14px;
+            font-family: 'Raleway', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav button:hover {
+            background: rgba(201, 169, 110, 0.15);
+            border-color: rgba(201, 169, 110, 0.55);
+            color: var(--gold);
+        }
+        .nav button:active { transform: translateY(1px); }
+        .nav button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .nav button .arrow {
+            font-size: 13px;
+            line-height: 1;
+            opacity: 0.85;
+        }
+
+        /* ===== SCENE VIEWPORT ===== */
+        #viewport {
+            position: fixed;
+            top: 48px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            overflow: hidden;
+        }
+        #scene-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background: #000;
+        }
+
+        #fade {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+            z-index: 3;
+        }
+        #fade.visible { opacity: 1; }
+
+        /* Bootstrap loader overlay (while xlsx is being fetched) */
+        #boot {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: rgba(255, 255, 255, 0.65);
+            transition: opacity 0.4s ease;
+        }
+        #boot.hidden { opacity: 0; pointer-events: none; }
+        #boot .title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 36px;
+            color: var(--gold);
+            letter-spacing: 0.08em;
+        }
+        #boot .sub {
+            font-size: 11px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        @media (max-width: 720px) {
+            #topbar { height: 44px; padding: 0 12px; gap: 10px; }
+            .brand { font-size: 15px; }
+            .brand .v { font-size: 9px; }
+            .track-title { display: none; }
+            .nav button { padding: 6px 10px; font-size: 10px; letter-spacing: 0.12em; }
+            .nav button .label { display: none; }
+            #viewport { top: 44px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="topbar">
+        <div class="brand">VEA<span class="v">demo v2</span></div>
+        <div class="divider"></div>
+
+        <div class="track-info">
+            <span class="track-num">
+                <span id="trackNum">--</span>
+                <span class="sep">/</span>
+                <span id="trackTotal">--</span>
+            </span>
+            <span class="track-title" id="trackTitle">Loading…</span>
+        </div>
+
+        <div class="dots" id="dots"></div>
+
+        <div class="nav">
+            <button id="btnPrev" title="Previous scene (←)">
+                <span class="arrow">◂</span><span class="label">Previous</span>
+            </button>
+            <button id="btnNext" title="Next scene (→)">
+                <span class="label">Next</span><span class="arrow">▸</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="viewport">
+        <iframe id="scene-frame" title="Current Scene" allow="fullscreen; xr-spatial-tracking"></iframe>
+        <div id="fade"></div>
+    </div>
+
+    <div id="boot">
+        <div class="title">VEA</div>
+        <div class="sub">demo v2 · reading config…</div>
+    </div>
+
+    <script type="module">
+        import { loadVeaConfig } from './xlsx-loader.js';
+
+        // Candidate scene files to look for. A file is only added to the
+        // TRACKS list if a HEAD request returns 200, so scenes that haven't
+        // been migrated yet are automatically skipped.
+        const SCENE_CANDIDATES = [
+            { index: 0, file: 'demo2-scene0.html' },
+            { index: 1, file: 'demo2-scene1.html' },
+            { index: 2, file: 'demo2-scene2.html' },
+            { index: 3, file: 'demo2-scene3.html' },
+            { index: 4, file: 'demo2-scene4.html' },
+            { index: 5, file: 'demo2-scene5.html' }
+        ];
+
+        let TRACKS = [];
+        let currentTrack = 0;
+
+        const frame      = document.getElementById('scene-frame');
+        const trackNum   = document.getElementById('trackNum');
+        const trackTotal = document.getElementById('trackTotal');
+        const trackTitle = document.getElementById('trackTitle');
+        const dotsEl     = document.getElementById('dots');
+        const fade       = document.getElementById('fade');
+        const boot       = document.getElementById('boot');
+        const btnPrev    = document.getElementById('btnPrev');
+        const btnNext    = document.getElementById('btnNext');
+
+        function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+        async function fileExists(path) {
+            try {
+                const r = await fetch(path, { method: 'HEAD' });
+                return r.ok;
+            } catch {
+                return false;
+            }
+        }
+
+        function buildDots() {
+            dotsEl.innerHTML = '';
+            TRACKS.forEach((_, i) => {
+                const d = document.createElement('span');
+                d.className = 'dot';
+                d.dataset.index = i;
+                d.addEventListener('click', () => goTo(i));
+                dotsEl.appendChild(d);
+            });
+        }
+
+        function updateUi() {
+            if (TRACKS.length === 0) {
+                trackNum.textContent   = '--';
+                trackTotal.textContent = '--';
+                trackTitle.textContent = 'No scenes available';
+                btnPrev.disabled = true;
+                btnNext.disabled = true;
+                return;
+            }
+            trackNum.textContent   = pad2(currentTrack + 1);
+            trackTotal.textContent = pad2(TRACKS.length);
+            trackTitle.textContent = TRACKS[currentTrack].title;
+
+            Array.from(dotsEl.children).forEach((d, i) => {
+                d.classList.toggle('active', i === currentTrack);
+            });
+
+            btnPrev.disabled = (currentTrack === 0);
+            btnNext.disabled = (currentTrack === TRACKS.length - 1);
+        }
+
+        function loadCurrent() {
+            if (TRACKS.length === 0) return;
+            fade.classList.add('visible');
+            setTimeout(() => {
+                frame.src = TRACKS[currentTrack].file;
+                setTimeout(() => fade.classList.remove('visible'), 220);
+            }, 280);
+        }
+
+        function goTo(index) {
+            if (index < 0 || index >= TRACKS.length || index === currentTrack) return;
+            currentTrack = index;
+            updateUi();
+            loadCurrent();
+        }
+        function next() { goTo(currentTrack + 1); }
+        function prev() { goTo(currentTrack - 1); }
+
+        btnNext.addEventListener('click', next);
+        btnPrev.addEventListener('click', prev);
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'IFRAME') return;
+            if (e.code === 'ArrowRight') { e.preventDefault(); next(); }
+            if (e.code === 'ArrowLeft')  { e.preventDefault(); prev(); }
+        });
+
+        // --- Bootstrap ---
+        (async function bootstrap() {
+            let config;
+            try {
+                config = await loadVeaConfig('demo2-input_2.xlsx');
+            } catch (e) {
+                console.error(e);
+                trackTitle.textContent = 'xlsx load failed';
+                return;
+            }
+
+            // Check which scene files actually exist
+            const results = await Promise.all(
+                SCENE_CANDIDATES.map(async (c) => ({
+                    ...c,
+                    exists: await fileExists(c.file)
+                }))
+            );
+
+            TRACKS = results
+                .filter(r => r.exists)
+                .map(r => ({
+                    index: r.index,
+                    file:  r.file,
+                    title: config.scenes[r.index]?.title || `Scene ${r.index}`
+                }));
+
+            buildDots();
+            updateUi();
+            if (TRACKS.length > 0) {
+                frame.src = TRACKS[0].file;
+            }
+
+            // Hide boot overlay
+            setTimeout(() => {
+                boot.classList.add('hidden');
+                setTimeout(() => { boot.style.display = 'none'; }, 500);
+            }, 200);
+        })();
+    </script>
+</body>
+</html>

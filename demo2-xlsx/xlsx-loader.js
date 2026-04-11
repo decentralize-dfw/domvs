@@ -50,6 +50,20 @@ export async function loadVeaConfig(xlsxPath = 'demo2-input_2.xlsx') {
     };
 }
 
+/**
+ * Parse the "▌ SAHNE N  —  Title  ·  Subtitle" header row into parts.
+ */
+function parseSceneHeader(headerText) {
+    if (!headerText) return { title: '', subtitle: '' };
+    // Strip leading "▌ SAHNE N  —  "
+    const clean = String(headerText).replace(/^▌\s*SAHNE\s*\d+\s*—\s*/u, '').trim();
+    const parts = clean.split(/\s*·\s*/);
+    return {
+        title:    parts[0] || clean,
+        subtitle: parts.slice(1).join(' · ')
+    };
+}
+
 /* ---------- Value coercion helpers ---------- */
 export function yes(v) {
     if (v === null || v === undefined) return false;
@@ -121,11 +135,15 @@ function parseScene(rows, sceneStartRowExcel) {
         }
     }
 
+    const header = parseSceneHeader(rows[sceneIdx]?.[0]);
+
     return {
-        camera:  parseCameraSection(rows, sceneIdx, sceneEnd),
-        models:  parseModelsSection(rows, sceneIdx, sceneEnd),
-        buttons: parseButtonsSection(rows, sceneIdx, sceneEnd),
-        panels:  parsePanelsSection(rows, sceneIdx, sceneEnd)
+        title:    header.title,
+        subtitle: header.subtitle,
+        camera:   parseCameraSection(rows, sceneIdx, sceneEnd),
+        models:   parseModelsSection(rows, sceneIdx, sceneEnd),
+        buttons:  parseButtonsSection(rows, sceneIdx, sceneEnd),
+        panels:   parsePanelsSection(rows, sceneIdx, sceneEnd)
     };
 }
 
