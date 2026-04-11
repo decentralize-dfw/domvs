@@ -6,10 +6,18 @@
    returned object so the xlsx can be edited without touching
    HTML/JS.
 
+   The actual xlsx URL is NOT hardcoded in scene files. Instead
+   it lives in a single central file, link.txt, whose URL is the
+   constant LINK_TXT_URL below. Update link.txt to point at a
+   different xlsx and every scene automatically picks it up.
+
    Requires SheetJS (XLSX) global — include in the HTML before
    importing this module:
        <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
    ============================================================= */
+
+// --- Central reference file that holds the xlsx URL ---
+export const LINK_TXT_URL = 'https://mergvs.com/demo2-xlsx/link.txt';
 
 // --- Section start rows (1-indexed, matching Excel) ---
 const SCENE_START_ROWS = {
@@ -21,8 +29,31 @@ const SCENE_START_ROWS = {
     5: 644
 };
 
-export async function loadVeaConfig(xlsxPath = 'demo2-input_2.xlsx') {
-    const resp = await fetch(xlsxPath);
+/**
+ * Fetch link.txt and return the first non-empty, non-comment line.
+ * That line is the URL to the xlsx config file.
+ */
+export async function resolveXlsxUrl(linkTxtUrl = LINK_TXT_URL) {
+    const resp = await fetch(linkTxtUrl, { cache: 'no-cache' });
+    if (!resp.ok) throw new Error(`link.txt fetch failed: ${resp.status}`);
+    const text = await resp.text();
+    for (const raw of text.split(/\r?\n/)) {
+        const line = raw.trim();
+        if (!line) continue;
+        if (line.startsWith('#') || line.startsWith('//')) continue;
+        return line;
+    }
+    throw new Error('link.txt contains no usable URL');
+}
+
+/**
+ * Load the VEA config.
+ *   - No arg: resolves xlsx URL from link.txt (the production path)
+ *   - String arg: use that URL directly (handy for local overrides)
+ */
+export async function loadVeaConfig(xlsxPath) {
+    const url = xlsxPath || await resolveXlsxUrl();
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error(`xlsx fetch failed: ${resp.status}`);
     const buf = await resp.arrayBuffer();
 
@@ -47,6 +78,20 @@ export async function loadVeaConfig(xlsxPath = 'demo2-input_2.xlsx') {
         scenes,
         bgImageUrl: findAssetByType(assets, 'JPEG')?.url || null,
         hdriUrl:    findAssetByType(assets, 'HDRI')?.url || null
+    };
+}
+
+/**
+ * Parse the "▌ SAHNE N  —  Title  ·  Subtitle" header row into parts.
+ */
+function parseSceneHeader(headerText) {
+    if (!headerText) return { title: '', subtitle: '' };
+    // Strip leading "▌ SAHNE N  —  "
+    const clean = String(headerText).replace(/^▌\s*SAHNE\s*\d+\s*—\s*/u, '').trim();
+    const parts = clean.split(/\s*·\s*/);
+    return {
+        title:    parts[0] || clean,
+        subtitle: parts.slice(1).join(' · ')
     };
 }
 
@@ -121,11 +166,15 @@ function parseScene(rows, sceneStartRowExcel) {
         }
     }
 
+    const header = parseSceneHeader(rows[sceneIdx]?.[0]);
+
     return {
-        camera:  parseCameraSection(rows, sceneIdx, sceneEnd),
-        models:  parseModelsSection(rows, sceneIdx, sceneEnd),
-        buttons: parseButtonsSection(rows, sceneIdx, sceneEnd),
-        panels:  parsePanelsSection(rows, sceneIdx, sceneEnd)
+        title:    header.title,
+        subtitle: header.subtitle,
+        camera:   parseCameraSection(rows, sceneIdx, sceneEnd),
+        models:   parseModelsSection(rows, sceneIdx, sceneEnd),
+        buttons:  parseButtonsSection(rows, sceneIdx, sceneEnd),
+        panels:   parsePanelsSection(rows, sceneIdx, sceneEnd)
     };
 }
 

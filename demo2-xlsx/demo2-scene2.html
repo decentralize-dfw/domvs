@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="demo2-style.css">
+    <link rel="stylesheet" href="https://mergvs.com/demo2-xlsx/demo2-style.css">
     <!-- SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script type="importmap">
@@ -58,7 +58,7 @@
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
         import { PMREMGenerator } from 'three';
-        import { loadVeaConfig, yes, num, renderPanelHtml, assetUrlFor } from './xlsx-loader.js';
+        import { loadVeaConfig, yes, num, renderPanelHtml, assetUrlFor } from 'https://mergvs.com/demo2-xlsx/xlsx-loader.js';
 
         const SCENE_INDEX = 2;
 
@@ -149,7 +149,7 @@
 
         async function init() {
             try {
-                config = await loadVeaConfig('demo2-input_2.xlsx');
+                config = await loadVeaConfig();
             } catch (e) {
                 console.error('xlsx load failed:', e);
                 sceneLoadingIndicatorEl.textContent = 'xlsx yüklenemedi';
