@@ -113,6 +113,23 @@ nav.scrolled{background:rgba(242,237,223,0.94);backdrop-filter:blur(16px);border
 .price-features li{display:flex;align-items:flex-start;gap:0.8rem;font-family:'Lora',serif;font-size:0.78rem;line-height:1.65;color:var(--umber)}
 .price-features li::before{content:'↳';color:var(--moss);flex-shrink:0;margin-top:0.1rem}
 
+/* PARTNERSHIP AGREEMENT */
+.agreement-section{background:var(--ivory);padding:9rem 3.5rem;border-top:1px solid var(--ecru)}
+.agreement-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:7rem;align-items:start}
+.agreement-title{font-family:'IM Fell English',serif;font-size:clamp(1.9rem,3.5vw,3rem);color:var(--forest);margin-bottom:1.8rem;line-height:1.15}
+.agreement-title em{font-style:italic;color:var(--sienna)}
+.agreement-text{font-family:'Lora',serif;font-size:0.88rem;line-height:2;color:var(--umber);margin-bottom:2rem}
+.agreement-items{list-style:none;display:flex;flex-direction:column;gap:0}
+.agreement-item{padding:1.8rem 0;border-bottom:1px solid var(--ecru);display:grid;grid-template-columns:auto 1fr;gap:1.8rem;align-items:start}
+.agreement-item:first-child{border-top:1px solid var(--ecru)}
+.agreement-item-num{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.3em;color:var(--sage);flex-shrink:0;margin-top:0.25rem}
+.agreement-item-title{font-family:'IM Fell English',serif;font-size:1.05rem;color:var(--forest);margin-bottom:0.5rem}
+.agreement-item-text{font-family:'Lora',serif;font-size:0.82rem;line-height:1.85;color:var(--umber)}
+.agreement-note{background:var(--linen);border:1px solid var(--ecru);padding:2.5rem;margin-top:3rem}
+.agreement-note-title{font-family:'Raleway',sans-serif;font-size:0.55rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--moss);margin-bottom:1rem;display:flex;align-items:center;gap:0.8rem}
+.agreement-note-title::before{content:'';width:16px;height:1px;background:var(--moss);flex-shrink:0}
+.agreement-note-text{font-family:'Lora',serif;font-style:italic;font-size:0.85rem;line-height:1.9;color:var(--umber)}
+
 /* PROCESS */
 .process-section{background:var(--parchment);padding:9rem 3.5rem}
 .process-header{max-width:1200px;margin:0 auto 6rem;text-align:center}
@@ -269,6 +286,51 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   </div>
 </section>
 
+<!-- AGREEMENT DETAIL -->
+<section class="agreement-section">
+  <div class="agreement-inner">
+    <div>
+      <div class="section-tag reveal">The Partnership Agreement</div>
+      <h2 class="agreement-title reveal reveal-delay-1">Transparent terms.<br><em>No surprises.</em></h2>
+      <p class="agreement-text reveal reveal-delay-2">We know that clarity matters — especially in a commission-based model. Here is exactly how the partnership agreement works, step by step, with no ambiguity.</p>
+      <div class="agreement-note reveal reveal-delay-3">
+        <div class="agreement-note-title">Digital-First Process</div>
+        <p class="agreement-note-text">Our partnership agreement is issued digitally via DocuSign or equivalent within 24 hours of your first enquiry. It is a single-page document outlining the property address, agreed commission rate, and duration terms. No retainer, no exclusivity requirement, no lock-in beyond the active listing period.</p>
+      </div>
+    </div>
+    <ul class="agreement-items">
+      <li class="agreement-item reveal">
+        <span class="agreement-item-num">01</span>
+        <div>
+          <div class="agreement-item-title">You share the listing details</div>
+          <p class="agreement-item-text">Send us the property address, type, and approximate price. We assess the property within 24 hours and confirm whether we are the right fit. No commitment required at this stage.</p>
+        </div>
+      </li>
+      <li class="agreement-item reveal reveal-delay-1">
+        <span class="agreement-item-num">02</span>
+        <div>
+          <div class="agreement-item-title">We issue the partnership agreement</div>
+          <p class="agreement-item-text">A one-page digital document confirming the property, the applicable commission rate (0.8% or 1.2%), and the listing duration. Signed electronically, returned within minutes.</p>
+        </div>
+      </li>
+      <li class="agreement-item reveal reveal-delay-2">
+        <span class="agreement-item-num">03</span>
+        <div>
+          <div class="agreement-item-title">We invest — at our own risk</div>
+          <p class="agreement-item-text">Production begins immediately. You pay nothing until the property sells. Our team covers all photography, video, 3D, and microsite costs. Our investment is our confidence in what we build.</p>
+        </div>
+      </li>
+      <li class="agreement-item reveal reveal-delay-3">
+        <span class="agreement-item-num">04</span>
+        <div>
+          <div class="agreement-item-title">Settlement on closing</div>
+          <p class="agreement-item-text">When the property sells, we issue a single invoice for the agreed commission percentage of the final sale price. Payment is due within 14 days of completion. VAT is applied where applicable under Luxembourg, Italian, or Turkish tax law.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
 <section class="process-section">
   <div class="process-header">
     <div class="section-tag reveal" style="justify-content:center">The Process</div>
@@ -312,13 +374,13 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="/#properties">Properties</a></li></ul></div>
-    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/">Luxembourg</a></li><li><a href="/">Milan</a></li><li><a href="/">Istanbul</a></li><li><a href="/">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/luxembourg">Luxembourg</a></li><li><a href="/milan">Milan</a></li><li><a href="/istanbul">Istanbul</a></li><li><a href="/about">International Inquiries</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="https://wa.me/352661000000" target="_blank" rel="noopener">WhatsApp Us</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
     <span class="footer-legal">Luxembourg · Milan · Istanbul</span>
-    <span class="footer-legal">Privacy · Terms</span>
+    <span class="footer-legal"><a href="/privacy" style="color:inherit;text-decoration:none">Privacy Policy</a> · <a href="/terms" style="color:inherit;text-decoration:none">Terms of Service</a></span>
   </div>
 </footer>
 

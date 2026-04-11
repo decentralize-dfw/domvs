@@ -150,6 +150,31 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
 .footer-bottom{max-width:1200px;margin:0 auto;padding-top:2rem;border-top:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center}
 .footer-legal{font-family:'Raleway',sans-serif;font-size:0.52rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:rgba(138,155,122,0.35)}
 
+/* TEAM */
+.team-section{background:var(--parchment);padding:9rem 3.5rem;border-top:1px solid var(--ecru)}
+.team-header{max-width:1200px;margin:0 auto 5rem}
+.team-header-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);margin-top:0.8rem;line-height:1.15}
+.team-header-title em{font-style:italic;color:var(--sienna)}
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto;border:1px solid var(--ecru)}
+.team-card{padding:3.5rem 3rem;border-right:1px solid var(--ecru);position:relative;transition:background 0.4s}
+.team-card:last-child{border-right:none}
+.team-card:hover{background:rgba(74,92,64,0.02)}
+.team-avatar{width:68px;height:68px;border-radius:50%;background:radial-gradient(ellipse at 40% 35%,rgba(74,92,64,0.15),rgba(74,92,64,0.03));border:1px solid var(--ecru);display:flex;align-items:center;justify-content:center;margin-bottom:2rem;font-family:'Cinzel',serif;font-size:1.1rem;color:var(--forest)}
+.team-name{font-family:'IM Fell English',serif;font-size:1.3rem;color:var(--forest);margin-bottom:0.35rem}
+.team-role{font-family:'Raleway',sans-serif;font-size:0.52rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;color:var(--moss);margin-bottom:1.5rem}
+.team-bio{font-family:'Lora',serif;font-size:0.82rem;line-height:1.9;color:var(--umber)}
+.team-credential{font-family:'Raleway',sans-serif;font-size:0.5rem;font-weight:300;letter-spacing:0.14em;text-transform:uppercase;color:var(--stone);margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--ecru);display:flex;flex-direction:column;gap:0.3rem}
+
+/* TESTIMONIALS (ABOUT) */
+.about-testi-section{background:var(--ivory);padding:9rem 3.5rem;border-top:1px solid var(--ecru)}
+.about-testi-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:1200px;margin:2rem auto 0;border:1px solid var(--ecru)}
+.about-testi-card{padding:3.5rem 3rem;border-right:1px solid var(--ecru)}
+.about-testi-card:last-child{border-right:none}
+.at-mark{font-family:'IM Fell English',serif;font-size:3rem;color:var(--sage-light);line-height:1;margin-bottom:1rem}
+.at-text{font-family:'IM Fell English',serif;font-style:italic;font-size:1.02rem;line-height:1.75;color:var(--forest);margin-bottom:2rem}
+.at-name{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:400;letter-spacing:0.18em;text-transform:uppercase;color:var(--forest)}
+.at-role{font-family:'Lora',serif;font-style:italic;font-size:0.78rem;color:var(--stone);margin-top:0.3rem}
+
 /* RESPONSIVE */
 @media(max-width:1024px){
   .story-inner{grid-template-columns:1fr;gap:4rem}
@@ -244,6 +269,68 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   </div>
 </section>
 
+<!-- TEAM -->
+<section class="team-section">
+  <div class="team-header">
+    <div class="section-tag reveal">The Studio</div>
+    <h2 class="team-header-title reveal reveal-delay-1">The people behind<br>every <em>experience.</em></h2>
+  </div>
+  <div class="team-grid">
+    <div class="team-card reveal">
+      <div class="team-avatar">MF</div>
+      <div class="team-name">Marco Ferrante</div>
+      <div class="team-role">Co-founder &amp; Lead Architect</div>
+      <p class="team-bio">Trained at the Politecnico di Milano, Marco leads spatial design and the architectural vision of every property experience. With a background in parametric design and digital fabrication, he bridges the gap between built space and virtual representation.</p>
+      <div class="team-credential">
+        <span>Politecnico di Milano — M.Arch, Architecture &amp; Urban Design</span>
+        <span>5+ years spatial computing &amp; WebXR</span>
+      </div>
+    </div>
+    <div class="team-card reveal reveal-delay-1">
+      <div class="team-avatar">LH</div>
+      <div class="team-name">Lena Hoffmann</div>
+      <div class="team-role">Co-founder &amp; Spatial Computing Lead</div>
+      <p class="team-bio">Lena heads the technical development of every immersive microsite — from Three.js spatial engines to real-time rendering pipelines. Based in Luxembourg, she also oversees client relationships across the Grand Duchy and Benelux markets.</p>
+      <div class="team-credential">
+        <span>MSc Computer Science, KU Leuven</span>
+        <span>Former spatial UX engineer, automotive industry</span>
+      </div>
+    </div>
+    <div class="team-card reveal reveal-delay-2">
+      <div class="team-avatar">SD</div>
+      <div class="team-name">Serkan Demir</div>
+      <div class="team-role">Director, Istanbul &amp; MENA Markets</div>
+      <p class="team-bio">Serkan leads production and client partnerships across Istanbul and the broader MENA region. An architect and urban researcher with deep knowledge of the Bosphorus and Anatolian property markets, he connects international buyers with the city's most exceptional properties.</p>
+      <div class="team-credential">
+        <span>MSc Urban Design, Istanbul Technical University</span>
+        <span>Fluent in Turkish, English, German</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="about-testi-section">
+  <div style="max-width:1200px;margin:0 auto 0">
+    <div class="section-tag reveal">Client Voices</div>
+    <h2 style="font-family:'IM Fell English',serif;font-size:clamp(1.8rem,3.5vw,2.8rem);color:var(--forest);margin-top:0.8rem;line-height:1.15;max-width:600px" class="reveal reveal-delay-1">In their own <em>words.</em></h2>
+  </div>
+  <div class="about-testi-grid">
+    <div class="about-testi-card reveal">
+      <div class="at-mark">"</div>
+      <p class="at-text">"What separates MERGVS from any other digital agency I've worked with is the architectural eye behind every decision. They don't just produce content — they understand what makes a space feel exceptional and they translate that into a digital experience that actually moves buyers."</p>
+      <div class="at-name">Giulia Romano</div>
+      <div class="at-role">Independent Real Estate Advisor, Milan</div>
+    </div>
+    <div class="about-testi-card reveal reveal-delay-1">
+      <div class="at-mark">"</div>
+      <p class="at-text">"We listed a château property in the Moselle valley that had been on the market for eight months with three different agencies. MERGVS came in, rebuilt the entire presentation, and we had a signed offer within five weeks. The buyer was in Hong Kong. They never left their office."</p>
+      <div class="at-name">Pierre-Antoine Muller</div>
+      <div class="at-role">Boutique Agency Principal, Luxembourg</div>
+    </div>
+  </div>
+</section>
+
 <section class="quote-section">
   <div class="quote-deco">"</div>
   <div class="quote-icon reveal">
@@ -310,13 +397,13 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="/#properties">Properties</a></li></ul></div>
-    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/">Luxembourg</a></li><li><a href="/">Milan</a></li><li><a href="/">Istanbul</a></li><li><a href="/">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/luxembourg">Luxembourg</a></li><li><a href="/milan">Milan</a></li><li><a href="/istanbul">Istanbul</a></li><li><a href="/about">International Inquiries</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="https://wa.me/352661000000" target="_blank" rel="noopener">WhatsApp Us</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
     <span class="footer-legal">Luxembourg · Milan · Istanbul</span>
-    <span class="footer-legal">Privacy · Terms</span>
+    <span class="footer-legal"><a href="/privacy" style="color:inherit;text-decoration:none">Privacy Policy</a> · <a href="/terms" style="color:inherit;text-decoration:none">Terms of Service</a></span>
   </div>
 </footer>
 
