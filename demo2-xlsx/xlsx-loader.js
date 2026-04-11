@@ -65,12 +65,12 @@ export async function loadVeaConfig(xlsxPath) {
     const ws = wb.Sheets['VEA Config'];
     if (!ws) throw new Error('Sheet "VEA Config" not found in workbook');
 
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, blankrows: true });
+    const rows = sheetToRowArray(ws);
 
     const assets = parseGlobalAssets(rows);
     const scenes = {};
     for (const idx in SCENE_START_ROWS) {
-        scenes[idx] = parseScene(rows, SCENE_START_ROWS[idx]);
+        scenes[idx] = parseScene(rows, SCENE_START_ROWS[idx], assets);
     }
 
     return {
@@ -95,6 +95,35 @@ function parseSceneHeader(headerText) {
     };
 }
 
+/**
+ * Build a rows[][] array where rows[N] ALWAYS corresponds to Excel
+ * row (N+1), regardless of the worksheet's !ref dimension.
+ *
+ * SheetJS's XLSX.utils.sheet_to_json({ header: 1 }) derives its
+ * output from the sheet's !ref range, so a sheet whose dimension
+ * starts at A2 will have rows[0] point at Excel row 2 — an off-by-
+ * one trap. Reading cells directly by their encoded address sidesteps
+ * this completely: r=0 → row 1, r=8 → row 9, etc.
+ */
+function sheetToRowArray(ws) {
+    if (!ws || !ws['!ref']) return [];
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    // Always start from (0,0) so that rows[excelRow - 1] is correct.
+    const maxR = Math.max(range.e.r, 0);
+    const maxC = Math.max(range.e.c, 14); // scan at least A..O (15 cols)
+    const rows = [];
+    for (let r = 0; r <= maxR; r++) {
+        const row = [];
+        for (let c = 0; c <= maxC; c++) {
+            const addr = XLSX.utils.encode_cell({ r, c });
+            const cell = ws[addr];
+            row.push(cell ? (cell.v !== undefined ? cell.v : null) : null);
+        }
+        rows.push(row);
+    }
+    return rows;
+}
+
 /* ---------- Value coercion helpers ---------- */
 export function yes(v) {
     if (v === null || v === undefined) return false;
@@ -116,29 +145,13 @@ function findAssetByType(assets, type) {
 }
 
 /**
- * Resolve a model entry from a scene to its actual asset URL.
- * Column C of a scene's model row may hold any of three forms:
- *   1. Direct http(s) URL          → modelEntry.url
- *   2. Legacy "Asset satır N"      → modelEntry.assetRow  (rowNum lookup)
- *   3. Asset name from Global Assets column B → modelEntry.assetName
- * The first form that resolves wins.
+ * Return the model entry's resolved URL. The URL is already baked
+ * into the entry at parse time (parseModelsSection reads column C
+ * of the scene block and, if the cell references the Global Assets
+ * table, walks the reference right then and there).
  */
-export function assetUrlFor(config, modelEntry) {
-    if (!modelEntry) return null;
-    if (modelEntry.url) return modelEntry.url;
-    if (modelEntry.assetRow && config.assets[modelEntry.assetRow]) {
-        return config.assets[modelEntry.assetRow].url;
-    }
-    if (modelEntry.assetName) {
-        const needle = String(modelEntry.assetName).trim().toLowerCase();
-        for (const key in config.assets) {
-            const a = config.assets[key];
-            if (a && String(a.name).trim().toLowerCase() === needle) {
-                return a.url;
-            }
-        }
-    }
-    return null;
+export function assetUrlFor(_config, modelEntry) {
+    return modelEntry?.url || null;
 }
 
 /* ---------- Global Assets ---------- */
@@ -171,7 +184,7 @@ function parseGlobalAssets(rows) {
 }
 
 /* ---------- Scene block ---------- */
-function parseScene(rows, sceneStartRowExcel) {
+function parseScene(rows, sceneStartRowExcel, assets) {
     const sceneIdx = sceneStartRowExcel - 1;
     let sceneEnd = rows.length - 1;
     for (let i = sceneIdx + 1; i < rows.length; i++) {
@@ -188,7 +201,7 @@ function parseScene(rows, sceneStartRowExcel) {
         title:    header.title,
         subtitle: header.subtitle,
         camera:   parseCameraSection(rows, sceneIdx, sceneEnd),
-        models:   parseModelsSection(rows, sceneIdx, sceneEnd),
+        models:   parseModelsSection(rows, sceneIdx, sceneEnd, assets),
         buttons:  parseButtonsSection(rows, sceneIdx, sceneEnd),
         panels:   parsePanelsSection(rows, sceneIdx, sceneEnd)
     };
@@ -229,14 +242,29 @@ function parseCameraSection(rows, sceneIdx, sceneEnd) {
     return cam;
 }
 
-/* ---------- Models section ---------- */
-function parseModelsSection(rows, sceneIdx, sceneEnd) {
+/* ---------- Models section ----------
+ *
+ * Reads the URL for each model straight out of the scene block. No
+ * Global Assets hardcoding: the loop starts one row below the
+ * "2 · KULLANILAN MODELLER" header and walks down until it hits the
+ * next "N · ..." section marker. Every row in between is considered,
+ * including the slotXX rows, and any row whose column C is empty
+ * or "null" is skipped.
+ *
+ * Column C may hold:
+ *   · A direct http(s) URL                 → used as-is
+ *   · A hyperlink (openpyxl/SheetJS)       → the link target is used
+ *   · Anything else (e.g. "City Model v2"  → treated as a lookup key
+ *     coming from a Google Sheets =B9         into the Global Assets
+ *     formula resolved to plain text)         table's B column (same
+ *                                              row's C is the real URL)
+ */
+function parseModelsSection(rows, sceneIdx, sceneEnd, assets) {
     const models = [];
     const m = findMarker(rows, sceneIdx, sceneEnd, '2 · KULLANILAN MODELLER');
     if (m < 0) return models;
 
-    // The models section ends right before the next numbered section
-    // marker in column A, e.g. "3 · TOGGLE BUTONLARI" or "4 · ...".
+    // Stop before the next "N · ..." section marker in column A.
     let stopIdx = sceneEnd;
     for (let i = m + 1; i <= sceneEnd; i++) {
         const a = rows[i]?.[0];
@@ -247,9 +275,6 @@ function parseModelsSection(rows, sceneIdx, sceneEnd) {
         }
     }
 
-    // Header row is m+1, data starts m+2. Walk every row in between —
-    // including the "↓ slotXX" area — and accept any row whose column C
-    // holds a usable URL (direct link or legacy "Asset satır N" ref).
     for (let i = m + 2; i <= stopIdx; i++) {
         const row = rows[i];
         if (!row) continue;
@@ -259,23 +284,25 @@ function parseModelsSection(rows, sceneIdx, sceneEnd) {
         const cStr = String(cCell).trim();
         if (!cStr || cStr.toLowerCase() === 'null') continue;
 
-        // Determine what kind of reference column C is holding.
-        //   · http/https URL              → use as-is (preferred)
-        //   · "Asset satır N" (legacy)    → resolve via Global Assets row
-        //   · Asset name ("City Model v2") → resolve via Global Assets B
+        // Resolve whatever is in column C to an actual URL.
         let url = null;
-        let assetRow = null;
-        let assetName = null;
         if (/^https?:\/\//i.test(cStr)) {
             url = cStr;
-        } else if (/satır\s*\d+/i.test(cStr)) {
-            const mm = cStr.match(/(\d+)/);
-            if (mm) assetRow = parseInt(mm[1], 10);
         } else {
-            // Treat the whole cell as a Global Assets name lookup
-            assetName = cStr;
+            // Anything else is treated as a name to look up in the
+            // Global Assets table (column B → column C). This covers
+            // the Google Sheets case where C43 holds =B9 and renders
+            // as "City Model v2" after export.
+            const needle = cStr.toLowerCase();
+            for (const key in assets) {
+                const a = assets[key];
+                if (a && String(a.name || '').trim().toLowerCase() === needle) {
+                    url = a.url;
+                    break;
+                }
+            }
         }
-        if (!url && !assetRow && !assetName) continue;
+        if (!url) continue;
 
         // Extract model ID from notes column O (index 14): "m1  |  Option 1"
         const notes = String(row[14] ?? '');
@@ -285,8 +312,6 @@ function parseModelsSection(rows, sceneIdx, sceneEnd) {
 
         models.push({
             url,
-            assetRow,
-            assetName,
             visible: yes(row[3]),
             pos:   { x: num(row[4]),  y: num(row[5]),  z: num(row[6])  },
             rot:   { x: num(row[7]),  y: num(row[8]),  z: num(row[9])  },
