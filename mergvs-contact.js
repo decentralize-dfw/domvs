@@ -3,7 +3,7 @@
 const CSS = `
 #mgv-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:1.5rem;opacity:0;pointer-events:none;transition:opacity 0.45s ease}
 #mgv-overlay.open{opacity:1;pointer-events:all}
-#mgv-backdrop{position:absolute;inset:0;background:rgba(22,32,18,0.92);backdrop-filter:blur(12px)}
+#mgv-backdrop{position:fixed;inset:0;background:rgba(22,32,18,0.92);backdrop-filter:blur(12px);display:none}
 #mgv-box{position:relative;z-index:1;background:#F2EDDF;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;padding:3.5rem;transform:translateY(28px) scale(0.97);transition:transform 0.45s cubic-bezier(0.16,1,0.3,1);scrollbar-width:thin;scrollbar-color:var(--ecru,#D8CDB8) transparent}
 #mgv-overlay.open #mgv-box{transform:translateY(0) scale(1)}
 #mgv-close{position:absolute;top:1.5rem;right:1.5rem;background:none;border:none;cursor:none;color:#5C4A32;font-size:1.4rem;line-height:1;padding:0.3rem 0.6rem;opacity:0.5;transition:opacity 0.2s;font-family:sans-serif}
