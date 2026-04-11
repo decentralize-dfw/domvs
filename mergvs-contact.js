@@ -121,6 +121,24 @@ const HTML = `
       <h2 class="mgv-title">Tell us about<br>your <em>property</em></h2>
       <p class="mgv-sub">We'll tailor our approach to your specific asset.</p>
 
+      <div style="margin-bottom:1.8rem">
+        <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">I am</p>
+        <div class="mgv-cards" style="grid-template-columns:repeat(2,1fr)">
+          <label class="mgv-card">
+            <input type="radio" name="mgv-role" value="Agent / Estate Professional" hidden>
+            <span class="mgv-card-icon" style="font-size:1.1rem">◇</span>
+            <span class="mgv-card-label">Agent / Professional</span>
+            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">No cost · commission model</span>
+          </label>
+          <label class="mgv-card">
+            <input type="radio" name="mgv-role" value="Private Owner / Seller" hidden>
+            <span class="mgv-card-icon" style="font-size:1.1rem">◈</span>
+            <span class="mgv-card-label">Private Owner / Seller</span>
+            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">Fixed production packages</span>
+          </label>
+        </div>
+      </div>
+
       <div style="margin-top:1.8rem">
         <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">City</p>
         <div class="mgv-cards" style="grid-template-columns:repeat(4,1fr)">
@@ -413,6 +431,7 @@ function init(){
     }
 
     /* Gather data */
+    const role=(document.querySelector('input[name="mgv-role"]:checked')||{}).value||'Not specified';
     const city=(document.querySelector('input[name="mgv-city"]:checked')||{}).value||'Not specified';
     const type=(document.querySelector('input[name="mgv-type"]:checked')||{}).value||'Not specified';
     const priceIdx=document.getElementById('mgv-price-slider').value;
@@ -433,12 +452,13 @@ function init(){
         name:name,
         email:email,
         phone:phone||'—',
+        role:role,
         city:city,
         property_type:type,
         listing_price:price,
         services:svcs,
         timeline:timeline,
-        _subject:'MERGVS Inquiry — '+city+' / '+price,
+        _subject:'MERGVS Inquiry — '+role+' · '+city+' / '+price,
         _replyto:email
       })
     }).then(function(res){
