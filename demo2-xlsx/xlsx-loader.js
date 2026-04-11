@@ -323,6 +323,38 @@ export function escapeHtml(s) {
 }
 
 /**
+ * Parse a scene-4 camera action string like:
+ *   "Pos(1, 1.6, 1.6)   → LookAt(1, 1.6, 1.5)   · FOV 80"
+ * into { pos, lookAt, fov }. Returns null if the string cannot be parsed.
+ */
+export function parseCameraPositionAction(action) {
+    if (!action) return null;
+    const m = String(action).match(
+        /Pos\(([^)]+)\)\s*(?:→|->)?\s*LookAt\(([^)]+)\)(?:\s*·\s*FOV\s*(\d+(?:\.\d+)?))?/
+    );
+    if (!m) return null;
+    const p = m[1].split(',').map(s => parseFloat(s.trim()));
+    const l = m[2].split(',').map(s => parseFloat(s.trim()));
+    return {
+        pos:    { x: p[0] || 0, y: p[1] || 0, z: p[2] || 0 },
+        lookAt: { x: l[0] || 0, y: l[1] || 0, z: l[2] || 0 },
+        fov:    m[3] ? parseFloat(m[3]) : 80
+    };
+}
+
+/**
+ * Return true if the given asset row entry refers to a collider-type
+ * asset (type contains "Collider"). Used by Scene 5 to distinguish
+ * the visible model from the invisible physics collider.
+ */
+export function isColliderEntry(config, entry) {
+    if (!entry || !entry.assetRow) return false;
+    const asset = config.assets[entry.assetRow];
+    if (!asset) return false;
+    return /collider/i.test(String(asset.type || ''));
+}
+
+/**
  * Render a panel object ({ title, content }) into HTML for the
  * left/right side panels. Content lines split on \n become <p>s.
  */
