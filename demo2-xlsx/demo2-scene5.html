@@ -484,7 +484,7 @@
             if (colliderMeshes.length > 0) {
                 updatePlayer(delta);
             }
-            if (hotspotMgr) hotspotMgr.update();
+            if (hotspotMgr) hotspotMgr.update(delta);
             if (composer) composer.render();
         }
 

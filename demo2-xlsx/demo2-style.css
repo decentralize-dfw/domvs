@@ -423,25 +423,7 @@ canvas {
         bottom: 30px;
     }
 }
-@media (max-width: 600px) {
-    #leftHtmlPanel,
-    #rightHtmlPanel {
-        width: calc(44vw - 10px);
-        font-size: 11px;
-        padding: 8px;
-        bottom: 160px;
-    }
-    #leftHtmlPanel h3,
-    #rightHtmlPanel h3 {
-        font-size: 12px;
-        margin-bottom: 4px;
-    }
-    #description {
-        width: 92vw;
-        font-size: 13px;
-    }
-    #fullscreenButton { display: none !important; }
-}
+/* Mobile overrides moved to bottom of file */
 
 /* --- MOBILE JOYSTICK --- */
 .joystick-zone {
@@ -555,8 +537,6 @@ canvas {
     text-transform: uppercase;
 }
 .vea-model-toggle {
-    position: fixed;
-    top: 34px;
     backdrop-filter: blur(8px);
     background: rgba(0, 0, 0, .55);
     border: 1px solid rgba(255, 255, 255, .08);
@@ -570,12 +550,7 @@ canvas {
     font-family: 'Raleway', Helvetica, Arial, sans-serif;
     cursor: pointer;
 }
-#modelToggleBtn1 { left: 16px;  }
-#modelToggleBtn2 { left: 72px;  }
-#modelToggleBtn3 { left: 128px; }
-#modelToggleBtn4 { left: 184px; }
-#modelToggleBtn5 { left: 240px; }
-#modelToggleBtn6 { left: 296px; }
+/* Toggle buttons positioned by #modelToggleBar flex container */
 
 /* =========================================================
    RICH PANEL SLOTS — tabs + media item renderers
@@ -726,4 +701,116 @@ canvas {
     margin-top: 4px;
     font-style: italic;
     line-height: 1.3;
+}
+
+/* =========================================================
+   HOTSPOT EDITOR — edit mode overlay, toolbar, list panel
+   ========================================================= */
+.vea-edit-overlay{position:fixed;inset:0;background:rgba(255,255,255,0.12);z-index:5;pointer-events:none}
+.vea-edit-toolbar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.9);padding:8px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);box-shadow:0 4px 24px rgba(0,0,0,0.6);font-family:'Raleway',sans-serif;user-select:none}
+.vea-edit-badge{color:#ff4444;font-size:10px;font-weight:700;letter-spacing:.25em}
+.vea-edit-btn,.vea-edit-copy,.vea-edit-exit{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.vea-edit-btn:hover,.vea-edit-copy:hover{background:rgba(201,169,110,0.2)}
+.vea-edit-btn.active{background:rgba(201,169,110,0.35);border-color:#c9a96e;color:#c9a96e}
+.vea-edit-exit{color:#ff6666;border-color:rgba(255,80,80,0.3)}
+.vea-edit-exit:hover{background:rgba(255,50,50,0.2)}
+.vea-edit-info{color:rgba(255,255,255,0.6);font-size:10px;letter-spacing:.04em;min-width:180px}
+.vea-edit-copy{color:#c9a96e}
+
+.vea-hs-list{position:fixed;left:10px;top:60px;bottom:20px;width:260px;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;z-index:200;overflow-y:auto;font-family:'Raleway',sans-serif;color:#fff}
+.vea-hs-list-title{padding:12px 14px 8px;font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#c9a96e;border-bottom:1px solid rgba(255,255,255,0.08)}
+.vea-hs-list-body{padding:6px}
+.vea-hs-list-row{padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:background .12s;border:1px solid transparent}
+.vea-hs-list-row:hover{background:rgba(255,255,255,0.06)}
+.vea-hs-list-row.selected{background:rgba(201,169,110,0.15);border-color:rgba(201,169,110,0.4)}
+.vea-hs-list-name{display:block;font-size:12px;font-weight:600;margin-bottom:5px;cursor:pointer;color:#c9a96e}
+.vea-hs-list-name:hover{text-decoration:underline}
+.vea-hs-list-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.vea-hs-field{display:flex;align-items:center;gap:2px}
+.vea-hs-field-label{font-size:8px;color:rgba(255,255,255,0.35);font-weight:700;min-width:14px;text-align:right}
+.vea-hs-field-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#ddd;font-size:10px;font-family:monospace;padding:2px 4px;border-radius:4px;outline:none;text-align:right}
+.vea-hs-field-input:focus{border-color:#c9a96e;background:rgba(201,169,110,0.1);color:#fff}
+
+#vea-hs-popups{position:fixed;inset:0;pointer-events:none;z-index:30}
+.vea-hs-popup{position:absolute;width:300px;max-height:350px;background:rgba(0,0,0,0.88);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;color:#fff;font-family:'Raleway',sans-serif;font-size:13px;pointer-events:all;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+.vea-hs-popup-x{position:absolute;top:8px;right:10px;background:none;border:none;color:#888;font-size:16px;cursor:pointer;padding:2px 6px}
+.vea-hs-popup-x:hover{color:#fff}
+.vea-hs-popup-title{font-size:14px;font-weight:700;color:#c9a96e;margin-bottom:8px;padding-right:20px}
+.vea-hs-popup-body p{margin:4px 0;line-height:1.5}
+.vea-hs-popup-body img,.vea-hs-popup-body video,.vea-hs-popup-body iframe{margin-top:8px}
+.vea-hs-popup::-webkit-scrollbar{width:3px}
+.vea-hs-popup::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.3);border-radius:3px}
+
+/* =========================================================
+   CAMERA EDITOR
+   ========================================================= */
+.vea-cam-panel{position:fixed;right:10px;top:60px;bottom:20px;width:290px;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;z-index:200;overflow-y:auto;font-family:'Raleway',sans-serif;color:#fff}
+.vea-cam-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.vea-cam-title{flex:1;font-size:11px;font-weight:700;letter-spacing:.12em;color:#c9a96e}
+.vea-cam-copy,.vea-cam-close{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit}
+.vea-cam-copy:hover{background:rgba(201,169,110,0.2);color:#c9a96e}
+.vea-cam-close{color:#ff6666;border-color:rgba(255,80,80,0.3)}
+.vea-cam-close:hover{background:rgba(255,50,50,0.2)}
+.vea-cam-clip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.vea-cam-clip-label{font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:.05em}
+.vea-cam-clip-input{width:50px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:12px;font-family:monospace;padding:3px 6px;border-radius:5px;outline:none;text-align:center}
+.vea-cam-clip-input:focus{border-color:#c9a96e;background:rgba(201,169,110,0.1)}
+.vea-cam-list-body{padding:8px}
+.vea-cam-row{padding:8px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02)}
+.vea-cam-row.selected{border-color:rgba(201,169,110,0.5);background:rgba(201,169,110,0.08)}
+.vea-cam-row-title{font-size:12px;font-weight:600;color:#c9a96e;margin-bottom:5px;cursor:pointer}
+.vea-cam-row-title:hover{text-decoration:underline}
+.vea-cam-go{background:rgba(201,169,110,0.15);border:1px solid rgba(201,169,110,0.4);color:#c9a96e;padding:3px 10px;border-radius:5px;font-size:9px;cursor:pointer;font-family:inherit;flex:1;text-align:center}
+.vea-cam-go:hover{background:rgba(201,169,110,0.3)}
+
+/* =========================================================
+   HOTSPOT HOVER + CURSOR
+   ========================================================= */
+canvas { cursor: default; }
+canvas.vea-hovering { cursor: pointer; }
+
+/* =========================================================
+   TOGGLE BAR — flex container replaces hardcoded positions
+   ========================================================= */
+#modelToggleBar {
+    position: fixed;
+    top: 34px;
+    left: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+    flex-wrap: wrap;
+    max-width: calc(100vw - 230px);
+}
+
+/* =========================================================
+   MOBILE OVERRIDES
+   ========================================================= */
+@media (max-width: 600px) {
+    #leftHtmlPanel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        width: 100%;
+        height: 40vh;
+        border-radius: 16px 16px 0 0;
+    }
+    #rightHtmlPanel {
+        display: none !important;
+    }
+    #modelToggleBar {
+        top: 8px;
+        max-width: calc(100vw - 16px);
+        flex-wrap: wrap;
+    }
+    .vea-model-toggle {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    .joystick-zone {
+        bottom: calc(40vh + 10px);
+    }
+    #fullscreenButton { display: none !important; }
 }

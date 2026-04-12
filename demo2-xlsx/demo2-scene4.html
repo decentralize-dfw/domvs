@@ -31,12 +31,14 @@
     <div id="sceneTransitionOverlay"></div>
 
     <p id="modelLabel" class="vea-model-label">Oda</p>
+    <div id="modelToggleBar">
     <button id="modelToggleBtn1" class="vea-model-toggle"></button>
     <button id="modelToggleBtn2" class="vea-model-toggle"></button>
     <button id="modelToggleBtn3" class="vea-model-toggle"></button>
     <button id="modelToggleBtn4" class="vea-model-toggle"></button>
     <button id="modelToggleBtn5" class="vea-model-toggle"></button>
     <button id="modelToggleBtn6" class="vea-model-toggle"></button>
+    </div>
 
     <div id="leftHtmlPanel"></div>
     <div id="rightHtmlPanel"></div>
@@ -349,7 +351,7 @@
         function animate() {
             const delta = clock.getDelta();
             if (orbitControls) orbitControls.update(delta);
-            if (hotspotMgr) hotspotMgr.update();
+            if (hotspotMgr) hotspotMgr.update(delta);
             if (composer) composer.render();
         }
 

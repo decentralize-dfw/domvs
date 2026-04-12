@@ -259,7 +259,7 @@
         function animate() {
             const delta = clock.getDelta();
             if (orbitControls) orbitControls.update(delta);
-            if (hotspotMgr) hotspotMgr.update();
+            if (hotspotMgr) hotspotMgr.update(delta);
             if (composer) composer.render();
         }
 
