@@ -228,9 +228,9 @@ const HTML = `
           <span class="mgv-card-label">Cinematic Video</span>
         </label>
         <label class="mgv-card">
-          <input type="checkbox" name="mgv-svc" value="Architecture Photography" hidden>
+          <input type="checkbox" name="mgv-svc" value="Photography Editing" hidden>
           <span class="mgv-card-icon" style="font-size:1.1rem">◎</span>
-          <span class="mgv-card-label">Photography</span>
+          <span class="mgv-card-label">Photo Editing</span>
         </label>
         <label class="mgv-card">
           <input type="checkbox" name="mgv-svc" value="Virtual Staging" hidden>
