@@ -665,7 +665,8 @@ export class HotspotManager {
    ============================================================= */
 
 export class CameraEditor {
-    constructor(camera, renderer, config, sceneIndex, orbitControls, sceneCfg) {
+    constructor(threeScene, camera, renderer, config, sceneIndex, orbitControls, sceneCfg) {
+        this.scene = threeScene;
         this.camera = camera;
         this.renderer = renderer;
         this.config = config;
@@ -674,9 +675,19 @@ export class CameraEditor {
         this.sceneCfg = sceneCfg;
         this.active = false;
         this._panel = null;
-        this._cameras = []; // parsed camera positions from buttons
+        this._cameras = [];
+        this._helpers = []; // {posSprite, lookSprite, line, camData}
+        this._transformControls = null;
+        this._selectedHelper = null;
+        this._dragMode = 'pos'; // 'pos' or 'look'
+        this._gizmoDragging = false;
+
+        // Save original camera state for restore
+        this._origCamPos = camera.position.clone();
+        this._origCamTarget = orbitControls ? orbitControls.target.clone() : new THREE.Vector3();
 
         this._parseFromButtons();
+        this._setupTransformControls();
         this._setupDOM();
         this._setupEvents();
     }
@@ -702,36 +713,229 @@ export class CameraEditor {
         }
     }
 
+    _setupTransformControls() {
+        this._transformControls = new TransformControls(this.camera, this.renderer.domElement);
+        this._transformControls.visible = false;
+        this._transformControls.enabled = false;
+        this._transformControls.setMode('translate');
+        this._transformControls.addEventListener('dragging-changed', e => {
+            this._gizmoDragging = e.value;
+            if (this.orbitControls) this.orbitControls.enabled = !e.value;
+        });
+        this._transformControls.addEventListener('change', () => this._syncFromHelpers());
+        this._transformControls.addEventListener('mouseDown', () => { this._gizmoDragging = true; });
+        this._transformControls.addEventListener('mouseUp', () => {
+            setTimeout(() => { this._gizmoDragging = false; }, 50);
+        });
+        this.scene.add(this._transformControls);
+    }
+
     _toggle() {
         this.active = !this.active;
-        this._panel.style.display = this.active ? 'block' : 'none';
-        if (this.active) this._buildList();
+        if (this.active) this._enterEditMode();
+        else this._exitEditMode();
     }
+
+    _enterEditMode() {
+        this._panel.style.display = 'block';
+
+        // Save current camera
+        this._origCamPos.copy(this.camera.position);
+        if (this.orbitControls) this._origCamTarget.copy(this.orbitControls.target);
+
+        // Move camera to ISO 45° overview
+        this.camera.position.set(15, 20, 15);
+        if (this.camera.fov) { this.camera.fov = 60; this.camera.updateProjectionMatrix(); }
+        if (this.orbitControls) {
+            this.orbitControls.target.set(0, 1, 0);
+            this.orbitControls.enabled = true;
+            this.orbitControls.update();
+        }
+
+        // Dim models %40
+        this.scene.traverse(c => {
+            if (c.isMesh && !c.userData._isCamHelper) {
+                c._origOp = c.material.opacity;
+                c._origTr = c.material.transparent;
+                c.material.transparent = true;
+                c.material.opacity = 0.4;
+            }
+        });
+
+        // Hide panels
+        document.querySelectorAll('#leftHtmlPanel,#rightHtmlPanel,#description').forEach(el => el.style.display = 'none');
+
+        // Create 3D helpers for each camera
+        this._createHelpers();
+        this._transformControls.visible = true;
+        this._transformControls.enabled = true;
+        this._buildList();
+    }
+
+    _exitEditMode() {
+        this._panel.style.display = 'none';
+
+        // Restore camera
+        this.camera.position.copy(this._origCamPos);
+        if (this.orbitControls) {
+            this.orbitControls.target.copy(this._origCamTarget);
+            this.orbitControls.update();
+        }
+
+        // Restore models
+        this.scene.traverse(c => {
+            if (c.isMesh && c._origOp !== undefined) {
+                c.material.opacity = c._origOp;
+                c.material.transparent = c._origTr;
+                delete c._origOp; delete c._origTr;
+            }
+        });
+
+        document.querySelectorAll('#leftHtmlPanel,#rightHtmlPanel').forEach(el => el.style.display = 'block');
+
+        // Remove helpers
+        this._removeHelpers();
+        this._transformControls.detach();
+        this._transformControls.visible = false;
+        this._transformControls.enabled = false;
+        if (this.orbitControls) this.orbitControls.enabled = true;
+    }
+
+    // ---- 3D HELPERS: camera icon + eye icon + dashed line ----
+
+    _createHelpers() {
+        this._removeHelpers();
+        const colors = [0x4488ff, 0xff8844, 0x44ff88, 0xff44aa, 0xaaff44, 0x44aaff];
+
+        this._cameras.forEach((cam, i) => {
+            const color = colors[i % colors.length];
+
+            // Camera position → blue sphere
+            const posGeo = new THREE.SphereGeometry(0.15, 16, 16);
+            const posMat = new THREE.MeshBasicMaterial({ color, depthTest: true });
+            const posMesh = new THREE.Mesh(posGeo, posMat);
+            posMesh.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
+            posMesh.userData._isCamHelper = true;
+            posMesh.userData._camIdx = i;
+            posMesh.userData._type = 'pos';
+            this.scene.add(posMesh);
+
+            // LookAt position → smaller sphere (eye)
+            const lookGeo = new THREE.SphereGeometry(0.1, 12, 12);
+            const lookMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: true });
+            const lookMesh = new THREE.Mesh(lookGeo, lookMat);
+            lookMesh.position.set(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z);
+            lookMesh.userData._isCamHelper = true;
+            lookMesh.userData._camIdx = i;
+            lookMesh.userData._type = 'look';
+            this.scene.add(lookMesh);
+
+            // Dashed line between pos and lookAt
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(cam.pos.x, cam.pos.y, cam.pos.z),
+                new THREE.Vector3(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z)
+            ]);
+            const lineMat = new THREE.LineDashedMaterial({
+                color, dashSize: 0.15, gapSize: 0.1, depthTest: true
+            });
+            const line = new THREE.Line(lineGeo, lineMat);
+            line.computeLineDistances();
+            line.userData._isCamHelper = true;
+            this.scene.add(line);
+
+            // Label
+            const lc = document.createElement('canvas');
+            lc.width = 256; lc.height = 64;
+            const lx = lc.getContext('2d');
+            lx.fillStyle = 'rgba(0,0,0,0.6)';
+            lx.beginPath(); lx.roundRect(2, 2, 252, 60, 10); lx.fill();
+            lx.fillStyle = '#fff'; lx.font = 'bold 24px Arial';
+            lx.textAlign = 'center'; lx.textBaseline = 'middle';
+            lx.fillText(`📷 ${cam.name}`, 128, 32);
+            const labelMat = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(lc), depthTest: true, sizeAttenuation: true
+            });
+            const label = new THREE.Sprite(labelMat);
+            label.scale.set(1.5, 0.4, 1);
+            label.position.set(cam.pos.x, cam.pos.y + 0.4, cam.pos.z);
+            label.userData._isCamHelper = true;
+            this.scene.add(label);
+
+            this._helpers.push({ posMesh, lookMesh, line, label, camData: cam, color });
+        });
+    }
+
+    _removeHelpers() {
+        for (const h of this._helpers) {
+            this.scene.remove(h.posMesh); h.posMesh.geometry.dispose(); h.posMesh.material.dispose();
+            this.scene.remove(h.lookMesh); h.lookMesh.geometry.dispose(); h.lookMesh.material.dispose();
+            this.scene.remove(h.line); h.line.geometry.dispose(); h.line.material.dispose();
+            this.scene.remove(h.label); h.label.material.map?.dispose(); h.label.material.dispose();
+        }
+        this._helpers = [];
+    }
+
+    _syncFromHelpers() {
+        // Sync 3D mesh positions back to camera data + update line
+        for (const h of this._helpers) {
+            h.camData.pos.x = h.posMesh.position.x;
+            h.camData.pos.y = h.posMesh.position.y;
+            h.camData.pos.z = h.posMesh.position.z;
+            h.camData.lookAt.x = h.lookMesh.position.x;
+            h.camData.lookAt.y = h.lookMesh.position.y;
+            h.camData.lookAt.z = h.lookMesh.position.z;
+            // Update line
+            const pts = h.line.geometry.attributes.position;
+            pts.setXYZ(0, h.posMesh.position.x, h.posMesh.position.y, h.posMesh.position.z);
+            pts.setXYZ(1, h.lookMesh.position.x, h.lookMesh.position.y, h.lookMesh.position.z);
+            pts.needsUpdate = true;
+            h.line.computeLineDistances();
+            // Update label
+            h.label.position.set(h.posMesh.position.x, h.posMesh.position.y + 0.4, h.posMesh.position.z);
+        }
+        this._refreshInputs();
+    }
+
+    _selectHelper(helperObj, type) {
+        this._selectedHelper = helperObj;
+        this._dragMode = type;
+        const target = type === 'pos' ? helperObj.posMesh : helperObj.lookMesh;
+        this._transformControls.attach(target);
+
+        // Highlight in list
+        this._panel.querySelectorAll('.vea-cam-row').forEach((row, i) => {
+            row.classList.toggle('selected', i === this._helpers.indexOf(helperObj));
+        });
+    }
+
+    // ---- LIST PANEL ----
 
     _buildList() {
         const body = this._panel.querySelector('.vea-cam-list-body');
         body.innerHTML = '';
         this._cameras.forEach((cam, i) => {
+            const h = this._helpers[i];
             const row = document.createElement('div');
             row.className = 'vea-cam-row';
 
             const title = document.createElement('div');
             title.className = 'vea-cam-row-title';
-            title.textContent = cam.name;
-            title.addEventListener('click', () => this._goToCamera(i));
+            title.textContent = `📷 ${cam.name}`;
+            title.style.borderLeft = `3px solid #${(h?.color || 0x4488ff).toString(16).padStart(6,'0')}`;
+            title.style.paddingLeft = '8px';
             row.appendChild(title);
 
             const grid = document.createElement('div');
             grid.className = 'vea-hs-list-grid';
 
             const fields = [
-                { label: 'PX', get: () => cam.pos.x, set: v => cam.pos.x = v },
-                { label: 'PY', get: () => cam.pos.y, set: v => cam.pos.y = v },
-                { label: 'PZ', get: () => cam.pos.z, set: v => cam.pos.z = v },
-                { label: 'LX', get: () => cam.lookAt.x, set: v => cam.lookAt.x = v },
-                { label: 'LY', get: () => cam.lookAt.y, set: v => cam.lookAt.y = v },
-                { label: 'LZ', get: () => cam.lookAt.z, set: v => cam.lookAt.z = v },
-                { label: 'FOV', get: () => cam.fov, set: v => cam.fov = v },
+                { label: 'PX', get: () => cam.pos.x, set: v => { cam.pos.x = v; if(h) h.posMesh.position.x = v; } },
+                { label: 'PY', get: () => cam.pos.y, set: v => { cam.pos.y = v; if(h) h.posMesh.position.y = v; } },
+                { label: 'PZ', get: () => cam.pos.z, set: v => { cam.pos.z = v; if(h) h.posMesh.position.z = v; } },
+                { label: 'LX', get: () => cam.lookAt.x, set: v => { cam.lookAt.x = v; if(h) h.lookMesh.position.x = v; } },
+                { label: 'LY', get: () => cam.lookAt.y, set: v => { cam.lookAt.y = v; if(h) h.lookMesh.position.y = v; } },
+                { label: 'LZ', get: () => cam.lookAt.z, set: v => { cam.lookAt.z = v; if(h) h.lookMesh.position.z = v; } },
+                { label: 'FOV', get: () => cam.fov, set: v => { cam.fov = v; } },
             ];
 
             for (const f of fields) {
@@ -741,18 +945,17 @@ export class CameraEditor {
                 lbl.className = 'vea-hs-field-label';
                 lbl.textContent = f.label;
                 cell.appendChild(lbl);
-
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.className = 'vea-hs-field-input';
                 input.value = f.get().toFixed(2);
                 input._fieldRef = f;
                 const commit = () => {
-                    const val = parseFloat(input.value.replace(',', '.'));
-                    if (!isNaN(val)) { f.set(val); input.value = f.get().toFixed(2); }
+                    const val = parseFloat(input.value.replace(',','.'));
+                    if (!isNaN(val)) { f.set(val); input.value = f.get().toFixed(2); this._syncFromHelpers(); }
                     else input.value = f.get().toFixed(2);
                 };
-                input.addEventListener('keydown', e => { if (e.key==='Enter'){e.preventDefault();commit();input.blur();} e.stopPropagation(); });
+                input.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault();commit();input.blur();} e.stopPropagation(); });
                 input.addEventListener('blur', commit);
                 input.addEventListener('focus', () => input.select());
                 input.addEventListener('click', e => e.stopPropagation());
@@ -762,21 +965,44 @@ export class CameraEditor {
                 grid.appendChild(cell);
             }
 
-            // "Go" button — apply this camera
+            // Select Pos / Select LookAt buttons
+            const btnRow = document.createElement('div');
+            btnRow.style.cssText = 'display:flex;gap:4px;grid-column:span 4;margin-top:2px';
+            const posBtn = document.createElement('button');
+            posBtn.className = 'vea-cam-go';
+            posBtn.textContent = '⊕ Pos';
+            posBtn.addEventListener('click', e => { e.stopPropagation(); if(h) this._selectHelper(h, 'pos'); });
+            const lookBtn = document.createElement('button');
+            lookBtn.className = 'vea-cam-go';
+            lookBtn.textContent = '◉ LookAt';
+            lookBtn.addEventListener('click', e => { e.stopPropagation(); if(h) this._selectHelper(h, 'look'); });
             const goBtn = document.createElement('button');
             goBtn.className = 'vea-cam-go';
             goBtn.textContent = '▶ Git';
-            goBtn.addEventListener('click', (e) => { e.stopPropagation(); this._goToCamera(i); });
-            grid.appendChild(goBtn);
+            goBtn.addEventListener('click', e => { e.stopPropagation(); this._goToCamera(i); });
+            btnRow.appendChild(posBtn);
+            btnRow.appendChild(lookBtn);
+            btnRow.appendChild(goBtn);
+            grid.appendChild(btnRow);
 
             row.appendChild(grid);
             body.appendChild(row);
         });
     }
 
+    _refreshInputs() {
+        const inputs = this._panel.querySelectorAll('.vea-hs-field-input');
+        inputs.forEach(inp => {
+            if (document.activeElement === inp) return;
+            const f = inp._fieldRef;
+            if (f) inp.value = f.get().toFixed(2);
+        });
+    }
+
     _goToCamera(index) {
         const cam = this._cameras[index];
         if (!cam) return;
+        // Temporarily exit edit view, apply camera, then re-enter
         this.camera.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
         this.camera.lookAt(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z);
         if (this.camera.fov !== undefined) {
@@ -803,13 +1029,15 @@ export class CameraEditor {
         });
     }
 
+    // ---- DOM ----
+
     _setupDOM() {
         this._panel = document.createElement('div');
         this._panel.className = 'vea-cam-panel';
         this._panel.style.display = 'none';
         this._panel.innerHTML = `
             <div class="vea-cam-header">
-                <span class="vea-cam-title">📷 KAMERA EDİTÖRÜ</span>
+                <span class="vea-cam-title">📷 KAMERA EDİTÖRÜ (Shift+C)</span>
                 <button class="vea-cam-copy">📋 Copy</button>
                 <button class="vea-cam-close">✕</button>
             </div>
@@ -821,12 +1049,11 @@ export class CameraEditor {
         this._panel.addEventListener('mousedown', e => e.stopPropagation());
         this._panel.addEventListener('pointerdown', e => e.stopPropagation());
 
-        // CSS
         if (!document.getElementById('vea-cam-css')) {
             const st = document.createElement('style');
             st.id = 'vea-cam-css';
             st.textContent = `
-.vea-cam-panel{position:fixed;right:10px;top:60px;bottom:20px;width:280px;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;z-index:200;overflow-y:auto;font-family:'Raleway',sans-serif;color:#fff}
+.vea-cam-panel{position:fixed;right:10px;top:60px;bottom:20px;width:290px;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;z-index:200;overflow-y:auto;font-family:'Raleway',sans-serif;color:#fff}
 .vea-cam-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08)}
 .vea-cam-title{flex:1;font-size:11px;font-weight:700;letter-spacing:.12em;color:#c9a96e}
 .vea-cam-copy,.vea-cam-close{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit}
@@ -835,9 +1062,10 @@ export class CameraEditor {
 .vea-cam-close:hover{background:rgba(255,50,50,0.2)}
 .vea-cam-list-body{padding:8px}
 .vea-cam-row{padding:8px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02)}
+.vea-cam-row.selected{border-color:rgba(201,169,110,0.5);background:rgba(201,169,110,0.08)}
 .vea-cam-row-title{font-size:12px;font-weight:600;color:#c9a96e;margin-bottom:5px;cursor:pointer}
 .vea-cam-row-title:hover{text-decoration:underline}
-.vea-cam-go{background:rgba(201,169,110,0.15);border:1px solid rgba(201,169,110,0.4);color:#c9a96e;padding:3px 10px;border-radius:5px;font-size:9px;cursor:pointer;font-family:inherit;grid-column:span 2}
+.vea-cam-go{background:rgba(201,169,110,0.15);border:1px solid rgba(201,169,110,0.4);color:#c9a96e;padding:3px 10px;border-radius:5px;font-size:9px;cursor:pointer;font-family:inherit;flex:1;text-align:center}
 .vea-cam-go:hover{background:rgba(201,169,110,0.3)}
 `;
             document.head.appendChild(st);
@@ -849,6 +1077,27 @@ export class CameraEditor {
             if (e.shiftKey && e.code === 'KeyC') {
                 e.preventDefault();
                 this._toggle();
+            }
+        });
+
+        // Click on 3D helper spheres
+        this.renderer.domElement.addEventListener('click', e => {
+            if (!this.active || this._gizmoDragging) return;
+            const mouse = new THREE.Vector2(
+                (e.clientX / innerWidth) * 2 - 1,
+                -(e.clientY / innerHeight) * 2 + 1
+            );
+            const rc = new THREE.Raycaster();
+            rc.setFromCamera(mouse, this.camera);
+            const meshes = [];
+            for (const h of this._helpers) { meshes.push(h.posMesh); meshes.push(h.lookMesh); }
+            const hits = rc.intersectObjects(meshes);
+            if (hits.length > 0) {
+                const hit = hits[0].object;
+                const idx = hit.userData._camIdx;
+                const type = hit.userData._type;
+                const helper = this._helpers[idx];
+                if (helper) this._selectHelper(helper, type);
             }
         });
     }

@@ -296,7 +296,7 @@
                 document.getElementById('modelLabel').style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
-                camEditor = new CameraEditor(camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
+                camEditor = new CameraEditor(scene, camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
                 hotspotMgr.loadHotspots();
                 if (sceneCfg.buttons.length > 0) {
                     selectCamera(0);
