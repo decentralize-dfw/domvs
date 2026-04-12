@@ -302,31 +302,6 @@
   .reveal-delay-3 { transition-delay:0.36s; }
   .reveal-delay-4 { transition-delay:0.48s; }
 
-  /* TESTIMONIALS */
-  .testimonials-section{background:var(--parchment);padding:9rem 3.5rem;border-top:1px solid var(--ecru)}
-  .testi-header{max-width:1200px;margin:0 auto 5rem;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:end}
-  .testi-header-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);line-height:1.15}
-  .testi-header-title em{font-style:italic;color:var(--sienna)}
-  .testi-header-text{font-family:'Lora',serif;font-size:0.88rem;line-height:2;color:var(--umber)}
-  .testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto 5rem;border:1px solid var(--ecru)}
-  .testi-card{padding:3rem;border-right:1px solid var(--ecru);transition:background 0.4s}
-  .testi-card:last-child{border-right:none}
-  .testi-card:hover{background:rgba(74,92,64,0.025)}
-  .testi-divider{width:20px;height:1px;background:var(--moss);margin-bottom:2rem}
-  .testi-text{font-family:'IM Fell English',serif;font-style:italic;font-size:1rem;line-height:1.75;color:var(--forest);margin-bottom:2rem}
-  .testi-author-name{font-family:'Raleway',sans-serif;font-size:0.58rem;font-weight:400;letter-spacing:0.18em;text-transform:uppercase;color:var(--forest);margin-bottom:0.3rem}
-  .testi-author-role{font-family:'Lora',serif;font-style:italic;font-size:0.78rem;color:var(--stone)}
-  .testi-author-loc{font-family:'Raleway',sans-serif;font-size:0.5rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:var(--moss);margin-top:0.3rem}
-  .case-study-strip{background:var(--linen);border:1px solid var(--ecru);padding:3.5rem;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;gap:4rem;align-items:center}
-  .cs-stat{text-align:center;flex-shrink:0}
-  .cs-stat-num{font-family:'IM Fell English',serif;font-size:3.5rem;color:var(--forest);line-height:1}
-  .cs-stat-num sup{font-size:1.5rem;color:var(--moss)}
-  .cs-stat-label{font-family:'Raleway',sans-serif;font-size:0.5rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:var(--stone);margin-top:0.4rem}
-  .cs-eyebrow{font-family:'Raleway',sans-serif;font-size:0.55rem;font-weight:300;letter-spacing:0.28em;text-transform:uppercase;color:var(--moss);margin-bottom:1rem;display:flex;align-items:center;gap:0.8rem}
-  .cs-eyebrow::before{content:'';width:18px;height:1px;background:var(--moss);flex-shrink:0}
-  .cs-title{font-family:'IM Fell English',serif;font-size:1.5rem;color:var(--forest);margin-bottom:0.8rem;line-height:1.2}
-  .cs-title em{font-style:italic;color:var(--sienna)}
-  .cs-text{font-family:'Lora',serif;font-size:0.85rem;line-height:1.9;color:var(--umber)}
 
   /* RESPONSIVE */
   @media(max-width:1024px){
@@ -343,8 +318,6 @@
     .demo-grid{grid-template-columns:1fr 1fr;}
     .footer-grid{grid-template-columns:1fr 1fr;}
     .immersive-visual{aspect-ratio:16/9;max-height:50vh;}
-    .testi-grid{grid-template-columns:1fr 1fr;}
-    .case-study-strip{grid-template-columns:repeat(2,1fr);}
   }
   @media(max-width:768px){
     nav{padding:1.4rem 1.5rem;}
@@ -361,12 +334,6 @@
     .footer-grid{grid-template-columns:1fr;gap:2.5rem;}
     .footer-bottom{flex-direction:column;gap:0.8rem;text-align:center;}
     .city-indicators,.scroll-hint{display:none;}
-    .testimonials-section{padding:6rem 1.5rem;}
-    .testi-grid{grid-template-columns:1fr;}
-    .testi-header{flex-direction:column;align-items:flex-start;gap:1rem;}
-    .case-study-strip{grid-template-columns:1fr;text-align:center;}
-    .cs-stat{border-right:none;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:1.5rem;}
-    .cs-stat:last-child{border-bottom:none;}
   }
 </style>
 </head>
@@ -464,54 +431,6 @@
   </div>
 </section>
 
-<!-- ═══ TESTIMONIALS & CASE STUDY ═══ -->
-<section class="testimonials-section" id="testimonials">
-  <div class="testi-header">
-    <div>
-      <div class="section-tag reveal">Client Voices</div>
-      <h2 class="testi-header-title reveal reveal-delay-1">What agents<br>and sellers <em>say.</em></h2>
-    </div>
-    <p class="testi-header-text reveal reveal-delay-2">We measure our success by the speed of the sale and the price achieved. Here is what professionals who have trusted MERGVS with their most important listings have to say.</p>
-  </div>
-  <div class="testi-grid">
-    <div class="testi-card reveal">
-      <div class="testi-divider"></div>
-      <p class="testi-text">"The immersive microsite MERGVS built for our Brera penthouse generated 340% more qualified enquiries than any listing we had previously run. The property sold in 19 days, 8% above asking. I would not present a prime property without them."</p>
-      <div class="testi-author-name">Sophie Marchetti</div>
-      <div class="testi-author-role">Senior Partner, Marchetti Real Estate</div>
-      <div class="testi-author-loc">Milan, Italy</div>
-    </div>
-    <div class="testi-card reveal reveal-delay-1">
-      <div class="testi-divider"></div>
-      <p class="testi-text">"As a private seller, I was sceptical. MERGVS's model — where they only earn when you sell — entirely changed my perspective. The Kirchberg property sold to an international buyer who made an offer after seeing only the digital experience. Never visited in person."</p>
-      <div class="testi-author-name">Jean-Claude Renard</div>
-      <div class="testi-author-role">Private Seller</div>
-      <div class="testi-author-loc">Luxembourg City</div>
-    </div>
-    <div class="testi-card reveal reveal-delay-2">
-      <div class="testi-divider"></div>
-      <p class="testi-text">"Istanbul's Bosphorus market demands a global reach. The spatial experience MERGVS produced for our Bebek yalı reached buyers in Geneva, Dubai, and London before the property even formally launched. Three competing offers within two weeks."</p>
-      <div class="testi-author-name">Ahmet Güler</div>
-      <div class="testi-author-role">Director, Prime Markets</div>
-      <div class="testi-author-loc">Istanbul, Turkey</div>
-    </div>
-  </div>
-  <div class="case-study-strip reveal">
-    <div class="cs-stat">
-      <div class="cs-stat-num">11<sup>%</sup></div>
-      <div class="cs-stat-label">Above asking</div>
-    </div>
-    <div>
-      <div class="cs-eyebrow">Case Study — Luxembourg · Kirchberg</div>
-      <h3 class="cs-title">Maison du Viaduc: <em>Sold in 23 days</em></h3>
-      <p class="cs-text">A 480 m² contemporary estate listed at €4.2M. MERGVS produced a full immersive microsite with 3D tour, cinematic video, and neighbourhood mapping. The property received 12 qualified international enquiries in the first week — versus 3 from the previous 6-week static listing. Final sale: €4.66M, 23 days on market.</p>
-    </div>
-    <div class="cs-stat">
-      <div class="cs-stat-num">23</div>
-      <div class="cs-stat-label">Days to close</div>
-    </div>
-  </div>
-</section>
 
 <!-- ═══ IMMERSIVE ═══ -->
 <section class="immersive-section" id="immersive">
