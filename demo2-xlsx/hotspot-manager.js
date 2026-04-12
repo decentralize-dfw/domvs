@@ -766,20 +766,23 @@ export class CameraEditor {
             }
         });
 
-        // Dim models %40 — track which meshes we change
+        // Dim models %40 + attach clipping plane — clone materials
+        // so shared materials don't bleed changes to other objects
         this._dimmedMeshes = [];
         this.scene.traverse(c => {
             if (c.isMesh && !c.userData._isCamHelper) {
+                const origMat = c.material;
+                const cloneMat = origMat.clone();
+                cloneMat.transparent = true;
+                cloneMat.opacity = 0.4;
+                cloneMat.clippingPlanes = [this._clippingPlane];
+                cloneMat.clipShadows = true;
+                cloneMat.needsUpdate = true;
+                c.material = cloneMat;
                 this._dimmedMeshes.push({
                     mesh: c,
-                    origOpacity: c.material.opacity,
-                    origTransparent: c.material.transparent,
-                    origClipping: c.material.clippingPlanes
+                    origMaterial: origMat
                 });
-                c.material.transparent = true;
-                c.material.opacity = 0.4;
-                c.material.clippingPlanes = [this._clippingPlane];
-                c.material.needsUpdate = true;
             }
         });
 
@@ -810,12 +813,11 @@ export class CameraEditor {
             this.orbitControls.update();
         }
 
-        // Restore ALL dimmed meshes
+        // Restore ALL dimmed meshes — swap back to original material
         for (const entry of this._dimmedMeshes) {
-            entry.mesh.material.opacity = entry.origOpacity;
-            entry.mesh.material.transparent = entry.origTransparent;
-            entry.mesh.material.clippingPlanes = entry.origClipping || [];
-            entry.mesh.material.needsUpdate = true;
+            const cloned = entry.mesh.material;
+            entry.mesh.material = entry.origMaterial;
+            cloned.dispose(); // free the clone
         }
         this._dimmedMeshes = [];
         this.renderer.localClippingEnabled = false;
@@ -836,12 +838,17 @@ export class CameraEditor {
         const maxY = this._sceneBBox.max.y;
         const height = maxY - minY;
         if (percent <= 0) {
-            // No clipping — plane way above
+            // No clipping — plane way above everything
+            this._clippingPlane.normal.set(0, -1, 0);
             this._clippingPlane.constant = maxY + 1000;
         } else {
-            // Clip from top: plane at maxY - (percent/100 * height)
+            // Clip top N%: everything ABOVE clipY gets hidden
+            // Plane normal (0,-1,0) means "hide stuff where y > constant"
+            // Three.js Plane: point is visible if plane.distanceToPoint(p) >= 0
+            // For normal (0,-1,0): distance = -y + constant → visible when y <= constant
             const clipY = maxY - (percent / 100) * height;
-            this._clippingPlane.set(new THREE.Vector3(0, -1, 0), clipY);
+            this._clippingPlane.normal.set(0, -1, 0);
+            this._clippingPlane.constant = clipY;
         }
     }
 
