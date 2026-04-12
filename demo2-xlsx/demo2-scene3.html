@@ -213,8 +213,8 @@
             Promise.all(sceneCfg.models.map(loadOne)).then(() => {
                 sceneLoadingIndicatorEl.style.display = 'none';
                 backgroundImgEl.style.display = 'none';
-                leftHtmlPanel.innerHTML  = renderPanelHtml(sceneCfg.panels['html_scene3_left']);
-                rightHtmlPanel.innerHTML = renderPanelHtml(sceneCfg.panels['html_scene3_right']);
+                leftHtmlPanel.innerHTML  = renderPanelHtml(sceneCfg.panels['left']);
+                rightHtmlPanel.innerHTML = renderPanelHtml(sceneCfg.panels['right']);
                 leftHtmlPanel.style.display  = 'block';
                 rightHtmlPanel.style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';

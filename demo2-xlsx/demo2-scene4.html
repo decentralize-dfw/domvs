@@ -126,8 +126,8 @@
             orbitControls.update();
 
             // Panel IDs are html_scene4_cam{N}_left/right where N = index+1
-            const camKey = `cam${index + 1}`;
-            updatePanelsById(`html_scene4_${camKey}_left`, `html_scene4_${camKey}_right`);
+            const kod = btn.kod || `toggle-${index + 1}`;
+            updatePanelsById(`${kod}-left`, `${kod}-right`);
 
             const btn = sceneCfg.buttons[index];
             descriptionEl.textContent = `Camera: ${btn?.name || ''}`;
