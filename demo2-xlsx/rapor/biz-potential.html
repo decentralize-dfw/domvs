@@ -1,0 +1,207 @@
+
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.pg { font-family: var(--font-sans); padding: 1rem 0; }
+.kv { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: var(--color-text-tertiary); margin: 2rem 0 0.7rem; }
+.kv:first-child { margin-top: 0; }
+
+/* Büyük metrik */
+.big-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.big-card { flex: 1; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.9rem 1rem; }
+.big-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); line-height: 1.1; }
+.big-val.green { color: var(--color-text-success); }
+.big-val.blue { color: var(--color-text-info); }
+.big-val.amber { color: var(--color-text-warning); }
+.big-label { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; line-height: 1.4; }
+
+/* Senaryo tablosu */
+.sc-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sc-table th { font-size: 10px; font-weight: 500; color: var(--color-text-tertiary); text-align: left; padding: 6px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.sc-table td { padding: 8px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); vertical-align: middle; }
+.sc-table tr:last-child td { border-bottom: none; }
+.sc-name { font-weight: 500; color: var(--color-text-primary) !important; }
+.sc-val { font-weight: 500; color: var(--color-text-success) !important; font-size: 13px !important; }
+.sc-val.amber { color: var(--color-text-warning) !important; }
+.sc-val.blue { color: var(--color-text-info) !important; }
+.sc-bg-green td { background: var(--color-background-success); }
+.sc-bg-amber td { background: var(--color-background-warning); }
+.sc-bg-blue td { background: var(--color-background-info); }
+.badge { font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+.b-g { background: var(--color-background-success); color: var(--color-text-success); }
+.b-a { background: var(--color-background-warning); color: var(--color-text-warning); }
+.b-b { background: var(--color-background-info); color: var(--color-text-info); }
+.b-r { background: var(--color-background-danger); color: var(--color-text-danger); }
+
+/* Darboğaz analizi */
+.bottleneck { display: flex; flex-direction: column; gap: 6px; }
+.btn-row { display: flex; align-items: center; gap: 10px; }
+.btn-label { width: 130px; font-size: 12px; color: var(--color-text-secondary); flex-shrink: 0; }
+.btn-bar-wrap { flex: 1; height: 20px; background: var(--color-background-secondary); border-radius: 4px; overflow: hidden; position: relative; }
+.btn-bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; }
+.btn-bar-label { font-size: 10px; font-weight: 500; white-space: nowrap; }
+.bar-red { background: var(--color-background-danger); color: var(--color-text-danger); }
+.bar-amber { background: var(--color-background-warning); color: var(--color-text-warning); }
+.bar-green { background: var(--color-background-success); color: var(--color-text-success); }
+
+/* İki sütun kart */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.85rem 1rem; }
+.card.accent-g { border-color: var(--color-border-success); }
+.card.accent-r { border-color: var(--color-border-danger); }
+.card-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 5px; }
+.card-body { font-size: 12px; color: var(--color-text-secondary); line-height: 1.55; }
+
+/* Strateji akışı */
+.strategy { display: flex; gap: 6px; align-items: stretch; }
+.st { flex: 1; background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.75rem; text-align: center; }
+.st-num { font-size: 11px; color: var(--color-text-tertiary); }
+.st-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin: 4px 0; }
+.st-sub { font-size: 11px; color: var(--color-text-secondary); line-height: 1.4; }
+.st-arr { display: flex; align-items: center; color: var(--color-text-tertiary); font-size: 18px; padding-top: 1rem; }
+</style>
+
+<div class="pg">
+
+  <!-- PAZAR MATEMATİĞİ -->
+  <div class="kv">Pazar matematiği — İstanbul baz alınırsa</div>
+  <div class="big-row">
+    <div class="big-card">
+      <div class="big-val blue">239,213</div>
+      <div class="big-label">2024 İstanbul konut satışı (TÜİK)</div>
+    </div>
+    <div class="big-card">
+      <div class="big-val amber">~%23</div>
+      <div class="big-label">Lüks segment payı (Türkiye geneli)</div>
+    </div>
+    <div class="big-card">
+      <div class="big-val blue">$113K</div>
+      <div class="big-label">Türkiye ortalama konut fiyatı (Şubat 2025)</div>
+    </div>
+    <div class="big-card">
+      <div class="big-val green">$8.5B</div>
+      <div class="big-label">Yabancı alıcı hacmi (2024, Türkiye)</div>
+    </div>
+  </div>
+
+  <!-- SENARYO MODELİ -->
+  <div class="kv">Gelir senaryosu — kaç ev = ne kadar gelir</div>
+  <table class="sc-table">
+    <thead>
+      <tr>
+        <th>Senaryo</th>
+        <th>Aylık ev sayısı</th>
+        <th>Ortalama fiyat</th>
+        <th>Komisyon oranı</th>
+        <th>Aylık gelir</th>
+        <th>Yıllık gelir</th>
+        <th>Gerekli kapasite</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="sc-bg-amber">
+        <td><span class="sc-name">Erken dönem</span><br><span class="badge b-a">Şu an</span></td>
+        <td>2–3 ev/ay</td>
+        <td>$500K–$1M</td>
+        <td>‰12</td>
+        <td class="sc-val amber">$7K–$18K</td>
+        <td class="sc-val amber">~$120K</td>
+        <td>1 kişi, 2 hf/ev</td>
+      </tr>
+      <tr>
+        <td><span class="sc-name">Büyüme</span><br><span class="badge b-b">6–18 ay</span></td>
+        <td>8–12 ev/ay</td>
+        <td>$1M–$3M</td>
+        <td>‰10</td>
+        <td class="sc-val blue">$80K–$360K</td>
+        <td class="sc-val blue">~$1.5M</td>
+        <td>3–4 kişi ekip</td>
+      </tr>
+      <tr class="sc-bg-green">
+        <td><span class="sc-name">Olgunluk</span><br><span class="badge b-g">2–3 yıl</span></td>
+        <td>30–50 ev/ay</td>
+        <td>$2M+</td>
+        <td>‰8</td>
+        <td class="sc-val">$480K–$800K</td>
+        <td class="sc-val">$6M–$10M</td>
+        <td>Platform + ekip</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:11px;color:var(--color-text-tertiary);margin-top:6px;">* İstanbul 2024: 239K satış × %23 lüks = ~55K lüks işlem/yıl = 4,600/ay erişilebilir hedef pazar</p>
+
+  <!-- DARBOĞAZ ANALİZİ -->
+  <div class="kv">Asıl sorun: darboğaz nerede?</div>
+  <div class="bottleneck">
+    <div class="btn-row">
+      <span class="btn-label">Teknoloji / ürün</span>
+      <div class="btn-bar-wrap"><div class="btn-bar bar-green" style="width:85%"><span class="btn-bar-label">Güçlü — dünyada benzeri yok</span></div></div>
+    </div>
+    <div class="btn-row">
+      <span class="btn-label">Pazar talebi</span>
+      <div class="btn-bar-wrap"><div class="btn-bar bar-green" style="width:78%"><span class="btn-bar-label">Güçlü — lüks büyüyor %7 CAGR</span></div></div>
+    </div>
+    <div class="btn-row">
+      <span class="btn-label">Marka pozisyon</span>
+      <div class="btn-bar-wrap"><div class="btn-bar bar-green" style="width:70%"><span class="btn-bar-label">İyi — Lux. / Milan / İst. çerçevesi doğru</span></div></div>
+    </div>
+    <div class="btn-row">
+      <span class="btn-label">Üretim kapasitesi</span>
+      <div class="btn-bar-wrap"><div class="btn-bar bar-red" style="width:15%"><span class="btn-bar-label">Kritik darboğaz — 2 hf/ev, tek kişi</span></div></div>
+    </div>
+    <div class="btn-row">
+      <span class="btn-label">Satış döngüsü</span>
+      <div class="btn-bar-wrap"><div class="btn-bar bar-amber" style="width:40%"><span class="btn-bar-label">Lüks emlak = uzun karar + uzun satış süreci</span></div></div>
+    </div>
+    <div class="btn-row">
+      <span class="btn-label">Nakit akışı</span>
+      <div class="btn-bar-wrap"><div class="btn-bar bar-red" style="width:20%"><span class="btn-bar-label">Riskli — satış olmadan gelir yok</span></div></div>
+    </div>
+  </div>
+
+  <!-- GÜÇLÜ / ZAYIF -->
+  <div class="kv">Gerçekçi değerlendirme</div>
+  <div class="two">
+    <div class="card accent-g">
+      <div class="card-title">Yapısal güçlü yönler</div>
+      <div class="card-body">
+        Komisyon modeli doğru — satıcıyla sıfır riskli ortaklık. Dünyada kimse tam zinciri (şehir → mobilya → FPS → satın alma) yapmıyor. Lüks emlak dijitalleşmede geç kalmış, yabancı alıcı %50+ sight-unseen satın almaya hazır. İstanbul'da 55K+ lüks işlem/yıl. Lüks fiyat büyümesi %6.96 CAGR — pazar sizi destekliyor.
+      </div>
+    </div>
+    <div class="card accent-r">
+      <div class="card-title">Yapısal riskler</div>
+      <div class="card-body">
+        2 hafta/ev → ölçeklenemiyor. 10 ev = 5 ay bekletme. Satış olmadan gelir yok — nakit sıkışması. Lüks emlak satışı 3–12 ay sürebilir, komisyon o kadar sonra gelir. Türk lüks segmenti büyük ama Lüksemburg ve Milano pazarı çok daha ödeme istekli ve uluslararası alıcı yoğun.
+      </div>
+    </div>
+  </div>
+
+  <!-- STRATEJİK AKIŞ -->
+  <div class="kv">Ölçeklenme için kritik dönüşüm noktaları</div>
+  <div class="strategy">
+    <div class="st">
+      <div class="st-num">1. adım</div>
+      <div class="st-title">Prodüksiyon hızlandır</div>
+      <div class="st-sub">2 hf → 3–4 güne. Şehir/semt modelleri şablonlaştır. Sadece daire modellemesi özelleştirilsin.</div>
+    </div>
+    <div class="st-arr">→</div>
+    <div class="st">
+      <div class="st-num">2. adım</div>
+      <div class="st-title">Milieu paketi sat</div>
+      <div class="st-sub">Şehir + semt modeli ortak. Her yeni ev sadece daire ekler. Maliyet düşer, marj yükselir.</div>
+    </div>
+    <div class="st-arr">→</div>
+    <div class="st">
+      <div class="st-num">3. adım</div>
+      <div class="st-title">Lüksemburg önceliği</div>
+      <div class="st-sub">€2M+ işlem, yabancı alıcı yoğun, dijital karar verme normu. En yüksek ROI pazar.</div>
+    </div>
+    <div class="st-arr">→</div>
+    <div class="st">
+      <div class="st-num">4. adım</div>
+      <div class="st-title">Platform + lisans</div>
+      <div class="st-sub">Teknoloji kiralanır. Ajanlar kendi listinglerini yükler. Gelir x100 çarpanı.</div>
+    </div>
+  </div>
+
+</div>
