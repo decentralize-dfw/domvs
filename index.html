@@ -228,7 +228,7 @@
   .cities-title em { font-style:italic; color:var(--sienna); }
   .cities-note { font-family:'Lora',serif; font-style:italic; font-size:0.82rem; line-height:1.75; color:var(--stone); max-width:280px; text-align:right; }
   .cities-grid { display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:0; max-width:1400px; margin:0 auto; padding:0 3.5rem; }
-  .city-card { position:relative; aspect-ratio:3/4; overflow:hidden; cursor:none; }
+  .city-card { position:relative; aspect-ratio:3/4; overflow:hidden; cursor:none; display:block; text-decoration:none; color:inherit; }
   .city-card:not(:last-child) { border-right:1px solid var(--ecru); }
   .city-bg { position:absolute; inset:0; transition:transform 0.9s cubic-bezier(0.25,0.46,0.45,0.94); }
   .city-card:hover .city-bg { transform:scale(1.04); }
@@ -386,6 +386,7 @@
   <a href="#contact" class="mobile-menu-cta" id="mobileCta">Request a Demo</a>
 </div>
 
+<main id="main-content">
 <!-- ═══ HERO ═══ -->
 <section class="hero" id="hero">
   <div class="hero-video-wrap" id="heroVideoWrap">
@@ -526,9 +527,9 @@
     <p class="cities-note reveal reveal-delay-2">Headquartered in Luxembourg, Milan, and Istanbul — our production network extends to any market where exceptional property deserves exceptional presentation.</p>
   </div>
   <div class="cities-grid">
-    <div class="city-card"><div class="city-bg city-bg-lux"><div class="city-geo"><svg width="100%" height="100%" viewBox="0 0 400 600"><line x1="0" y1="100" x2="400" y2="200" stroke="#4A5C40" stroke-width="0.6"/><line x1="0" y1="200" x2="400" y2="300" stroke="#4A5C40" stroke-width="0.6"/><circle cx="200" cy="300" r="130" stroke="#4A5C40" stroke-width="0.6" fill="none"/><circle cx="200" cy="300" r="65" stroke="#4A5C40" stroke-width="0.4" fill="none"/></svg></div></div><div class="city-overlay"></div><div class="city-count">01</div><div class="city-info"><div class="city-tag">Grand Duchy</div><h3 class="city-name">Luxembourg</h3><p class="city-desc">Europe's financial heart. Château estates, contemporary residences, and cross-border properties of extraordinary discretion.</p></div></div>
-    <div class="city-card"><div class="city-bg city-bg-mil"><div class="city-geo"><svg width="100%" height="100%" viewBox="0 0 300 600"><polygon points="150,50 280,200 220,400 80,400 20,200" stroke="#4A5C40" stroke-width="0.6" fill="none"/><polygon points="150,120 240,230 200,360 100,360 60,230" stroke="#4A5C40" stroke-width="0.3" fill="none"/></svg></div></div><div class="city-overlay"></div><div class="city-count">02</div><div class="city-info"><div class="city-tag">Lombardy</div><h3 class="city-name">Milan</h3><p class="city-desc">Fashion, finance, and architecture in perfect tension. From Brera penthouses to Navigli conversions of singular character.</p></div></div>
-    <div class="city-card"><div class="city-bg city-bg-ist"><div class="city-geo"><svg width="100%" height="100%" viewBox="0 0 300 600"><path d="M 50 100 Q 150 50 250 100 Q 280 200 250 300 Q 150 400 50 300 Q 20 200 50 100" stroke="#8B4A2A" stroke-width="0.6" fill="none"/><path d="M 80 150 Q 150 110 220 150 Q 245 220 220 280 Q 150 340 80 280 Q 55 220 80 150" stroke="#4A5C40" stroke-width="0.4" fill="none"/></svg></div></div><div class="city-overlay"></div><div class="city-count">03</div><div class="city-info"><div class="city-tag">Two Continents</div><h3 class="city-name">Istanbul</h3><p class="city-desc">Where East meets West, and history meets ambition. Bosphorus villas, Ottoman mansions, and the architecture of a confident city.</p></div></div>
+    <a href="/luxembourg" class="city-card" aria-label="MERGVS Luxembourg — Luxury Property Marketing"><div class="city-bg city-bg-lux"><div class="city-geo"><svg width="100%" height="100%" viewBox="0 0 400 600"><line x1="0" y1="100" x2="400" y2="200" stroke="#4A5C40" stroke-width="0.6"/><line x1="0" y1="200" x2="400" y2="300" stroke="#4A5C40" stroke-width="0.6"/><circle cx="200" cy="300" r="130" stroke="#4A5C40" stroke-width="0.6" fill="none"/><circle cx="200" cy="300" r="65" stroke="#4A5C40" stroke-width="0.4" fill="none"/></svg></div></div><div class="city-overlay"></div><div class="city-count">01</div><div class="city-info"><div class="city-tag">Grand Duchy</div><h3 class="city-name">Luxembourg</h3><p class="city-desc">Europe's financial heart. Château estates, contemporary residences, and cross-border properties of extraordinary discretion.</p></div></a>
+    <a href="/milan" class="city-card" aria-label="MERGVS Milan — Luxury Property Marketing"><div class="city-bg city-bg-mil"><div class="city-geo"><svg width="100%" height="100%" viewBox="0 0 300 600"><polygon points="150,50 280,200 220,400 80,400 20,200" stroke="#4A5C40" stroke-width="0.6" fill="none"/><polygon points="150,120 240,230 200,360 100,360 60,230" stroke="#4A5C40" stroke-width="0.3" fill="none"/></svg></div></div><div class="city-overlay"></div><div class="city-count">02</div><div class="city-info"><div class="city-tag">Lombardy</div><h3 class="city-name">Milan</h3><p class="city-desc">Fashion, finance, and architecture in perfect tension. From Brera penthouses to Navigli conversions of singular character.</p></div></a>
+    <a href="/istanbul" class="city-card" aria-label="MERGVS Istanbul — Luxury Property Marketing"><div class="city-bg city-bg-ist"><div class="city-geo"><svg width="100%" height="100%" viewBox="0 0 300 600"><path d="M 50 100 Q 150 50 250 100 Q 280 200 250 300 Q 150 400 50 300 Q 20 200 50 100" stroke="#8B4A2A" stroke-width="0.6" fill="none"/><path d="M 80 150 Q 150 110 220 150 Q 245 220 220 280 Q 150 340 80 280 Q 55 220 80 150" stroke="#4A5C40" stroke-width="0.4" fill="none"/></svg></div></div><div class="city-overlay"></div><div class="city-count">03</div><div class="city-info"><div class="city-tag">Two Continents</div><h3 class="city-name">Istanbul</h3><p class="city-desc">Where East meets West, and history meets ambition. Bosphorus villas, Ottoman mansions, and the architecture of a confident city.</p></div></a>
   </div>
 </section>
 
@@ -545,7 +546,7 @@
 <!-- ═══ DEMOS ═══ -->
 <section class="demo-section" id="properties">
   <div class="demo-header">
-    <div><div class="section-tag reveal">Live Experiences</div><h2 class="demo-title reveal reveal-delay-1">Properties we've<br><em>brought to life.</em></h2></div>
+    <div><div class="section-tag reveal">Portfolio Preview</div><h2 class="demo-title reveal reveal-delay-1">Experiences<br><em>in development.</em></h2></div>
     <a href="#" class="demo-all reveal">View All Properties</a>
   </div>
   <div class="demo-grid">
@@ -566,6 +567,8 @@
     <a href="#properties" class="btn-ghost-light">See the Work First</a>
   </div>
 </section>
+
+</main><!-- end #main-content -->
 
 <!-- ═══ FOOTER ═══ -->
 <footer>
