@@ -66,15 +66,18 @@ export class HotspotManager {
     }
 
     update() {
-        // Labels face camera
         for (const obj of this.objects) {
-            if (obj.label) obj.label.lookAt(this.camera.position);
-        }
-        // Update popup screen positions
-        for (const obj of this.objects) {
+            if (obj.label) {
+                // Position label above the hotspot at fixed world size
+                // (independent of group scale)
+                const wp = obj.group.position;
+                obj.label.position.set(wp.x, wp.y + 0.8, wp.z);
+                obj.label.visible = obj.group.visible;
+                // Fixed scale regardless of hotspot size
+                obj.label.scale.set(1.2, 0.3, 1);
+            }
             if (obj.popupOpen) this._updatePopupPosition(obj);
         }
-        // Update list values if edit mode
         if (this.editMode) this._refreshList();
     }
 
@@ -130,7 +133,7 @@ export class HotspotManager {
             const tex = new THREE.TextureLoader().load(url);
             tex.colorSpace = THREE.SRGBColorSpace;
             const mat = new THREE.SpriteMaterial({
-                map: tex, depthTest: false, sizeAttenuation: true,
+                map: tex, depthTest: true, sizeAttenuation: true,
                 transparent: true
             });
             const sprite = new THREE.Sprite(mat);
@@ -146,10 +149,10 @@ export class HotspotManager {
             clickTarget = dot;
         }
 
-        // Floating name label (always faces camera, sits above marker)
+        // Floating name label — added to SCENE (not group) so it
+        // doesn't scale with the hotspot. Position updated in update().
         const label = this._makeLabelSprite(data.name);
-        label.position.set(0, 0.8, 0);
-        group.add(label);
+        this.scene.add(label);
 
         this.scene.add(group);
         this.objects.push({
@@ -168,7 +171,7 @@ export class HotspotManager {
         x.beginPath(); x.arc(32, 32, 8, 0, Math.PI * 2);
         x.fillStyle = '#fff'; x.fill();
         const mat = new THREE.SpriteMaterial({
-            map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+            map: new THREE.CanvasTexture(c), depthTest: true, sizeAttenuation: true
         });
         const s = new THREE.Sprite(mat);
         s.scale.set(0.5, 0.5, 0.5);
@@ -187,7 +190,7 @@ export class HotspotManager {
         x.textAlign = 'center'; x.textBaseline = 'middle';
         x.fillText(text || '', 256, 64);
         const mat = new THREE.SpriteMaterial({
-            map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+            map: new THREE.CanvasTexture(c), depthTest: true, sizeAttenuation: true
         });
         const s = new THREE.Sprite(mat);
         s.scale.set(1.5, 0.4, 1);
@@ -359,32 +362,92 @@ export class HotspotManager {
             const row = document.createElement('div');
             row.className = 'vea-hs-list-row';
             row.dataset.idx = i;
-            row.innerHTML = `<span class="vea-hs-list-name">${this._esc(obj.data.name)}</span>
-                <span class="vea-hs-list-vals" data-idx="${i}"></span>`;
-            row.addEventListener('click', (e) => {
+
+            const nameEl = document.createElement('span');
+            nameEl.className = 'vea-hs-list-name';
+            nameEl.textContent = obj.data.name;
+            nameEl.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this._selectObject(obj);
             });
+            row.appendChild(nameEl);
+
+            // Editable fields grid
+            const grid = document.createElement('div');
+            grid.className = 'vea-hs-list-grid';
+            const fields = [
+                { label: 'X', get: () => obj.group.position.x, set: v => { obj.group.position.x = v; } },
+                { label: 'Y', get: () => obj.group.position.y, set: v => { obj.group.position.y = v; } },
+                { label: 'Z', get: () => obj.group.position.z, set: v => { obj.group.position.z = v; } },
+                { label: 'RX', get: () => obj.group.rotation.x, set: v => { obj.group.rotation.x = v; } },
+                { label: 'RY', get: () => obj.group.rotation.y, set: v => { obj.group.rotation.y = v; } },
+                { label: 'RZ', get: () => obj.group.rotation.z, set: v => { obj.group.rotation.z = v; } },
+                { label: 'S', get: () => obj.group.scale.x, set: v => { obj.group.scale.set(v, v, v); } },
+            ];
+
+            for (const f of fields) {
+                const cell = document.createElement('div');
+                cell.className = 'vea-hs-field';
+
+                const lbl = document.createElement('span');
+                lbl.className = 'vea-hs-field-label';
+                lbl.textContent = f.label;
+                cell.appendChild(lbl);
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'vea-hs-field-input';
+                input.dataset.objIdx = i;
+                input.dataset.fieldLabel = f.label;
+                input.value = f.get().toFixed(2);
+                input._fieldRef = f;
+
+                // Commit on Enter or blur
+                const commit = () => {
+                    const val = parseFloat(input.value.replace(',', '.'));
+                    if (!isNaN(val)) {
+                        f.set(val);
+                        input.value = f.get().toFixed(2);
+                    } else {
+                        input.value = f.get().toFixed(2);
+                    }
+                };
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); commit(); input.blur(); }
+                    e.stopPropagation(); // prevent scene shortcuts (WASD etc.)
+                });
+                input.addEventListener('blur', commit);
+                input.addEventListener('focus', () => input.select());
+                input.addEventListener('click', (e) => e.stopPropagation());
+                input.addEventListener('mousedown', (e) => e.stopPropagation());
+                input.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+                cell.appendChild(input);
+                grid.appendChild(cell);
+            }
+
+            row.appendChild(grid);
             body.appendChild(row);
         });
-        this._refreshList();
     }
 
     _refreshList() {
         if (!this._editListPanel) return;
+        // Only update inputs that are NOT focused (don't overwrite while user types)
         this.objects.forEach((obj, i) => {
-            const el = this._editListPanel.querySelector(`.vea-hs-list-vals[data-idx="${i}"]`);
-            if (!el) return;
-            const p = obj.group.position;
-            const r = obj.group.rotation;
-            const s = obj.group.scale.x;
-            el.textContent = `P(${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}) R(${r.x.toFixed(1)},${r.y.toFixed(1)},${r.z.toFixed(1)}) S(${s.toFixed(2)})`;
+            const inputs = this._editListPanel.querySelectorAll(`.vea-hs-field-input[data-obj-idx="${i}"]`);
+            inputs.forEach(input => {
+                if (document.activeElement === input) return; // skip focused
+                const f = input._fieldRef;
+                if (f) input.value = f.get().toFixed(2);
+            });
         });
         // Toolbar info
         if (this.selectedObject) {
             const g = this.selectedObject.group;
+            const p = g.position;
             const info = this._editToolbar.querySelector('.vea-edit-info');
-            if (info) info.textContent = `${this.selectedObject.data.name}  P(${g.position.x.toFixed(2)}, ${g.position.y.toFixed(2)}, ${g.position.z.toFixed(2)})`;
+            if (info) info.textContent = `${this.selectedObject.data.name}  P(${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)})`;
         }
     }
 
@@ -523,8 +586,13 @@ export class HotspotManager {
         for (const o of this.objects) {
             this._closePopup(o);
             this.scene.remove(o.group);
-            o.sprite.material.map?.dispose(); o.sprite.material.dispose();
-            o.label?.material.map?.dispose(); o.label?.material.dispose();
+            if (o.label) {
+                this.scene.remove(o.label);
+                o.label.material.map?.dispose();
+                o.label.material.dispose();
+            }
+            o.sprite?.material?.map?.dispose();
+            o.sprite?.material?.dispose();
         }
         this.objects = [];
     }
@@ -556,8 +624,13 @@ export class HotspotManager {
 .vea-hs-list-row{padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:background .12s;border:1px solid transparent}
 .vea-hs-list-row:hover{background:rgba(255,255,255,0.06)}
 .vea-hs-list-row.selected{background:rgba(201,169,110,0.15);border-color:rgba(201,169,110,0.4)}
-.vea-hs-list-name{display:block;font-size:12px;font-weight:600;margin-bottom:3px}
-.vea-hs-list-vals{display:block;font-size:9px;color:rgba(255,255,255,0.45);font-family:monospace;letter-spacing:.02em}
+.vea-hs-list-name{display:block;font-size:12px;font-weight:600;margin-bottom:5px;cursor:pointer;color:#c9a96e}
+.vea-hs-list-name:hover{text-decoration:underline}
+.vea-hs-list-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.vea-hs-field{display:flex;align-items:center;gap:2px}
+.vea-hs-field-label{font-size:8px;color:rgba(255,255,255,0.35);font-weight:700;min-width:14px;text-align:right}
+.vea-hs-field-input{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#ddd;font-size:10px;font-family:monospace;padding:2px 4px;border-radius:4px;outline:none;text-align:right}
+.vea-hs-field-input:focus{border-color:#c9a96e;background:rgba(201,169,110,0.1);color:#fff}
 
 #vea-hs-popups{position:fixed;inset:0;pointer-events:none;z-index:30}
 .vea-hs-popup{position:absolute;width:300px;max-height:350px;background:rgba(0,0,0,0.88);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;color:#fff;font-family:'Raleway',sans-serif;font-size:13px;pointer-events:all;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
