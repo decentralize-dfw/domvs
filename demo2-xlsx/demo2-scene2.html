@@ -140,8 +140,8 @@
                 action.hidden.forEach(id => setModelVisibility(id, false));
             }
 
-            const optId = `opt${index + 1}`;
-            updatePanelsById(`html_scene2_${optId}_left`, `html_scene2_${optId}_right`);
+            const kod = btn.kod || `toggle-${index + 1}`;
+            updatePanelsById(`${kod}-left`, `${kod}-right`);
 
             descriptionEl.textContent = `Showing ${btn?.name || ''}`;
             descriptionEl.style.display = 'block';
