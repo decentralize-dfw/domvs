@@ -758,13 +758,17 @@ export class CameraEditor {
             this.orbitControls.update();
         }
 
-        // Compute scene bounding box (for clipping plane)
+        // Compute scene bounding box from ALL scene meshes
         this._sceneBBox = new THREE.Box3();
         this.scene.traverse(c => {
             if (c.isMesh && !c.userData._isCamHelper) {
-                this._sceneBBox.expandByObject(c);
+                c.geometry.computeBoundingBox();
+                const worldBB = c.geometry.boundingBox.clone();
+                worldBB.applyMatrix4(c.matrixWorld);
+                this._sceneBBox.union(worldBB);
             }
         });
+        console.log('CamEditor bbox:', this._sceneBBox.min.y, '→', this._sceneBBox.max.y, 'height:', this._sceneBBox.max.y - this._sceneBBox.min.y);
 
         // Dim models %40 + attach clipping plane — clone materials
         // so shared materials don't bleed changes to other objects
@@ -837,18 +841,24 @@ export class CameraEditor {
         const minY = this._sceneBBox.min.y;
         const maxY = this._sceneBBox.max.y;
         const height = maxY - minY;
+        // Three.js Plane: visible when dot(normal, point) + constant >= 0
+        // Normal (0,1,0) → dot = y → visible when y + constant >= 0 → y >= -constant
+        // We want to HIDE everything ABOVE clipY → visible when y <= clipY
+        // So: normal (0,-1,0) → dot = -y → visible when -y + constant >= 0 → y <= constant
+        // clipY = maxY - (percent/100) * height
         if (percent <= 0) {
-            // No clipping — plane way above everything
             this._clippingPlane.normal.set(0, -1, 0);
-            this._clippingPlane.constant = maxY + 1000;
+            this._clippingPlane.constant = maxY + 100;
         } else {
-            // Clip top N%: everything ABOVE clipY gets hidden
-            // Plane normal (0,-1,0) means "hide stuff where y > constant"
-            // Three.js Plane: point is visible if plane.distanceToPoint(p) >= 0
-            // For normal (0,-1,0): distance = -y + constant → visible when y <= constant
-            const clipY = maxY - (percent / 100) * height;
+            const clipY = maxY - (percent / 100.0) * height;
             this._clippingPlane.normal.set(0, -1, 0);
             this._clippingPlane.constant = clipY;
+            console.log(`Clip ${percent}%: clipY=${clipY.toFixed(2)} (range ${minY.toFixed(2)}→${maxY.toFixed(2)}, h=${height.toFixed(2)})`);
+        }
+        // Force material update on all clipped meshes
+        for (const entry of this._dimmedMeshes) {
+            entry.mesh.material.clippingPlanes = [this._clippingPlane];
+            entry.mesh.material.needsUpdate = true;
         }
     }
 
