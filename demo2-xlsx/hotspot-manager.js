@@ -685,6 +685,11 @@ export class CameraEditor {
         // Save original camera state for restore
         this._origCamPos = camera.position.clone();
         this._origCamTarget = orbitControls ? orbitControls.target.clone() : new THREE.Vector3();
+        this._origFov = camera.fov || 75;
+        this._clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 100);
+        this._clipPercent = 0; // 0 = no clip, 20 = cut top 20%
+        this._sceneBBox = null;
+        this._dimmedMeshes = []; // track exactly which meshes we dimmed
 
         this._parseFromButtons();
         this._setupTransformControls();
@@ -741,6 +746,7 @@ export class CameraEditor {
 
         // Save current camera
         this._origCamPos.copy(this.camera.position);
+        this._origFov = this.camera.fov || 75;
         if (this.orbitControls) this._origCamTarget.copy(this.orbitControls.target);
 
         // Move camera to ISO 45° overview
@@ -752,15 +758,36 @@ export class CameraEditor {
             this.orbitControls.update();
         }
 
-        // Dim models %40
+        // Compute scene bounding box (for clipping plane)
+        this._sceneBBox = new THREE.Box3();
         this.scene.traverse(c => {
             if (c.isMesh && !c.userData._isCamHelper) {
-                c._origOp = c.material.opacity;
-                c._origTr = c.material.transparent;
-                c.material.transparent = true;
-                c.material.opacity = 0.4;
+                this._sceneBBox.expandByObject(c);
             }
         });
+
+        // Dim models %40 — track which meshes we change
+        this._dimmedMeshes = [];
+        this.scene.traverse(c => {
+            if (c.isMesh && !c.userData._isCamHelper) {
+                this._dimmedMeshes.push({
+                    mesh: c,
+                    origOpacity: c.material.opacity,
+                    origTransparent: c.material.transparent,
+                    origClipping: c.material.clippingPlanes
+                });
+                c.material.transparent = true;
+                c.material.opacity = 0.4;
+                c.material.clippingPlanes = [this._clippingPlane];
+                c.material.needsUpdate = true;
+            }
+        });
+
+        // Enable renderer clipping
+        this.renderer.localClippingEnabled = true;
+
+        // Apply initial clip (0%)
+        this._applyClip(this._clipPercent);
 
         // Hide panels
         document.querySelectorAll('#leftHtmlPanel,#rightHtmlPanel,#description').forEach(el => el.style.display = 'none');
@@ -777,19 +804,21 @@ export class CameraEditor {
 
         // Restore camera
         this.camera.position.copy(this._origCamPos);
+        if (this.camera.fov) { this.camera.fov = this._origFov; this.camera.updateProjectionMatrix(); }
         if (this.orbitControls) {
             this.orbitControls.target.copy(this._origCamTarget);
             this.orbitControls.update();
         }
 
-        // Restore models
-        this.scene.traverse(c => {
-            if (c.isMesh && c._origOp !== undefined) {
-                c.material.opacity = c._origOp;
-                c.material.transparent = c._origTr;
-                delete c._origOp; delete c._origTr;
-            }
-        });
+        // Restore ALL dimmed meshes
+        for (const entry of this._dimmedMeshes) {
+            entry.mesh.material.opacity = entry.origOpacity;
+            entry.mesh.material.transparent = entry.origTransparent;
+            entry.mesh.material.clippingPlanes = entry.origClipping || [];
+            entry.mesh.material.needsUpdate = true;
+        }
+        this._dimmedMeshes = [];
+        this.renderer.localClippingEnabled = false;
 
         document.querySelectorAll('#leftHtmlPanel,#rightHtmlPanel').forEach(el => el.style.display = 'block');
 
@@ -799,6 +828,21 @@ export class CameraEditor {
         this._transformControls.visible = false;
         this._transformControls.enabled = false;
         if (this.orbitControls) this.orbitControls.enabled = true;
+    }
+
+    _applyClip(percent) {
+        if (!this._sceneBBox || this._sceneBBox.isEmpty()) return;
+        const minY = this._sceneBBox.min.y;
+        const maxY = this._sceneBBox.max.y;
+        const height = maxY - minY;
+        if (percent <= 0) {
+            // No clipping — plane way above
+            this._clippingPlane.constant = maxY + 1000;
+        } else {
+            // Clip from top: plane at maxY - (percent/100 * height)
+            const clipY = maxY - (percent / 100) * height;
+            this._clippingPlane.set(new THREE.Vector3(0, -1, 0), clipY);
+        }
     }
 
     // ---- 3D HELPERS: camera icon + eye icon + dashed line ----
@@ -1041,6 +1085,10 @@ export class CameraEditor {
                 <button class="vea-cam-copy">📋 Copy</button>
                 <button class="vea-cam-close">✕</button>
             </div>
+            <div class="vea-cam-clip">
+                <span class="vea-cam-clip-label">✂ Clip %</span>
+                <input type="text" class="vea-cam-clip-input" value="0" />
+            </div>
             <div class="vea-cam-list-body"></div>`;
         document.body.appendChild(this._panel);
 
@@ -1048,6 +1096,23 @@ export class CameraEditor {
         this._panel.querySelector('.vea-cam-close').addEventListener('click', e => { e.stopPropagation(); this._toggle(); });
         this._panel.addEventListener('mousedown', e => e.stopPropagation());
         this._panel.addEventListener('pointerdown', e => e.stopPropagation());
+
+        // Clip input
+        const clipInput = this._panel.querySelector('.vea-cam-clip-input');
+        if (clipInput) {
+            const commitClip = () => {
+                const val = parseFloat(clipInput.value.replace(',','.'));
+                if (!isNaN(val)) {
+                    this._clipPercent = Math.max(0, Math.min(100, val));
+                    clipInput.value = this._clipPercent;
+                    this._applyClip(this._clipPercent);
+                }
+            };
+            clipInput.addEventListener('keydown', e => { if(e.key==='Enter'){commitClip();e.preventDefault();} e.stopPropagation(); });
+            clipInput.addEventListener('blur', commitClip);
+            clipInput.addEventListener('click', e => e.stopPropagation());
+            clipInput.addEventListener('mousedown', e => e.stopPropagation());
+        }
 
         if (!document.getElementById('vea-cam-css')) {
             const st = document.createElement('style');
@@ -1060,6 +1125,10 @@ export class CameraEditor {
 .vea-cam-copy:hover{background:rgba(201,169,110,0.2);color:#c9a96e}
 .vea-cam-close{color:#ff6666;border-color:rgba(255,80,80,0.3)}
 .vea-cam-close:hover{background:rgba(255,50,50,0.2)}
+.vea-cam-clip{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.vea-cam-clip-label{font-size:10px;color:rgba(255,255,255,0.6);letter-spacing:.05em}
+.vea-cam-clip-input{width:50px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:12px;font-family:monospace;padding:3px 6px;border-radius:5px;outline:none;text-align:center}
+.vea-cam-clip-input:focus{border-color:#c9a96e;background:rgba(201,169,110,0.1)}
 .vea-cam-list-body{padding:8px}
 .vea-cam-row{padding:8px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02)}
 .vea-cam-row.selected{border-color:rgba(201,169,110,0.5);background:rgba(201,169,110,0.08)}
