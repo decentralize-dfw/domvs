@@ -21,12 +21,12 @@ export const LINK_TXT_URL = 'https://mergvs.com/demo2-xlsx/link.txt';
 
 // --- Section start rows (1-indexed, matching Excel) ---
 const SCENE_START_ROWS = {
-    0: 33,
-    1: 105,
-    2: 240,
-    3: 346,
-    4: 418,
-    5: 644
+    0: 18,
+    1: 132,
+    2: 246,
+    3: 360,
+    4: 474,
+    5: 587
 };
 
 /**
@@ -76,7 +76,6 @@ export async function loadVeaConfig(xlsxPath) {
     return {
         assets,
         scenes,
-        hotspots: parseHotspots(rows),
         bgImageUrl: findAssetByType(assets, 'JPEG')?.url || null,
         hdriUrl:    findAssetByType(assets, 'HDRI')?.url || null
     };
@@ -159,7 +158,7 @@ export function assetUrlFor(_config, modelEntry) {
 function parseGlobalAssets(rows) {
     const assets = {};
     // Excel rows 9..29 cover the main assets + empty slots.
-    for (let excelRow = 9; excelRow <= 29; excelRow++) {
+    for (let excelRow = 6; excelRow <= 20; excelRow++) {
         const row = rows[excelRow - 1];
         if (!row) continue;
         const name = row[1];  // col B
@@ -204,7 +203,8 @@ function parseScene(rows, sceneStartRowExcel, assets) {
         camera:   parseCameraSection(rows, sceneIdx, sceneEnd),
         models:   parseModelsSection(rows, sceneIdx, sceneEnd, assets),
         buttons:  parseButtonsSection(rows, sceneIdx, sceneEnd),
-        panels:   parsePanelsSection(rows, sceneIdx, sceneEnd)
+        panels:   parsePanelsSection(rows, sceneIdx, sceneEnd),
+        hotspots: parseHotspotsSection(rows, sceneIdx, sceneEnd)
     };
 }
 
@@ -732,18 +732,13 @@ export function renderPanelHtml(panel) {
  *   N: Toggle Kod (empty = always visible)
  *   O: Sahne (0-5)
  */
-function parseHotspots(rows) {
-    // Find the "▌ BÖLÜM 2" marker
-    let m = -1;
-    for (let i = 0; i < rows.length; i++) {
-        const a = rows[i]?.[0];
-        if (a && String(a).includes('HOTSPOT SLOT')) { m = i; break; }
-    }
+function parseHotspotsSection(rows, sceneIdx, sceneEnd) {
+    const m = findMarker(rows, sceneIdx, sceneEnd, '5 · HOTSPOT');
     if (m < 0) return [];
 
     const all = [];
     // Data starts at m+2 (m+1 is the column header row)
-    for (let i = m + 2; i < rows.length; i++) {
+    for (let i = m + 2; i <= sceneEnd; i++) {
         const row = rows[i];
         if (!row) continue;
         const name = row[1];
@@ -773,7 +768,7 @@ function parseHotspots(rows) {
             rot:   { x: readN(9),  y: readN(10), z: readN(11) },
             scale: readN(12) || 1,
             toggleKod: read(13),
-            scene: read(14)
+            // scene field not needed (per-scene parsing)
         });
     }
     return all;
@@ -785,12 +780,10 @@ function parseHotspots(rows) {
  *   getHotspotsForScene(config, 2, 'toggle-1') → only toggle-1 + always-visible
  */
 export function getHotspotsForScene(config, sceneIndex, activeToggleKod) {
-    if (!config || !config.hotspots) return [];
-    const si = String(sceneIndex);
-    return config.hotspots.filter(h => {
-        if (h.scene !== si && h.scene !== '') return false;
+    const scene = config?.scenes?.[sceneIndex];
+    if (!scene || !scene.hotspots) return [];
+    return scene.hotspots.filter(h => {
         if (!activeToggleKod) return true;
-        // Show if no toggle restriction OR matches active toggle
         return !h.toggleKod || h.toggleKod === activeToggleKod;
     });
 }
