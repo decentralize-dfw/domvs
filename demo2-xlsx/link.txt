@@ -12,9 +12,13 @@
 # To switch sources just comment / uncomment the appropriate line.
 # -----------------------------------------------------------------
 
-# --- [hidden] Local mergvs.com xlsx (production fallback) ---
+# --- [active] Local mergvs.com xlsx (_3 has the new slot schema
+#     + pilot samples in Scene 2 opt1_left) ---
+https://mergvs.com/demo2-xlsx/demo2-input_3.xlsx
+
+# --- [hidden] Previous local copy ---
 # https://mergvs.com/demo2-xlsx/demo2-input_2.xlsx
 
-# --- [active] Google Sheets live export ---
+# --- [hidden] Google Sheets live export ---
 # Source sheet: https://docs.google.com/spreadsheets/d/1PHlQs_sQdEidhx5drZQrY9flFT0yevKMhOblOzcObks/edit
-https://docs.google.com/spreadsheets/d/1PHlQs_sQdEidhx5drZQrY9flFT0yevKMhOblOzcObks/export?format=xlsx
+# https://docs.google.com/spreadsheets/d/1PHlQs_sQdEidhx5drZQrY9flFT0yevKMhOblOzcObks/export?format=xlsx
