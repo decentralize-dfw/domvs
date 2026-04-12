@@ -67,6 +67,9 @@ select.mgv-input{appearance:none;cursor:pointer}
 .mgv-btn-back:hover{color:#2E3D28}
 .mgv-btn-back::before{content:'←';font-style:normal}
 
+/* ERROR */
+#mgv-form-error{display:none;margin-top:1.2rem;padding:0.9rem 1.2rem;background:rgba(139,74,42,0.07);border-left:2px solid #8B4A2A;font-family:'Lora',serif;font-style:italic;font-size:0.82rem;color:#8B4A2A;line-height:1.7}
+
 /* SUCCESS */
 #mgv-success{display:none;text-align:center;padding:3rem 0}
 #mgv-success .mgv-s-icon{width:60px;height:60px;margin:0 auto 2rem}
@@ -286,6 +289,7 @@ const HTML = `
         </div>
       </div>
 
+      <div id="mgv-form-error" role="alert"></div>
       <div class="mgv-btns">
         <button class="mgv-btn-back" id="mgv-back-3">← Back</button>
         <button class="mgv-btn-next" id="mgv-submit" style="background:#2E3D28">Send Request →</button>
@@ -382,9 +386,9 @@ function init(){
   }
 
   document.getElementById('mgv-next-1').addEventListener('click',function(){goTo(1);});
-  document.getElementById('mgv-next-2').addEventListener('click',function(){goTo(2);});
+  document.getElementById('mgv-next-2').addEventListener('click',function(){clearFormError();goTo(2);});
   document.getElementById('mgv-back-2').addEventListener('click',function(){goTo(0);});
-  document.getElementById('mgv-back-3').addEventListener('click',function(){goTo(1);});
+  document.getElementById('mgv-back-3').addEventListener('click',function(){clearFormError();goTo(1);});
 
   /* Radio/checkbox card toggle */
   document.querySelectorAll('.mgv-card input[type="radio"]').forEach(function(inp){
@@ -420,13 +424,31 @@ function init(){
   }
 
   /* Submit */
+  function showFormError(msg){
+    var el=document.getElementById('mgv-form-error');
+    el.textContent=msg;
+    el.style.display='block';
+    el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function clearFormError(){
+    var el=document.getElementById('mgv-form-error');
+    el.style.display='none';
+    el.textContent='';
+  }
+
   document.getElementById('mgv-submit').addEventListener('click',function(){
+    clearFormError();
     const name=document.getElementById('mgv-name').value.trim();
     const email=document.getElementById('mgv-email').value.trim();
-    if(!name||!email){
+    const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if(!name){
+      document.getElementById('mgv-name').focus();
+      showFormError('Please enter your name so we know who we\'re speaking with.');
+      return;
+    }
+    if(!email||!emailOk){
       document.getElementById('mgv-email').focus();
-      document.getElementById('mgv-email').style.borderColor='#8B4A2A';
-      setTimeout(function(){document.getElementById('mgv-email').style.borderColor='';},2000);
+      showFormError('Please enter a valid email address — we\'ll use it only to reply to your enquiry.');
       return;
     }
 
@@ -469,18 +491,27 @@ function init(){
       }else{
         res.json().then(function(data){
           console.error('Formspree error:', JSON.stringify(data));
-        }).catch(function(){});
+          var msg='Something went wrong on our end. Please try again, or write to us directly at hello@mergvs.com.';
+          if(data&&data.errors&&data.errors.length){
+            var fieldErr=data.errors.find(function(e){return e.field==='email';});
+            if(fieldErr) msg='The email address you entered doesn\'t appear to be valid. Please double-check it.';
+          } else if(data&&data.error&&typeof data.error==='string'){
+            if(data.error.toLowerCase().indexOf('activate')!==-1){
+              msg='The form is not yet active. Please contact us directly at hello@mergvs.com.';
+            }
+          }
+          showFormError(msg);
+        }).catch(function(){
+          showFormError('Something went wrong. Please write to us directly at hello@mergvs.com.');
+        });
         btn.disabled=false;
         btn.textContent='Send Request →';
-        btn.style.background='#8B4A2A';
-        setTimeout(function(){btn.style.background='#2E3D28';},2000);
       }
     }).catch(function(err){
       console.error('Formspree fetch error:', err);
       btn.disabled=false;
       btn.textContent='Send Request →';
-      btn.style.background='#8B4A2A';
-      setTimeout(function(){btn.style.background='#2E3D28';},2000);
+      showFormError('Unable to send — please check your connection, or write to us at hello@mergvs.com.');
     });
   });
 
