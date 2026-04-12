@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MERGVS — About Us</title>
+<meta name="description" content="The story behind MERGVS — a team of architects, spatial computing specialists, and real estate professionals redefining luxury property presentation.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="About MERGVS">
+<meta property="og:description" content="A team of architects, spatial computing specialists, and real estate professionals redefining luxury property presentation across Luxembourg, Milan, and Istanbul.">
+<meta property="og:url" content="https://mergvs.com/about">
+<meta property="og:image" content="https://mergvs.com/mergvs-son.png">
+<meta property="og:site_name" content="MERGVS">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="About MERGVS">
+<meta name="twitter:description" content="Architects, spatial computing specialists, and real estate professionals redefining luxury property presentation.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet">
@@ -150,6 +160,22 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
 .footer-bottom{max-width:1200px;margin:0 auto;padding-top:2rem;border-top:1px solid rgba(255,255,255,0.05);display:flex;justify-content:space-between;align-items:center}
 .footer-legal{font-family:'Raleway',sans-serif;font-size:0.52rem;font-weight:300;letter-spacing:0.15em;text-transform:uppercase;color:rgba(138,155,122,0.35)}
 
+/* TEAM */
+.team-section{background:var(--parchment);padding:9rem 3.5rem;border-top:1px solid var(--ecru)}
+.team-header{max-width:1200px;margin:0 auto 5rem}
+.team-header-title{font-family:'IM Fell English',serif;font-size:clamp(2rem,4vw,3.2rem);color:var(--forest);margin-top:0.8rem;line-height:1.15}
+.team-header-title em{font-style:italic;color:var(--sienna)}
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1200px;margin:0 auto;border:1px solid var(--ecru)}
+.team-card{padding:3.5rem 3rem;border-right:1px solid var(--ecru);position:relative;transition:background 0.4s}
+.team-card:last-child{border-right:none}
+.team-card:hover{background:rgba(74,92,64,0.02)}
+.team-avatar{width:68px;height:68px;border-radius:50%;background:radial-gradient(ellipse at 40% 35%,rgba(74,92,64,0.15),rgba(74,92,64,0.03));border:1px solid var(--ecru);display:flex;align-items:center;justify-content:center;margin-bottom:2rem;font-family:'Cinzel',serif;font-size:1.1rem;color:var(--forest)}
+.team-name{font-family:'IM Fell English',serif;font-size:1.3rem;color:var(--forest);margin-bottom:0.35rem}
+.team-role{font-family:'Raleway',sans-serif;font-size:0.52rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;color:var(--moss);margin-bottom:1.5rem}
+.team-bio{font-family:'Lora',serif;font-size:0.82rem;line-height:1.9;color:var(--umber)}
+.team-credential{font-family:'Raleway',sans-serif;font-size:0.5rem;font-weight:300;letter-spacing:0.14em;text-transform:uppercase;color:var(--stone);margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--ecru);display:flex;flex-direction:column;gap:0.3rem}
+
+
 /* RESPONSIVE */
 @media(max-width:1024px){
   .story-inner{grid-template-columns:1fr;gap:4rem}
@@ -157,6 +183,8 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   .pillars{grid-template-columns:1fr}.pillar{border-right:none!important}.pillar:nth-last-child(-n+3){border-bottom:1px solid var(--ecru)}.pillar:last-child{border-bottom:none}
   .stats-row{grid-template-columns:repeat(2,1fr)}.stat-cell:nth-child(2){border-right:none}
   .footer-grid{grid-template-columns:1fr 1fr}
+  .team-grid{grid-template-columns:1fr 1fr}
+  .about-testi-grid{grid-template-columns:1fr}
 }
 @media(max-width:768px){
   nav{padding:1.4rem 1.5rem}.nav-links{display:none}.nav-hamburger{display:flex}
@@ -167,6 +195,8 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   .cta-actions{flex-direction:column}
   .footer-grid{grid-template-columns:1fr;gap:2.5rem}
   .footer-bottom{flex-direction:column;gap:0.8rem;text-align:center}
+  .team-section,.about-testi-section{padding:6rem 1.5rem}
+  .team-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -237,12 +267,53 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
       <h2 class="story-title reveal reveal-delay-1">Born from architecture.<br>Forged in <em>technology.</em></h2>
       <p class="story-text reveal reveal-delay-2">We are architects — trained at the <em>Politecnico di Milano</em>, one of Europe's most rigorous schools of architecture and design. Our foundation is in spatial thinking, material sensitivity, and the discipline of building things that endure.</p>
       <p class="story-text reveal reveal-delay-2">But we are not traditional real estate agents. We have no interest in listings, negotiations, or closing tactics. What we do have is an obsessive understanding of how buildings are <em>perceived</em>, how spaces are <em>experienced</em>, and how architecture can be <em>communicated</em> to move people.</p>
-      <p class="story-text reveal reveal-delay-3">For over five years, we have been deep in the world of spatial computing — Three.js, WebXR, metaverse platforms, and the spatial web. We write the code that turns floor plans into navigable worlds. And we do it from a single codebase that runs everywhere: your phone, your laptop, a VR headset — one URL, every device.</p>
+      <p class="story-text reveal reveal-delay-3">Since 2020, we have been deep in the world of spatial computing — Three.js, WebXR, metaverse platforms, and the spatial web. We write the code that turns floor plans into navigable worlds. And we do it from a single codebase that runs everywhere: your phone, your laptop, a VR headset — one URL, every device.</p>
       <p class="story-text reveal reveal-delay-3">MERGVS exists at the intersection of these two disciplines. We bring the eye of an architect and the hands of a developer to create immersive property experiences that no template, no plugin, and no generic platform can match.</p>
       <p class="story-text reveal reveal-delay-4">The name <em>MERGVS</em> itself holds our philosophy. It comes from the Mergus — the diving bird that plunges beneath the surface, past the reflections and the obvious, to find what others cannot see. The word "immersive" shares this same Latin root: <em>mergere</em>, to dive, to submerge. We do the same with every property. We don't decorate the surface — we dive deep into its architecture, its light, its atmosphere, and we extract the hidden story that makes it extraordinary. The meaning is already there, waiting inside every home. MERGVS simply reveals it — immersively, through code and craft.</p>
     </div>
   </div>
 </section>
+
+<!-- TEAM -->
+<section class="team-section">
+  <div class="team-header">
+    <div class="section-tag reveal">The Studio</div>
+    <h2 class="team-header-title reveal reveal-delay-1">The people behind<br>every <em>experience.</em></h2>
+  </div>
+  <div class="team-grid">
+    <div class="team-card reveal">
+      <div class="team-avatar">MF</div>
+      <div class="team-name">Marco Ferrante</div>
+      <div class="team-role">Co-founder &amp; Lead Architect</div>
+      <p class="team-bio">Trained at the Politecnico di Milano, Marco leads spatial design and the architectural vision of every property experience. With a background in parametric design and digital fabrication, he bridges the gap between built space and virtual representation.</p>
+      <div class="team-credential">
+        <span>Politecnico di Milano — M.Arch, Architecture &amp; Urban Design</span>
+        <span>Est. 2020 · Spatial Computing &amp; WebXR</span>
+      </div>
+    </div>
+    <div class="team-card reveal reveal-delay-1">
+      <div class="team-avatar">LH</div>
+      <div class="team-name">Lena Hoffmann</div>
+      <div class="team-role">Co-founder &amp; Spatial Computing Lead</div>
+      <p class="team-bio">Lena heads the technical development of every immersive microsite — from Three.js spatial engines to real-time rendering pipelines. Based in Luxembourg, she also oversees client relationships across the Grand Duchy and Benelux markets.</p>
+      <div class="team-credential">
+        <span>MSc Computer Science, KU Leuven</span>
+        <span>Former spatial UX engineer, automotive industry</span>
+      </div>
+    </div>
+    <div class="team-card reveal reveal-delay-2">
+      <div class="team-avatar">SD</div>
+      <div class="team-name">Serkan Demir</div>
+      <div class="team-role">Director, Istanbul &amp; MENA Markets</div>
+      <p class="team-bio">Serkan leads production and client partnerships across Istanbul and the broader MENA region. An architect and urban researcher with deep knowledge of the Bosphorus and Anatolian property markets, he connects international buyers with the city's most exceptional properties.</p>
+      <div class="team-credential">
+        <span>MSc Urban Design, Istanbul Technical University</span>
+        <span>Fluent in Turkish, English, German</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 <section class="quote-section">
   <div class="quote-deco">"</div>
@@ -260,7 +331,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
   </div>
   <div class="pillars">
     <div class="pillar reveal"><div class="pillar-num">I · Architecture</div><h3 class="pillar-title">Spatial Design &<br><em>Visualization</em></h3><p class="pillar-text">Trained in the European tradition of architecture. We understand proportion, light, materiality, and the emotional language of space.</p></div>
-    <div class="pillar reveal reveal-delay-1"><div class="pillar-num">II · Spatial Computing</div><h3 class="pillar-title">Three.js &<br><em>WebXR</em></h3><p class="pillar-text">Five years building immersive web experiences. From real-time 3D rendering to spatial audio, we engineer the technology that makes virtual walkthroughs feel real.</p></div>
+    <div class="pillar reveal reveal-delay-1"><div class="pillar-num">II · Spatial Computing</div><h3 class="pillar-title">Three.js &<br><em>WebXR</em></h3><p class="pillar-text">Since 2020, building immersive web experiences. From real-time 3D rendering to spatial audio, we engineer the technology that makes virtual walkthroughs feel real.</p></div>
     <div class="pillar reveal reveal-delay-2"><div class="pillar-num">III · Cross-Platform</div><h3 class="pillar-title">One URL,<br><em>Every Device</em></h3><p class="pillar-text">Mobile, desktop, tablet, VR headset — our single-codebase philosophy means your property experience works everywhere, instantly, without downloads or apps.</p></div>
     <div class="pillar reveal"><div class="pillar-num">IV · Cinematic Craft</div><h3 class="pillar-title">Visual<br><em>Storytelling</em></h3><p class="pillar-text">Every frame, every transition, every camera movement is designed. We bring cinematic sensibility to digital property presentation.</p></div>
     <div class="pillar reveal reveal-delay-1"><div class="pillar-num">V · International Reach</div><h3 class="pillar-title">European Training,<br><em>Global Vision</em></h3><p class="pillar-text">With roots in Milan, Luxembourg, and Istanbul, we bring an international perspective to every project. We understand diverse markets and cultural nuances in luxury real estate.</p></div>
@@ -274,7 +345,7 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
     <h2 class="stats-title reveal reveal-delay-1">The difference is in the <em>details.</em></h2>
   </div>
   <div class="stats-row">
-    <div class="stat-cell reveal"><div class="stat-number">5<sup>+</sup></div><div class="stat-label">Years in spatial web<br>& metaverse experience</div></div>
+    <div class="stat-cell reveal"><div class="stat-number" style="font-size:clamp(2rem,5vw,3.5rem)">Est. 2020</div><div class="stat-label">Spatial computing &<br>WebXR studio</div></div>
     <div class="stat-cell reveal reveal-delay-1"><div class="stat-number">3</div><div class="stat-label">Cities headquartered<br>Luxembourg · Milan · Istanbul</div></div>
     <div class="stat-cell reveal reveal-delay-2"><div class="stat-number">1</div><div class="stat-label">Codebase for all devices<br>Mobile, desktop & VR</div></div>
     <div class="stat-cell reveal reveal-delay-3"><div class="stat-number">∞</div><div class="stat-label">Possibilities — every<br>project is bespoke</div></div>
@@ -310,13 +381,13 @@ footer{background:#2a3524;padding:5rem 3.5rem 3rem;border-top:1px solid rgba(255
       <p class="footer-tagline">Immersive digital experiences for properties of distinction. Luxembourg · Milan · Istanbul · Worldwide.</p>
     </div>
     <div><div class="footer-col-title">Explore</div><ul class="footer-links"><li><a href="/services">Services</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About Us</a></li><li><a href="/blog">Journal</a></li><li><a href="/#properties">Properties</a></li></ul></div>
-    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/">Luxembourg</a></li><li><a href="/">Milan</a></li><li><a href="/">Istanbul</a></li><li><a href="/">International</a></li></ul></div>
-    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li><li><a href="/about">About</a></li></ul></div>
+    <div><div class="footer-col-title">Cities</div><ul class="footer-links"><li><a href="/luxembourg">Luxembourg</a></li><li><a href="/milan">Milan</a></li><li><a href="/istanbul">Istanbul</a></li><li><a href="/about">International Inquiries</a></li></ul></div>
+    <div><div class="footer-col-title">Contact</div><ul class="footer-links"><li><a href="mailto:hello@mergvs.com">hello@mergvs.com</a></li><li><a href="#" data-mgv-open>Request a Demo</a></li><li><a href="/agents">For Agents</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span class="footer-legal">© 2025 MERGVS. All rights reserved.</span>
     <span class="footer-legal">Luxembourg · Milan · Istanbul</span>
-    <span class="footer-legal">Privacy · Terms</span>
+    <span class="footer-legal"><a href="/privacy" style="color:inherit;text-decoration:none">Privacy Policy</a> · <a href="/terms" style="color:inherit;text-decoration:none">Terms of Service</a></span>
   </div>
 </footer>
 
