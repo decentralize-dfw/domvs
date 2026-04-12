@@ -62,12 +62,14 @@
             renderPanelHtml, assetUrlFor,
             isColliderEntry
         } from 'https://mergvs.com/demo2-xlsx/xlsx-loader-4.js';
+        import { HotspotManager } from 'https://mergvs.com/demo2-xlsx/hotspot-manager.js';
 
         const SCENE_INDEX = 5;
 
         let scene, renderer, composer, camera, pointerLockControls, pmremGenerator;
         let config = null;
         let sceneCfg = null;
+        let hotspotMgr = null;
         const clock = new THREE.Clock();
 
         // --- Walk-thru state (defaults, overridden from xlsx) ---
@@ -269,6 +271,8 @@
                 leftHtmlPanel.style.display  = 'block';
                 rightHtmlPanel.style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr.loadHotspots();
                 fadeOutLoading();
                 updateMobileJoystick();
             }).catch((e) => {
@@ -480,6 +484,7 @@
             if (colliderMeshes.length > 0) {
                 updatePlayer(delta);
             }
+            if (hotspotMgr) hotspotMgr.update();
             if (composer) composer.render();
         }
 

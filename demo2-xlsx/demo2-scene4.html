@@ -61,12 +61,14 @@
             renderPanelHtml, assetUrlFor,
             parseCameraPositionAction
         } from 'https://mergvs.com/demo2-xlsx/xlsx-loader-4.js';
+        import { HotspotManager } from 'https://mergvs.com/demo2-xlsx/hotspot-manager.js';
 
         const SCENE_INDEX = 4;
 
         let scene, renderer, composer, camera, orbitControls, pmremGenerator;
         let config = null;
         let sceneCfg = null;
+        let hotspotMgr = null;
         let cameraPositions = []; // Parsed from button actions
         const clock = new THREE.Clock();
 
@@ -126,8 +128,10 @@
             orbitControls.update();
 
             // Panel IDs are html_scene4_cam{N}_left/right where N = index+1
-            const kod = btn.kod || `toggle-${index + 1}`;
+            const btn = sceneCfg.buttons[index];
+            const kod = btn?.kod || `toggle-${index + 1}`;
             updatePanelsById(`${kod}-left`, `${kod}-right`);
+            if (hotspotMgr) hotspotMgr.setToggle(kod);
 
             const btn = sceneCfg.buttons[index];
             descriptionEl.textContent = `Camera: ${btn?.name || ''}`;
@@ -291,6 +295,8 @@
                 backgroundImgEl.style.display = 'none';
                 document.getElementById('modelLabel').style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr.loadHotspots();
                 if (sceneCfg.buttons.length > 0) {
                     selectCamera(0);
                 }
@@ -322,6 +328,7 @@
         function animate() {
             const delta = clock.getDelta();
             if (orbitControls) orbitControls.update(delta);
+            if (hotspotMgr) hotspotMgr.update();
             if (composer) composer.render();
         }
 

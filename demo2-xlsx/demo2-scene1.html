@@ -59,12 +59,14 @@
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
         import { PMREMGenerator } from 'three';
         import { loadVeaConfig, yes, num, renderPanelHtml, assetUrlFor } from 'https://mergvs.com/demo2-xlsx/xlsx-loader-4.js';
+        import { HotspotManager } from 'https://mergvs.com/demo2-xlsx/hotspot-manager.js';
 
         const SCENE_INDEX = 1;
 
         let scene, renderer, composer, camera, orbitControls, pmremGenerator;
         let config = null;
         let sceneCfg = null;
+        let hotspotMgr = null;
         const clock = new THREE.Clock();
 
         const loadingEl = document.getElementById('loading');
@@ -116,6 +118,7 @@
             // panel items tagged "toggle-1-left" / "toggle-1-right"
             const kod = btn.kod || `toggle-${index + 1}`;
             updatePanelsById(`${kod}-left`, `${kod}-right`);
+            if (hotspotMgr) hotspotMgr.setToggle(kod);
             descriptionEl.textContent = `Info for ${btn?.name || ''}`;
             descriptionEl.style.display = 'block';
         }
@@ -287,6 +290,9 @@
                 if (sceneCfg.buttons.length > 0) {
                     selectVariant(0);
                 }
+                // Hotspots
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr.loadHotspots();
                 fadeOutLoading();
             }).catch((e) => {
                 console.error(e);
@@ -324,6 +330,7 @@
         function animate() {
             const delta = clock.getDelta();
             if (orbitControls) orbitControls.update(delta);
+            if (hotspotMgr) hotspotMgr.update();
             if (composer) composer.render();
         }
 
