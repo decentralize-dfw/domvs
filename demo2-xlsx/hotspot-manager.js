@@ -130,7 +130,7 @@ export class HotspotManager {
             const tex = new THREE.TextureLoader().load(url);
             tex.colorSpace = THREE.SRGBColorSpace;
             const mat = new THREE.SpriteMaterial({
-                map: tex, depthTest: false, sizeAttenuation: true,
+                map: tex, depthTest: true, sizeAttenuation: true,
                 transparent: true
             });
             const sprite = new THREE.Sprite(mat);
@@ -168,7 +168,7 @@ export class HotspotManager {
         x.beginPath(); x.arc(32, 32, 8, 0, Math.PI * 2);
         x.fillStyle = '#fff'; x.fill();
         const mat = new THREE.SpriteMaterial({
-            map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+            map: new THREE.CanvasTexture(c), depthTest: true, sizeAttenuation: true
         });
         const s = new THREE.Sprite(mat);
         s.scale.set(0.5, 0.5, 0.5);
@@ -187,7 +187,7 @@ export class HotspotManager {
         x.textAlign = 'center'; x.textBaseline = 'middle';
         x.fillText(text || '', 256, 64);
         const mat = new THREE.SpriteMaterial({
-            map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+            map: new THREE.CanvasTexture(c), depthTest: true, sizeAttenuation: true
         });
         const s = new THREE.Sprite(mat);
         s.scale.set(1.5, 0.4, 1);
