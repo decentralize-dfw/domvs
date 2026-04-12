@@ -758,17 +758,30 @@ export class CameraEditor {
             this.orbitControls.update();
         }
 
-        // Compute scene bounding box from ALL scene meshes
+        // Compute scene bounding box from model meshes ONLY
+        // (skip environment spheres, helpers, sprites, huge skyboxes)
         this._sceneBBox = new THREE.Box3();
         this.scene.traverse(c => {
-            if (c.isMesh && !c.userData._isCamHelper) {
-                c.geometry.computeBoundingBox();
-                const worldBB = c.geometry.boundingBox.clone();
-                worldBB.applyMatrix4(c.matrixWorld);
-                this._sceneBBox.union(worldBB);
+            if (!c.isMesh) return;
+            if (c.userData._isCamHelper) return;
+            // Skip skybox/environment spheres (huge geometry)
+            if (!c.geometry || !c.geometry.boundingBox) {
+                c.geometry?.computeBoundingBox();
             }
+            if (!c.geometry?.boundingBox) return;
+            const size = new THREE.Vector3();
+            c.geometry.boundingBox.getSize(size);
+            // Skip objects larger than 500 units (likely env sphere)
+            if (size.x > 500 || size.y > 500 || size.z > 500) return;
+            const worldBB = c.geometry.boundingBox.clone();
+            worldBB.applyMatrix4(c.matrixWorld);
+            this._sceneBBox.union(worldBB);
         });
-        console.log('CamEditor bbox:', this._sceneBBox.min.y, '→', this._sceneBBox.max.y, 'height:', this._sceneBBox.max.y - this._sceneBBox.min.y);
+        // Fallback if bbox is still empty or invalid
+        if (this._sceneBBox.isEmpty()) {
+            this._sceneBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
+        }
+        console.log('CamEditor bbox:', this._sceneBBox.min.y.toFixed(2), '→', this._sceneBBox.max.y.toFixed(2));
 
         // Dim models %40 + attach clipping plane — clone materials
         // so shared materials don't bleed changes to other objects
