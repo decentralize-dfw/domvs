@@ -59,12 +59,14 @@
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
         import { PMREMGenerator } from 'three';
         import { loadVeaConfig, yes, num, renderPanelHtml, assetUrlFor } from 'https://mergvs.com/demo2-xlsx/xlsx-loader-4.js';
+        import { HotspotManager } from 'https://mergvs.com/demo2-xlsx/hotspot-manager.js';
 
         const SCENE_INDEX = 2;
 
         let scene, renderer, composer, camera, orbitControls, pmremGenerator;
         let config = null;
         let sceneCfg = null;
+        let hotspotMgr = null;
         const clock = new THREE.Clock();
         const loadedModels = {}; // keyed by model id (m1, m3, m4, m5)
 
@@ -135,6 +137,8 @@
 
             const btn = sceneCfg.buttons[index];
             if (btn) {
+                const varKod = btn.kod || `toggle-${index + 1}`;
+                if (hotspotMgr) hotspotMgr.setToggle(varKod);
                 const action = parseVisibilityAction(btn.action);
                 action.visible.forEach(id => setModelVisibility(id, true));
                 action.hidden.forEach(id => setModelVisibility(id, false));
@@ -311,6 +315,8 @@
                 backgroundImgEl.style.display = 'none';
                 document.getElementById('modelLabel').style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr.loadHotspots();
                 if (sceneCfg.buttons.length > 0) {
                     selectVariant(0);
                 }
@@ -351,6 +357,7 @@
         function animate() {
             const delta = clock.getDelta();
             if (orbitControls) orbitControls.update(delta);
+            if (hotspotMgr) hotspotMgr.update();
             if (composer) composer.render();
         }
 
