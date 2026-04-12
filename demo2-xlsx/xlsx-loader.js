@@ -76,6 +76,7 @@ export async function loadVeaConfig(xlsxPath) {
     return {
         assets,
         scenes,
+        hotspots: parseHotspots(rows),
         bgImageUrl: findAssetByType(assets, 'JPEG')?.url || null,
         hdriUrl:    findAssetByType(assets, 'HDRI')?.url || null
     };
@@ -714,6 +715,84 @@ export function renderPanelHtml(panel) {
          + `<div class="vea-tabs">${tabButtons}</div>`
          + `<div class="vea-tab-body">${tabBodies}</div>`
          + `</div>`;
+}
+
+/* ---------- Hotspot parser ----------
+ *
+ * Global section "▌ BÖLÜM 2 — HOTSPOT SLOTLARI" lives at the
+ * bottom of the sheet (after all scenes). Each row describes a 3D
+ * marker (GLB or PNG sprite) with position/rotation/scale, a popup
+ * content (text/image/video/…), the scene it belongs to, and an
+ * optional toggle-kod for conditional visibility.
+ *
+ * Column layout:
+ *   A: #   B: Ad   C: Hotspot Tip   D: Hotspot Link
+ *   E: Popup Tip   F: Popup İçerik/Link
+ *   G-I: Pos X/Y/Z   J-L: Rot X/Y/Z   M: Scale
+ *   N: Toggle Kod (empty = always visible)
+ *   O: Sahne (0-5)
+ */
+function parseHotspots(rows) {
+    // Find the "▌ BÖLÜM 2" marker
+    let m = -1;
+    for (let i = 0; i < rows.length; i++) {
+        const a = rows[i]?.[0];
+        if (a && String(a).includes('HOTSPOT SLOT')) { m = i; break; }
+    }
+    if (m < 0) return [];
+
+    const all = [];
+    // Data starts at m+2 (m+1 is the column header row)
+    for (let i = m + 2; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row) continue;
+        const name = row[1];
+        if (!name || String(name).trim().toLowerCase() === 'null') continue;
+
+        const read  = (idx) => {
+            const v = row[idx];
+            if (v === null || v === undefined) return '';
+            const s = String(v).trim();
+            return (s.toLowerCase() === 'null') ? '' : s;
+        };
+        const readN = (idx) => {
+            const v = row[idx];
+            if (v === null || v === undefined) return 0;
+            const n = parseFloat(v);
+            return isNaN(n) ? 0 : n;
+        };
+
+        all.push({
+            order:      readN(0),
+            name:       String(name).trim(),
+            hotspotTip: read(2).toLowerCase() || 'png',
+            hotspotUrl: read(3),
+            popupTip:   read(4).toLowerCase() || 'text',
+            popupContent: read(5),
+            pos:   { x: readN(6),  y: readN(7),  z: readN(8) },
+            rot:   { x: readN(9),  y: readN(10), z: readN(11) },
+            scale: readN(12) || 1,
+            toggleKod: read(13),
+            scene: read(14)
+        });
+    }
+    return all;
+}
+
+/**
+ * Filter hotspots for a specific scene (and optionally a toggle).
+ *   getHotspotsForScene(config, 2)         → all scene-2 hotspots
+ *   getHotspotsForScene(config, 2, 'toggle-1') → only toggle-1 + always-visible
+ */
+export function getHotspotsForScene(config, sceneIndex, activeToggleKod) {
+    if (!config || !config.hotspots) return [];
+    const si = String(sceneIndex);
+    return config.hotspots.filter(h => {
+        if (h.scene !== si && h.scene !== '') return false;
+        if (!activeToggleKod) return true;
+        // Show if no toggle restriction OR matches active toggle
+        return !h.toggleKod || h.toggleKod === activeToggleKod;
+    });
 }
 
 /* ---------- Document-level tab click delegate ----------
