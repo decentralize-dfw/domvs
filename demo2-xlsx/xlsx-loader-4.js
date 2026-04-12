@@ -323,11 +323,27 @@ function parseModelsSection(rows, sceneIdx, sceneEnd, assets) {
         let modelId = idMatch ? idMatch[1] : null;
         if (modelId && /^modelurls$/i.test(modelId)) modelId = null;
 
+        // D column: "YES"=always visible, "NO"=hidden,
+        // "toggle-1" etc.=visible only in that toggle
+        const rawD = row[3] ? String(row[3]).trim() : '';
+        let modelVisible = true;
+        let modelToggleKod = '';
+        if (rawD.toUpperCase() === 'NO') {
+            modelVisible = false;
+        } else if (rawD.toUpperCase() === 'YES' || !rawD || rawD === 'null') {
+            modelVisible = true;
+        } else {
+            // Toggle kod — initially hidden, shown by scene code
+            modelVisible = false;
+            modelToggleKod = rawD;
+        }
+
         models.push({
             url,
             assetType: assetRef ? String(assetRef.type || '') : '',
             assetName: assetRef ? String(assetRef.name || '') : '',
-            visible: yes(row[3]),
+            visible: modelVisible,
+            toggleKod: modelToggleKod,
             pos:   { x: num(row[4]),  y: num(row[5]),  z: num(row[6])  },
             rot:   { x: num(row[7]),  y: num(row[8]),  z: num(row[9])  },
             scale: { x: num(row[10]), y: num(row[11]), z: num(row[12]) },

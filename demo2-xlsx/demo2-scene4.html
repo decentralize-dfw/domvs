@@ -61,7 +61,7 @@
             renderPanelHtml, assetUrlFor,
             parseCameraPositionAction
         } from 'https://mergvs.com/demo2-xlsx/xlsx-loader-4.js';
-        import { HotspotManager } from 'https://mergvs.com/demo2-xlsx/hotspot-manager.js';
+        import { HotspotManager, CameraEditor } from 'https://mergvs.com/demo2-xlsx/hotspot-manager.js';
 
         const SCENE_INDEX = 4;
 
@@ -69,6 +69,7 @@
         let config = null;
         let sceneCfg = null;
         let hotspotMgr = null;
+        let camEditor = null;
         let cameraPositions = []; // Parsed from button actions
         const clock = new THREE.Clock();
 
@@ -296,6 +297,7 @@
                 document.getElementById('modelLabel').style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                camEditor = new CameraEditor(camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
                 hotspotMgr.loadHotspots();
                 if (sceneCfg.buttons.length > 0) {
                     selectCamera(0);

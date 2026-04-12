@@ -286,13 +286,13 @@
                 backgroundImgEl.style.display = 'none';
                 document.getElementById('modelLabel').style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';
+                // Hotspots — ÖNCE yükle, SONRA selectVariant toggle'ı uygulasın
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr.loadHotspots();
                 // Select first variant by default
                 if (sceneCfg.buttons.length > 0) {
                     selectVariant(0);
                 }
-                // Hotspots
-                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
-                hotspotMgr.loadHotspots();
                 fadeOutLoading();
             }).catch((e) => {
                 console.error(e);

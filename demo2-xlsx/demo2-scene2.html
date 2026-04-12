@@ -113,23 +113,21 @@
         }
 
         /**
-         * Parse a toggle button action string for model IDs to show/hide.
-         * Example: "m1+m4 görünür · m3+m5 gizli — Klasik Cephe"
-         * → { visible: ['m1','m4'], hidden: ['m3','m5'] }
+         * Show/hide models based on their toggleKod from Excel.
+         * Models with toggleKod matching activeKod → visible.
+         * Models with empty toggleKod → always visible.
+         * Models with different toggleKod → hidden.
          */
-        function parseVisibilityAction(action) {
-            const result = { visible: [], hidden: [] };
-            if (!action) return result;
-            const visibleMatch = action.match(/([a-zA-Z0-9_+]+)\s*görünür/);
-            const hiddenMatch  = action.match(/([a-zA-Z0-9_+]+)\s*gizli/);
-            if (visibleMatch) result.visible = visibleMatch[1].split('+').filter(Boolean);
-            if (hiddenMatch)  result.hidden  = hiddenMatch[1].split('+').filter(Boolean);
-            return result;
-        }
-
-        function setModelVisibility(id, visible) {
-            const m = loadedModels[id];
-            if (m) m.visible = visible;
+        function applyModelToggle(activeKod) {
+            for (const id in loadedModels) {
+                const root = loadedModels[id];
+                const entry = sceneCfg.models.find(m => m.id === id);
+                if (!entry || !entry.toggleKod) {
+                    root.visible = true; // no toggle → always visible
+                } else {
+                    root.visible = (entry.toggleKod === activeKod);
+                }
+            }
         }
 
         function selectVariant(index) {
@@ -139,9 +137,7 @@
             if (btn) {
                 const varKod = btn.kod || `toggle-${index + 1}`;
                 if (hotspotMgr) hotspotMgr.setToggle(varKod);
-                const action = parseVisibilityAction(btn.action);
-                action.visible.forEach(id => setModelVisibility(id, true));
-                action.hidden.forEach(id => setModelVisibility(id, false));
+                applyModelToggle(varKod);
             }
 
             const kod = btn.kod || `toggle-${index + 1}`;
