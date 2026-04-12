@@ -1,0 +1,24 @@
+Options -Indexes
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Remove .html extension — serve clean URLs
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME}\.html -f
+  RewriteRule ^([^/]+)/?$ $1.html [L]
+
+  # 301 redirects: legacy blog-N URLs → clean slugs
+  RewriteRule ^blog-1$   /blog/the-bosphorus-premium                   [R=301,L]
+  RewriteRule ^blog-2$   /blog/brera-navigli-isola                     [R=301,L]
+  RewriteRule ^blog-3$   /blog/luxembourg-quiet-supremacy              [R=301,L]
+  RewriteRule ^blog-4$   /blog/psychology-luxury-property-presentation [R=301,L]
+  RewriteRule ^blog-5$   /blog/meridian-triangle                       [R=301,L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
