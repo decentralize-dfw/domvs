@@ -134,7 +134,6 @@
             updatePanelsById(`${kod}-left`, `${kod}-right`);
             if (hotspotMgr) hotspotMgr.setToggle(kod);
 
-            const btn = sceneCfg.buttons[index];
             descriptionEl.textContent = `Camera: ${btn?.name || ''}`;
             descriptionEl.style.display = 'block';
         }
