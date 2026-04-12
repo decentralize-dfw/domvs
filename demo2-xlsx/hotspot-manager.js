@@ -68,13 +68,16 @@ export class HotspotManager {
     update() {
         for (const obj of this.objects) {
             if (obj.label) {
-                // Position label above the hotspot at fixed world size
-                // (independent of group scale)
-                const wp = obj.group.position;
-                obj.label.position.set(wp.x, wp.y + 0.8, wp.z);
+                // Compute bounding box top of the hotspot group
+                const box = new THREE.Box3().setFromObject(obj.group);
+                const topY = box.max.y;
+                const center = new THREE.Vector3();
+                box.getCenter(center);
+                // Place label just above the top of bounding box
+                obj.label.position.set(center.x, topY + 0.3, center.z);
                 obj.label.visible = obj.group.visible;
-                // Fixed scale regardless of hotspot size
-                obj.label.scale.set(1.2, 0.3, 1);
+                // Fixed world-space size (won't change with hotspot scale)
+                obj.label.scale.set(3, 0.8, 1);
             }
             if (obj.popupOpen) this._updatePopupPosition(obj);
         }
@@ -234,9 +237,11 @@ export class HotspotManager {
 
     _updatePopupPosition(obj) {
         if (!obj.popupEl) return;
-        // Project hotspot 3D position to screen coordinates
-        const worldPos = obj.group.position.clone();
-        worldPos.y += 1.5; // offset above the marker
+        // Project bounding box top to screen
+        const box = new THREE.Box3().setFromObject(obj.group);
+        const worldPos = new THREE.Vector3();
+        box.getCenter(worldPos);
+        worldPos.y = box.max.y + 0.8; // above bounding box top
         worldPos.project(this.camera);
         const screenX = (worldPos.x * 0.5 + 0.5) * window.innerWidth;
         const screenY = (-worldPos.y * 0.5 + 0.5) * window.innerHeight;
