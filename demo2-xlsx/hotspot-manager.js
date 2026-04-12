@@ -60,7 +60,13 @@ export class HotspotManager {
     setToggle(toggleKod) {
         for (const obj of this.objects) {
             const tk = obj.data.toggleKod;
-            obj.group.visible = !tk || tk === toggleKod || toggleKod === null;
+            if (!tk) {
+                // toggleKod boş → her zaman görünür
+                obj.group.visible = true;
+            } else {
+                // toggleKod dolu → sadece eşleşen toggle'da görünür
+                obj.group.visible = (tk === toggleKod);
+            }
         }
         this._closeAllPopups();
     }
@@ -77,7 +83,7 @@ export class HotspotManager {
                 obj.label.position.set(center.x, topY + 0.3, center.z);
                 obj.label.visible = obj.group.visible;
                 // Fixed world-space size (won't change with hotspot scale)
-                obj.label.scale.set(3, 0.8, 1);
+                obj.label.scale.set(4.5, 1.2, 1);
             }
             if (obj.popupOpen) this._updatePopupPosition(obj);
         }
