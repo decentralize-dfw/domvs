@@ -1,0 +1,6 @@
+# VEA Demo 3 — config reference
+# Active source:
+https://mergvs.com/demo3-xlsx/demo3-input.xlsx
+
+# Google Sheets (hidden):
+# https://docs.google.com/spreadsheets/d/1PHlQs_sQdEidhx5drZQrY9flFT0yevKMhOblOzcObks/export?format=xlsx
