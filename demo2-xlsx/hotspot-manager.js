@@ -656,3 +656,200 @@ export class HotspotManager {
         document.head.appendChild(st);
     }
 }
+
+/* =============================================================
+   CAMERA EDITOR — Shift+C toggle
+   Editable camera positions for scenes with toggle cameras.
+   Shows a list panel with Pos/LookAt/FOV fields, arrow helpers
+   in 3D, and clipboard export in Excel format.
+   ============================================================= */
+
+export class CameraEditor {
+    constructor(camera, renderer, config, sceneIndex, orbitControls, sceneCfg) {
+        this.camera = camera;
+        this.renderer = renderer;
+        this.config = config;
+        this.sceneIndex = sceneIndex;
+        this.orbitControls = orbitControls;
+        this.sceneCfg = sceneCfg;
+        this.active = false;
+        this._panel = null;
+        this._cameras = []; // parsed camera positions from buttons
+
+        this._parseFromButtons();
+        this._setupDOM();
+        this._setupEvents();
+    }
+
+    _parseFromButtons() {
+        if (!this.sceneCfg?.buttons) return;
+        for (const btn of this.sceneCfg.buttons) {
+            const action = btn.action || '';
+            const m = action.match(
+                /Pos\(([^)]+)\)\s*(?:→|->)?\s*LookAt\(([^)]+)\)(?:\s*·\s*FOV\s*(\d+(?:\.\d+)?))?/
+            );
+            if (m) {
+                const p = m[1].split(',').map(s => parseFloat(s.trim()));
+                const l = m[2].split(',').map(s => parseFloat(s.trim()));
+                this._cameras.push({
+                    name: btn.name,
+                    kod: btn.kod || btn.id,
+                    pos: { x: p[0]||0, y: p[1]||0, z: p[2]||0 },
+                    lookAt: { x: l[0]||0, y: l[1]||0, z: l[2]||0 },
+                    fov: m[3] ? parseFloat(m[3]) : 80
+                });
+            }
+        }
+    }
+
+    _toggle() {
+        this.active = !this.active;
+        this._panel.style.display = this.active ? 'block' : 'none';
+        if (this.active) this._buildList();
+    }
+
+    _buildList() {
+        const body = this._panel.querySelector('.vea-cam-list-body');
+        body.innerHTML = '';
+        this._cameras.forEach((cam, i) => {
+            const row = document.createElement('div');
+            row.className = 'vea-cam-row';
+
+            const title = document.createElement('div');
+            title.className = 'vea-cam-row-title';
+            title.textContent = cam.name;
+            title.addEventListener('click', () => this._goToCamera(i));
+            row.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = 'vea-hs-list-grid';
+
+            const fields = [
+                { label: 'PX', get: () => cam.pos.x, set: v => cam.pos.x = v },
+                { label: 'PY', get: () => cam.pos.y, set: v => cam.pos.y = v },
+                { label: 'PZ', get: () => cam.pos.z, set: v => cam.pos.z = v },
+                { label: 'LX', get: () => cam.lookAt.x, set: v => cam.lookAt.x = v },
+                { label: 'LY', get: () => cam.lookAt.y, set: v => cam.lookAt.y = v },
+                { label: 'LZ', get: () => cam.lookAt.z, set: v => cam.lookAt.z = v },
+                { label: 'FOV', get: () => cam.fov, set: v => cam.fov = v },
+            ];
+
+            for (const f of fields) {
+                const cell = document.createElement('div');
+                cell.className = 'vea-hs-field';
+                const lbl = document.createElement('span');
+                lbl.className = 'vea-hs-field-label';
+                lbl.textContent = f.label;
+                cell.appendChild(lbl);
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'vea-hs-field-input';
+                input.value = f.get().toFixed(2);
+                input._fieldRef = f;
+                const commit = () => {
+                    const val = parseFloat(input.value.replace(',', '.'));
+                    if (!isNaN(val)) { f.set(val); input.value = f.get().toFixed(2); }
+                    else input.value = f.get().toFixed(2);
+                };
+                input.addEventListener('keydown', e => { if (e.key==='Enter'){e.preventDefault();commit();input.blur();} e.stopPropagation(); });
+                input.addEventListener('blur', commit);
+                input.addEventListener('focus', () => input.select());
+                input.addEventListener('click', e => e.stopPropagation());
+                input.addEventListener('mousedown', e => e.stopPropagation());
+                input.addEventListener('pointerdown', e => e.stopPropagation());
+                cell.appendChild(input);
+                grid.appendChild(cell);
+            }
+
+            // "Go" button — apply this camera
+            const goBtn = document.createElement('button');
+            goBtn.className = 'vea-cam-go';
+            goBtn.textContent = '▶ Git';
+            goBtn.addEventListener('click', (e) => { e.stopPropagation(); this._goToCamera(i); });
+            grid.appendChild(goBtn);
+
+            row.appendChild(grid);
+            body.appendChild(row);
+        });
+    }
+
+    _goToCamera(index) {
+        const cam = this._cameras[index];
+        if (!cam) return;
+        this.camera.position.set(cam.pos.x, cam.pos.y, cam.pos.z);
+        this.camera.lookAt(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z);
+        if (this.camera.fov !== undefined) {
+            this.camera.fov = cam.fov;
+            this.camera.updateProjectionMatrix();
+        }
+        if (this.orbitControls) {
+            this.orbitControls.target.set(cam.lookAt.x, cam.lookAt.y, cam.lookAt.z);
+            this.orbitControls.update();
+        }
+    }
+
+    _copyToClipboard() {
+        const fmtNum = n => n.toFixed(3).replace('.', ',');
+        const rows = this._cameras.map((cam, i) => {
+            return [
+                i + 1, cam.name, cam.kod,
+                `Pos(${fmtNum(cam.pos.x)}, ${fmtNum(cam.pos.y)}, ${fmtNum(cam.pos.z)})   → LookAt(${fmtNum(cam.lookAt.x)}, ${fmtNum(cam.lookAt.y)}, ${fmtNum(cam.lookAt.z)})   · FOV ${cam.fov.toFixed(0)}`
+            ].join('\t');
+        });
+        navigator.clipboard.writeText(rows.join('\n')).then(() => {
+            const btn = this._panel.querySelector('.vea-cam-copy');
+            if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '📋 Copy', 2000); }
+        });
+    }
+
+    _setupDOM() {
+        this._panel = document.createElement('div');
+        this._panel.className = 'vea-cam-panel';
+        this._panel.style.display = 'none';
+        this._panel.innerHTML = `
+            <div class="vea-cam-header">
+                <span class="vea-cam-title">📷 KAMERA EDİTÖRÜ</span>
+                <button class="vea-cam-copy">📋 Copy</button>
+                <button class="vea-cam-close">✕</button>
+            </div>
+            <div class="vea-cam-list-body"></div>`;
+        document.body.appendChild(this._panel);
+
+        this._panel.querySelector('.vea-cam-copy').addEventListener('click', e => { e.stopPropagation(); this._copyToClipboard(); });
+        this._panel.querySelector('.vea-cam-close').addEventListener('click', e => { e.stopPropagation(); this._toggle(); });
+        this._panel.addEventListener('mousedown', e => e.stopPropagation());
+        this._panel.addEventListener('pointerdown', e => e.stopPropagation());
+
+        // CSS
+        if (!document.getElementById('vea-cam-css')) {
+            const st = document.createElement('style');
+            st.id = 'vea-cam-css';
+            st.textContent = `
+.vea-cam-panel{position:fixed;right:10px;top:60px;bottom:20px;width:280px;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:12px;z-index:200;overflow-y:auto;font-family:'Raleway',sans-serif;color:#fff}
+.vea-cam-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.vea-cam-title{flex:1;font-size:11px;font-weight:700;letter-spacing:.12em;color:#c9a96e}
+.vea-cam-copy,.vea-cam-close{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit}
+.vea-cam-copy:hover{background:rgba(201,169,110,0.2);color:#c9a96e}
+.vea-cam-close{color:#ff6666;border-color:rgba(255,80,80,0.3)}
+.vea-cam-close:hover{background:rgba(255,50,50,0.2)}
+.vea-cam-list-body{padding:8px}
+.vea-cam-row{padding:8px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02)}
+.vea-cam-row-title{font-size:12px;font-weight:600;color:#c9a96e;margin-bottom:5px;cursor:pointer}
+.vea-cam-row-title:hover{text-decoration:underline}
+.vea-cam-go{background:rgba(201,169,110,0.15);border:1px solid rgba(201,169,110,0.4);color:#c9a96e;padding:3px 10px;border-radius:5px;font-size:9px;cursor:pointer;font-family:inherit;grid-column:span 2}
+.vea-cam-go:hover{background:rgba(201,169,110,0.3)}
+`;
+            document.head.appendChild(st);
+        }
+    }
+
+    _setupEvents() {
+        document.addEventListener('keydown', e => {
+            if (e.shiftKey && e.code === 'KeyC') {
+                e.preventDefault();
+                this._toggle();
+            }
+        });
+    }
+}
