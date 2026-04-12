@@ -5,6 +5,15 @@
 
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+const _gltfLoader = new GLTFLoader();
+const _dracoLoader = new DRACOLoader();
+_dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+_gltfLoader.setDRACOLoader(_dracoLoader);
+_gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
 export class HotspotManager {
     constructor(threeScene, camera, renderer, config, sceneIndex, orbitControls) {
@@ -79,43 +88,110 @@ export class HotspotManager {
         group.scale.set(s, s, s);
         group.userData.hotspotData = data;
 
-        // Gold circle sprite
-        const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.beginPath(); ctx.arc(32, 32, 28, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(201,169,110,0.85)'; ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 3; ctx.stroke();
-        ctx.beginPath(); ctx.arc(32, 32, 8, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff'; ctx.fill();
+        const tip = (data.hotspotTip || 'png').toLowerCase();
+        const url = data.hotspotUrl || '';
+        let clickTarget = null; // the object raycasted for clicks
 
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-            map: new THREE.CanvasTexture(canvas), depthTest: false, sizeAttenuation: true
-        }));
-        sprite.scale.set(0.5, 0.5, 0.5);
-        sprite.userData.isHotspotSprite = true;
-        group.add(sprite);
+        if (tip === 'glb' && url) {
+            // ---- GLB MODEL ----
+            // Load async, add to group when ready. GLB does NOT rotate
+            // with camera (stays fixed in world space).
+            const placeholder = this._makeGoldDot();
+            placeholder.userData.isHotspotSprite = true;
+            group.add(placeholder);
+            clickTarget = placeholder;
 
-        // Label
-        const lc = document.createElement('canvas');
-        lc.width = 512; lc.height = 128;
-        const lx = lc.getContext('2d');
-        lx.fillStyle = 'rgba(0,0,0,0.7)';
-        lx.beginPath(); lx.roundRect(10, 20, 492, 88, 20); lx.fill();
-        lx.strokeStyle = 'rgba(201,169,110,0.6)'; lx.lineWidth = 2; lx.stroke();
-        lx.fillStyle = '#fff'; lx.font = 'bold 36px Arial';
-        lx.textAlign = 'center'; lx.textBaseline = 'middle';
-        lx.fillText(data.name || '', 256, 64);
+            _gltfLoader.load(url, (gltf) => {
+                const model = gltf.scene;
+                model.traverse(c => {
+                    if (c.isMesh) {
+                        c.userData.isHotspotSprite = true;
+                        c.castShadow = false;
+                        c.receiveShadow = false;
+                    }
+                });
+                group.add(model);
+                // Remove placeholder dot once GLB is loaded
+                group.remove(placeholder);
+                placeholder.material.map?.dispose();
+                placeholder.material.dispose();
+                // Use the GLB's first mesh as click target
+                const firstMesh = [];
+                model.traverse(c => { if (c.isMesh) firstMesh.push(c); });
+                if (firstMesh.length) {
+                    const obj = this.objects.find(o => o.group === group);
+                    if (obj) obj.sprite = firstMesh[0];
+                }
+            }, undefined, (err) => {
+                console.warn('Hotspot GLB load failed:', url, err);
+            });
+        } else if (tip === 'png' && url) {
+            // ---- PNG SPRITE (always faces camera) ----
+            const tex = new THREE.TextureLoader().load(url);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            const mat = new THREE.SpriteMaterial({
+                map: tex, depthTest: false, sizeAttenuation: true,
+                transparent: true
+            });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(1, 1, 1);
+            sprite.userData.isHotspotSprite = true;
+            group.add(sprite);
+            clickTarget = sprite;
+        } else {
+            // ---- FALLBACK: gold dot ----
+            const dot = this._makeGoldDot();
+            dot.userData.isHotspotSprite = true;
+            group.add(dot);
+            clickTarget = dot;
+        }
 
-        const label = new THREE.Sprite(new THREE.SpriteMaterial({
-            map: new THREE.CanvasTexture(lc), depthTest: false, sizeAttenuation: true
-        }));
-        label.scale.set(1.5, 0.4, 1);
-        label.position.set(0, 0.6, 0);
+        // Floating name label (always faces camera, sits above marker)
+        const label = this._makeLabelSprite(data.name);
+        label.position.set(0, 0.8, 0);
         group.add(label);
 
         this.scene.add(group);
-        this.objects.push({ data, group, sprite, label, popupOpen: false, popupEl: null });
+        this.objects.push({
+            data, group, sprite: clickTarget, label,
+            popupOpen: false, popupEl: null
+        });
+    }
+
+    _makeGoldDot() {
+        const c = document.createElement('canvas');
+        c.width = 64; c.height = 64;
+        const x = c.getContext('2d');
+        x.beginPath(); x.arc(32, 32, 28, 0, Math.PI * 2);
+        x.fillStyle = 'rgba(201,169,110,0.85)'; x.fill();
+        x.strokeStyle = 'rgba(255,255,255,0.9)'; x.lineWidth = 3; x.stroke();
+        x.beginPath(); x.arc(32, 32, 8, 0, Math.PI * 2);
+        x.fillStyle = '#fff'; x.fill();
+        const mat = new THREE.SpriteMaterial({
+            map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+        });
+        const s = new THREE.Sprite(mat);
+        s.scale.set(0.5, 0.5, 0.5);
+        return s;
+    }
+
+    _makeLabelSprite(text) {
+        const c = document.createElement('canvas');
+        c.width = 512; c.height = 128;
+        const x = c.getContext('2d');
+        x.clearRect(0, 0, 512, 128);
+        x.fillStyle = 'rgba(0,0,0,0.7)';
+        x.beginPath(); x.roundRect(10, 20, 492, 88, 20); x.fill();
+        x.strokeStyle = 'rgba(201,169,110,0.6)'; x.lineWidth = 2; x.stroke();
+        x.fillStyle = '#fff'; x.font = 'bold 36px Arial';
+        x.textAlign = 'center'; x.textBaseline = 'middle';
+        x.fillText(text || '', 256, 64);
+        const mat = new THREE.SpriteMaterial({
+            map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+        });
+        const s = new THREE.Sprite(mat);
+        s.scale.set(1.5, 0.4, 1);
+        return s;
     }
 
     // ---- POPUP ----
@@ -155,11 +231,24 @@ export class HotspotManager {
 
     _updatePopupPosition(obj) {
         if (!obj.popupEl) return;
-        const v = obj.group.position.clone(); v.y += 1.2; v.project(this.camera);
-        const x = (v.x * .5 + .5) * window.innerWidth;
-        const y = (-v.y * .5 + .5) * window.innerHeight;
-        obj.popupEl.style.left = Math.max(10, Math.min(x - 150, innerWidth - 320)) + 'px';
-        obj.popupEl.style.top = Math.max(10, Math.min(y - 200, innerHeight - 100)) + 'px';
+        // Project hotspot 3D position to screen coordinates
+        const worldPos = obj.group.position.clone();
+        worldPos.y += 1.5; // offset above the marker
+        worldPos.project(this.camera);
+        const screenX = (worldPos.x * 0.5 + 0.5) * window.innerWidth;
+        const screenY = (-worldPos.y * 0.5 + 0.5) * window.innerHeight;
+        // Center popup horizontally on the hotspot, place ABOVE it
+        const popupW = 300;
+        const popupH = obj.popupEl.offsetHeight || 200;
+        let left = screenX - popupW / 2;
+        let top = screenY - popupH - 20; // 20px gap above the marker
+        // Clamp to viewport
+        left = Math.max(10, Math.min(left, window.innerWidth - popupW - 10));
+        top = Math.max(10, Math.min(top, window.innerHeight - 50));
+        // If popup would go above viewport, place it below instead
+        if (top < 10) top = screenY + 30;
+        obj.popupEl.style.left = left + 'px';
+        obj.popupEl.style.top = top + 'px';
     }
 
     _closePopup(obj) { if (obj.popupEl) { obj.popupEl.remove(); obj.popupEl = null; } obj.popupOpen = false; }
@@ -380,11 +469,27 @@ export class HotspotManager {
             this.mouse.y = -(e.clientY / innerHeight) * 2 + 1;
             this.raycaster.setFromCamera(this.mouse, this.camera);
 
-            const sprites = this.objects.filter(o => o.group.visible).map(o => o.sprite);
-            const hits = this.raycaster.intersectObjects(sprites);
+            // Collect all clickable targets (sprites for png, meshes for glb)
+            const targets = [];
+            const targetMap = new Map();
+            for (const o of this.objects) {
+                if (!o.group.visible) continue;
+                if (o.sprite) {
+                    targets.push(o.sprite);
+                    targetMap.set(o.sprite, o);
+                }
+                // For GLB hotspots, also add all child meshes
+                o.group.traverse(c => {
+                    if (c.isMesh && c.userData.isHotspotSprite) {
+                        targets.push(c);
+                        targetMap.set(c, o);
+                    }
+                });
+            }
+            const hits = this.raycaster.intersectObjects(targets, false);
             if (hits.length === 0) return;
 
-            const obj = this.objects.find(o => o.sprite === hits[0].object);
+            const obj = targetMap.get(hits[0].object);
             if (!obj) return;
 
             if (this.editMode) {
