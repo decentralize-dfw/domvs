@@ -21,12 +21,12 @@ export const LINK_TXT_URL = 'https://mergvs.com/demo2-xlsx/link.txt';
 
 // --- Section start rows (1-indexed, matching Excel) ---
 const SCENE_START_ROWS = {
-    0: 18,
-    1: 132,
-    2: 246,
-    3: 360,
-    4: 474,
-    5: 587
+    0: 38,
+    1: 152,
+    2: 266,
+    3: 380,
+    4: 494,
+    5: 607
 };
 
 /**
@@ -158,7 +158,7 @@ export function assetUrlFor(_config, modelEntry) {
 function parseGlobalAssets(rows) {
     const assets = {};
     // Excel rows 9..29 cover the main assets + empty slots.
-    for (let excelRow = 6; excelRow <= 20; excelRow++) {
+    for (let excelRow = 7; excelRow <= 36; excelRow++) {
         const row = rows[excelRow - 1];
         if (!row) continue;
         const name = row[1];  // col B
