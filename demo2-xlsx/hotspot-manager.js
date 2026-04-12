@@ -66,15 +66,18 @@ export class HotspotManager {
     }
 
     update() {
-        // Labels face camera
         for (const obj of this.objects) {
-            if (obj.label) obj.label.lookAt(this.camera.position);
-        }
-        // Update popup screen positions
-        for (const obj of this.objects) {
+            if (obj.label) {
+                // Position label above the hotspot at fixed world size
+                // (independent of group scale)
+                const wp = obj.group.position;
+                obj.label.position.set(wp.x, wp.y + 0.8, wp.z);
+                obj.label.visible = obj.group.visible;
+                // Fixed scale regardless of hotspot size
+                obj.label.scale.set(1.2, 0.3, 1);
+            }
             if (obj.popupOpen) this._updatePopupPosition(obj);
         }
-        // Update list values if edit mode
         if (this.editMode) this._refreshList();
     }
 
@@ -146,10 +149,10 @@ export class HotspotManager {
             clickTarget = dot;
         }
 
-        // Floating name label (always faces camera, sits above marker)
+        // Floating name label — added to SCENE (not group) so it
+        // doesn't scale with the hotspot. Position updated in update().
         const label = this._makeLabelSprite(data.name);
-        label.position.set(0, 0.8, 0);
-        group.add(label);
+        this.scene.add(label);
 
         this.scene.add(group);
         this.objects.push({
@@ -583,8 +586,13 @@ export class HotspotManager {
         for (const o of this.objects) {
             this._closePopup(o);
             this.scene.remove(o.group);
-            o.sprite.material.map?.dispose(); o.sprite.material.dispose();
-            o.label?.material.map?.dispose(); o.label?.material.dispose();
+            if (o.label) {
+                this.scene.remove(o.label);
+                o.label.material.map?.dispose();
+                o.label.material.dispose();
+            }
+            o.sprite?.material?.map?.dispose();
+            o.sprite?.material?.dispose();
         }
         this.objects = [];
     }
