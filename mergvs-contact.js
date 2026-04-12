@@ -445,7 +445,7 @@ function init(){
     btn.disabled=true;
     btn.textContent='Sending…';
 
-    fetch('https://formspree.io/f/xeepddyq',{
+    fetch('https://formspree.io/f/mwvwzjeo',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/json'},
       body:JSON.stringify({
