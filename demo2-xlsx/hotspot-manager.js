@@ -391,12 +391,25 @@ export class HotspotManager {
     // ---- CLIPBOARD ----
 
     _copyToClipboard() {
+        // Sayısal değerlerde noktayı virgüle çevir — Türkçe lokale
+        // Google Sheets "10.169" noktayı binlik ayracı sanıp 10169 yapıyor.
+        // Virgülle yazarsak "10,169" → 10.169 olarak doğru algılar.
+        const fmtNum = (n) => n.toFixed(3).replace('.', ',');
+
         const rows = this.objects.map((obj, i) => {
             const d = obj.data, g = obj.group, p = g.position, rot = g.rotation;
-            return [i + 1, d.name, d.hotspotTip, d.hotspotUrl, d.popupTip, d.popupContent,
-                p.x.toFixed(3), p.y.toFixed(3), p.z.toFixed(3),
-                rot.x.toFixed(3), rot.y.toFixed(3), rot.z.toFixed(3),
-                g.scale.x.toFixed(3), d.toggleKod || 'null'].join('\t');
+            return [
+                i + 1,
+                d.name,
+                d.hotspotTip,
+                d.hotspotUrl,
+                d.popupTip,
+                d.popupContent,
+                fmtNum(p.x), fmtNum(p.y), fmtNum(p.z),
+                fmtNum(rot.x), fmtNum(rot.y), fmtNum(rot.z),
+                fmtNum(g.scale.x),
+                d.toggleKod || 'null'
+            ].join('\t');
         });
         navigator.clipboard.writeText(rows.join('\n')).then(() => {
             const btn = this._editToolbar.querySelector('.vea-edit-copy');
