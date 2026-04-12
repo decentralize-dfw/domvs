@@ -1,0 +1,208 @@
+
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.pg { font-family: var(--font-sans); padding: 1rem 0; }
+.kv { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: var(--color-text-tertiary); margin: 2rem 0 0.6rem; }
+.kv:first-child { margin-top: 0; }
+
+/* Ana matris */
+.matrix { display: grid; grid-template-columns: 130px 1fr 1fr 1fr 1fr; gap: 1px; background: var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; margin-bottom: 0.5rem; }
+.cell { background: var(--color-background-primary); padding: 9px 11px; font-size: 12px; }
+.cell.head { background: var(--color-background-secondary); font-size: 11px; font-weight: 500; color: var(--color-text-secondary); }
+.cell.row-head { background: var(--color-background-secondary); font-size: 11px; font-weight: 500; color: var(--color-text-secondary); display: flex; align-items: center; }
+.cell.has { background: var(--color-background-success); color: var(--color-text-success); font-weight: 500; font-size: 11px; }
+.cell.partial { background: var(--color-background-warning); color: var(--color-text-warning); font-size: 11px; }
+.cell.no { background: var(--color-background-primary); color: var(--color-text-tertiary); font-size: 11px; }
+.cell.vea { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; font-size: 11px; }
+.cell.vea-head { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; font-size: 11px; }
+
+/* Katman zoom diyagram */
+.zoom-chain { display: flex; align-items: center; gap: 0; margin: 0.5rem 0 1.5rem; overflow: hidden; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); }
+.zoom-step { flex: 1; padding: 10px 8px; text-align: center; position: relative; }
+.zoom-step + .zoom-step::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 14px solid transparent; border-bottom: 14px solid transparent; border-left: 10px solid var(--color-border-tertiary); }
+.zoom-num { font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 3px; }
+.zoom-label { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+.zoom-sub { font-size: 10px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.3; }
+.z0 { background: #E6F1FB; }
+.z1 { background: #EAF3DE; }
+.z2 { background: #FAEEDA; }
+.z3 { background: #F0F0F0; }
+.z4 { background: #FAECE7; }
+.z5 { background: #FBEAF0; }
+.z6 { background: #EEEDFE; }
+
+/* Büyük iddia kartı */
+.claim { background: var(--color-background-info); border: 1px solid var(--color-border-info); border-radius: var(--border-radius-lg); padding: 1.25rem; margin: 1rem 0; }
+.claim-title { font-size: 15px; font-weight: 500; color: var(--color-text-info); margin-bottom: 6px; }
+.claim-body { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; }
+
+/* Parçalı analiz */
+.part-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.part { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 0.8rem 1rem; }
+.part-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+.part-who { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 6px; }
+.part-body { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+.badge-sm { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 4px; margin-bottom: 4px; }
+.b-green { background: var(--color-background-success); color: var(--color-text-success); }
+.b-amber { background: var(--color-background-warning); color: var(--color-text-warning); }
+.b-red { background: var(--color-background-danger); color: var(--color-text-danger); }
+.b-blue { background: var(--color-background-info); color: var(--color-text-info); }
+</style>
+
+<div class="pg">
+
+  <!-- KATMAN ZİNCİRİ -->
+  <div class="kv">VEA'nın ölçek zinciri — şehirden mobilyaya</div>
+  <div class="zoom-chain">
+    <div class="zoom-step z0">
+      <div class="zoom-num">Bölüm 0</div>
+      <div class="zoom-label">Şehir</div>
+      <div class="zoom-sub">ulaşım AVM landmark</div>
+    </div>
+    <div class="zoom-step z1">
+      <div class="zoom-num">Bölüm 1</div>
+      <div class="zoom-label">Semt</div>
+      <div class="zoom-sub">yakın çevre piyasa</div>
+    </div>
+    <div class="zoom-step z2">
+      <div class="zoom-num">Bölüm 2</div>
+      <div class="zoom-label">Bina</div>
+      <div class="zoom-sub">katmanlar donatılar</div>
+    </div>
+    <div class="zoom-step z3">
+      <div class="zoom-num">Bölüm 3</div>
+      <div class="zoom-label">Daire</div>
+      <div class="zoom-sub">isometrik ölçüler</div>
+    </div>
+    <div class="zoom-step z4">
+      <div class="zoom-num">Bölüm 3-3</div>
+      <div class="zoom-label">Mobilya</div>
+      <div class="zoom-sub">sürükle bırak kit</div>
+    </div>
+    <div class="zoom-step z5">
+      <div class="zoom-num">Bölüm 4-5</div>
+      <div class="zoom-label">Panorama + FPS</div>
+      <div class="zoom-sub">360° + WASD gezme</div>
+    </div>
+    <div class="zoom-step z6">
+      <div class="zoom-num">Bölüm 6</div>
+      <div class="zoom-label">Satın alma</div>
+      <div class="zoom-sub">AI agent booking</div>
+    </div>
+  </div>
+
+  <!-- KİM NE YAPIYOR MATRİSİ -->
+  <div class="kv">Kim hangi katmanı yapıyor — dünya karşılaştırması</div>
+  <div class="matrix">
+    <div class="cell head"></div>
+    <div class="cell head">Şehir / Semt ölçeği</div>
+    <div class="cell head">Bina katmanları</div>
+    <div class="cell head">İsometrik + mobilya</div>
+    <div class="cell head">FPS gezme + satın alma</div>
+
+    <div class="cell row-head">Realtor.com FlyAround</div>
+    <div class="cell has">✓ Google 3D Maps ile</div>
+    <div class="cell no">— yok</div>
+    <div class="cell no">— yok</div>
+    <div class="cell no">— yok</div>
+
+    <div class="cell row-head">LUNAS L-Touch</div>
+    <div class="cell partial">⚬ bina çevresi</div>
+    <div class="cell has">✓ kat + daire filtre</div>
+    <div class="cell partial">⚬ yalnız iç görünüm</div>
+    <div class="cell no">— yok</div>
+
+    <div class="cell row-head">Matterport</div>
+    <div class="cell no">— yok</div>
+    <div class="cell no">— yok</div>
+    <div class="cell no">— yok</div>
+    <div class="cell has">✓ panoramik gezme</div>
+
+    <div class="cell row-head">Planner 5D / Homestyler</div>
+    <div class="cell no">— yok</div>
+    <div class="cell no">— yok</div>
+    <div class="cell has">✓ sürükle bırak mobilya</div>
+    <div class="cell partial">⚬ 3D walkthrough</div>
+
+    <div class="cell row-head">PropVR / DAMAC</div>
+    <div class="cell partial">⚬ master plan</div>
+    <div class="cell has">✓ bina dışı</div>
+    <div class="cell partial">⚬ konfigürasyon</div>
+    <div class="cell partial">⚬ satış entegrasyon</div>
+
+    <div class="cell row-head" style="color:var(--color-text-info); font-weight:600;">VEA hedef</div>
+    <div class="cell vea">✓ şehir + semt + piyasa</div>
+    <div class="cell vea">✓ katman opacity + donatı</div>
+    <div class="cell vea">✓ isometrik + sürükle kit</div>
+    <div class="cell vea">✓ FPS + oturma + booking</div>
+  </div>
+
+  <div class="claim">
+    <div class="claim-title">Sonuç: Bu zinciri tek deneyimde birleştiren dünyada yok.</div>
+    <div class="claim-body">Şehir ölçeğini FlyAround, bina katmanlarını LUNAS, mobilyayı Planner 5D, panoramayı Matterport yapıyor — ama bunlar birbirinden kopuk araçlar. VEA bunları tek anlatı akışı içinde, bölüm bölüm birleştiriyor. Bu kombinasyon tanımı itibarıyla orijinal bir format.</div>
+  </div>
+
+  <!-- PARÇA PARÇA ANALİZ -->
+  <div class="kv">Her katman için dünya referansı var mı?</div>
+  <div class="part-grid">
+
+    <div class="part">
+      <span class="badge-sm b-green">Referans var</span>
+      <div class="part-title">Şehir / semt ölçeği (Bölüm 0–1)</div>
+      <div class="part-who">Realtor.com FlyAround (Ekim 2025)</div>
+      <div class="part-body">Google 3D Maps üzerinde ev → çevre uçuşu. Ama sadece görselleştirme — piyasa verisi, ulaşım analizi, landmark yakınlığı yok. VEA buna veri katıyor.</div>
+    </div>
+
+    <div class="part">
+      <span class="badge-sm b-green">Referans var</span>
+      <div class="part-title">Bina katmanları + opacity (Bölüm 2)</div>
+      <div class="part-who">LUNAS L-Touch, Imerza, Buildmedia</div>
+      <div class="part-body">Kat filtresi, bina dışından daire seçimi, şeffaflık efektleri var. Ama hep developer projeleri için — tek satılık ev için yapan yok.</div>
+    </div>
+
+    <div class="part">
+      <span class="badge-sm b-green">Referans var</span>
+      <div class="part-title">İsometrik görünüm + ölçüler (Bölüm 3–3-2)</div>
+      <div class="part-who">Roomagen, RoomSketcher, Foyr Neo</div>
+      <div class="part-body">3D isometrik floor plan + ölçüler + oda renklendirme mevcut araçlar. Ama bunlar ayrı tool olarak çalışıyor, emlak anlatısının içine gömülmüyor.</div>
+    </div>
+
+    <div class="part">
+      <span class="badge-sm b-amber">Kısmen var</span>
+      <div class="part-title">Sürükle bırak mobilya kitleri (Bölüm 3-3)</div>
+      <div class="part-who">Planner 5D, Homestyler, Floorplanner</div>
+      <div class="part-body">Drag-drop mobilya var ama bunlar genel tasarım araçları. "3 hazır kit + özelleştirme" formatını emlak bağlamında sunan, satın alma akışına bağlayan yok.</div>
+    </div>
+
+    <div class="part">
+      <span class="badge-sm b-green">Referans var</span>
+      <div class="part-title">Panoramik 360° + FPS gezme (Bölüm 4–5)</div>
+      <div class="part-who">Matterport, LUNAS VR, Shapespark</div>
+      <div class="part-body">360° panorama ve FPS walk-thru güçlü referanslar var. Ama "koltuğa oturma, yemek yeme" gibi yaşam senaryoları henüz mainstream değil.</div>
+    </div>
+
+    <div class="part">
+      <span class="badge-sm b-red">Yok</span>
+      <div class="part-title">AI agent + booking + iletişim (Bölüm 6)</div>
+      <div class="part-who">Kimse tam yapmıyor</div>
+      <div class="part-body">Deneyim sonunda AI ajanla konuşma, gezme randevusu booking ve satın alma opsiyonları — bunları 3D deneyimle aynı akışta birleştiren yok. En yakın: bazı Zillow denemeleri, ama çok basit.</div>
+    </div>
+
+    <div class="part">
+      <span class="badge-sm b-red">Yok</span>
+      <div class="part-title">Yakın satış piyasa analizi (Bölüm 1-3)</div>
+      <div class="part-who">Sadece veri siteleri yapıyor, 3D değil</div>
+      <div class="part-body">Endeks Ticari, Hepsiemlak verileri var ama bunlar tablo/liste. Semt 3D modeli üzerine "geçen ay şu ev şu fiyata satıldı" hotspot'larını koymak — kimse yapmamış.</div>
+    </div>
+
+    <div class="part">
+      <span class="badge-sm b-red">Yok</span>
+      <div class="part-title">Yaşam senaryoları (5-2, 5-3)</div>
+      <div class="part-who">Oyun motorlarında var, emlakta değil</div>
+      <div class="part-body">"Koltuğa oturup TV izleme, yemek masasına oturup yemek yeme" — bu Sims seviyesinde bir anlatı. Emlak pazarlamasında hiç yok. Gaming yaklaşımı emlağa taşınıyor.</div>
+    </div>
+
+  </div>
+
+</div>
