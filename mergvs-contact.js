@@ -467,12 +467,16 @@ function init(){
         document.querySelector('.mgv-progress').style.display='none';
         document.getElementById('mgv-success').style.display='flex';
       }else{
+        res.json().then(function(data){
+          console.error('Formspree error:', JSON.stringify(data));
+        }).catch(function(){});
         btn.disabled=false;
         btn.textContent='Send Request →';
         btn.style.background='#8B4A2A';
         setTimeout(function(){btn.style.background='#2E3D28';},2000);
       }
-    }).catch(function(){
+    }).catch(function(err){
+      console.error('Formspree fetch error:', err);
       btn.disabled=false;
       btn.textContent='Send Request →';
       btn.style.background='#8B4A2A';
