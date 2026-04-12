@@ -120,12 +120,32 @@
             const camPos = cameraPositions[index];
             if (!camPos) return;
 
+            // Set camera at the fixed position, looking at target
             camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
             camera.lookAt(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
             camera.fov = camPos.fov;
             camera.updateProjectionMatrix();
 
-            orbitControls.target.set(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
+            // Camera stays FIXED at camPos.pos, can only rotate (look around)
+            // and zoom (FOV change). No translation/pan allowed.
+            // OrbitControls orbits camera around target, so we set target
+            // very close to camera pos — this way rotate moves the view
+            // direction without moving the camera far from its position.
+            const lookDir = new THREE.Vector3(
+                camPos.lookAt.x - camPos.pos.x,
+                camPos.lookAt.y - camPos.pos.y,
+                camPos.lookAt.z - camPos.pos.z
+            ).normalize().multiplyScalar(0.01); // tiny offset
+            orbitControls.target.set(
+                camPos.pos.x + lookDir.x,
+                camPos.pos.y + lookDir.y,
+                camPos.pos.z + lookDir.z
+            );
+            orbitControls.enablePan = false;
+            orbitControls.enableZoom = true;
+            orbitControls.enableRotate = true;
+            orbitControls.minDistance = 0.001;
+            orbitControls.maxDistance = 0.02;
             orbitControls.update();
 
             // Panel IDs are html_scene4_cam{N}_left/right where N = index+1

@@ -754,6 +754,12 @@ export class CameraEditor {
         if (this.camera.fov) { this.camera.fov = 60; this.camera.updateProjectionMatrix(); }
         if (this.orbitControls) {
             this.orbitControls.target.set(0, 1, 0);
+            // Editor mode: free orbit + pan + zoom (unlock distances)
+            this.orbitControls.enablePan = true;
+            this.orbitControls.enableZoom = true;
+            this.orbitControls.enableRotate = true;
+            this.orbitControls.minDistance = 0;
+            this.orbitControls.maxDistance = Infinity;
             this.orbitControls.enabled = true;
             this.orbitControls.update();
         }
@@ -822,11 +828,15 @@ export class CameraEditor {
     _exitEditMode() {
         this._panel.style.display = 'none';
 
-        // Restore camera
+        // Restore camera + orbit settings
         this.camera.position.copy(this._origCamPos);
         if (this.camera.fov) { this.camera.fov = this._origFov; this.camera.updateProjectionMatrix(); }
         if (this.orbitControls) {
             this.orbitControls.target.copy(this._origCamTarget);
+            // Restore scene 4 locked-position orbit behavior
+            this.orbitControls.enablePan = false;
+            this.orbitControls.minDistance = 0.001;
+            this.orbitControls.maxDistance = 0.02;
             this.orbitControls.update();
         }
 
