@@ -378,7 +378,8 @@ function parseButtonsSection(rows, sceneIdx, sceneEnd) {
         buttons.push({
             name:   nameStr,
             id:     idStr,
-            action: row[3] ? String(row[3]).trim() : ''
+            action: row[3] ? String(row[3]).trim() : '',
+            kod:    row[4] ? String(row[4]).trim() : ''
         });
     }
     return buttons;
@@ -410,87 +411,108 @@ const KNOWN_TIPS = new Set([
     'youtube', 'drive', 'iframe', 'link', 'glb'
 ]);
 
+/* ---------- Single-item reader (shared by both panel formats) ---------- */
+function readPanelItem(r) {
+    if (!r) return null;
+    const rawB = (r[1] !== null && r[1] !== undefined) ? String(r[1]).trim() : '';
+    const rawC = (r[2] !== null && r[2] !== undefined) ? String(r[2]).trim() : '';
+    const bEmpty = !rawB || rawB.toLowerCase() === 'null';
+    const cEmpty = !rawC || rawC.toLowerCase() === 'null';
+    if (bEmpty && cEmpty) return null;
+
+    let tip, content;
+    if (!bEmpty && KNOWN_TIPS.has(rawB.toLowerCase())) {
+        tip = rawB.toLowerCase();
+        content = cEmpty ? '' : rawC;
+    } else if (!bEmpty) {
+        tip = 'text';
+        content = rawB;
+    } else {
+        return null;
+    }
+    if (!content) return null;
+
+    const read = (idx) => {
+        const v = r[idx];
+        if (v === null || v === undefined) return '';
+                const s = String(v).trim();
+                return (!s || s.toLowerCase() === 'null') ? '' : s;
+            };
+
+    return {
+        tip, content,
+        width:   read(3),
+        height:  read(4),
+        caption: read(5),
+        extra:   read(6),
+        kod:     read(7)
+    };
+}
+
 function parsePanelsSection(rows, sceneIdx, sceneEnd) {
     const panels = {};
     const m = findMarker(rows, sceneIdx, sceneEnd, '4 · BİLGİ PANELLERİ');
     if (m < 0) return panels;
 
+    // Detect format: "Panel ID:" rows → old per-panel blocks.
+    // No "Panel ID:" → flat list with Kod tags in col H.
+    let hasOldFormat = false;
     for (let i = m + 1; i <= sceneEnd; i++) {
-        const row = rows[i];
-        if (!row) continue;
-        const a = String(row[0] ?? '');
-        const idMatch = a.match(/Panel ID:\s*([a-zA-Z0-9_]+)/);
-        if (!idMatch) continue;
-        const panelId = idMatch[1];
+        const a = String(rows[i]?.[0] ?? '');
+        if (a.includes('Panel ID:')) { hasOldFormat = true; break; }
+        if (/^\s*\d+\s*·/.test(a)) break;
+    }
 
-        // Layout beneath a "Panel ID:" row:
-        //   i     : panel marker
-        //   i + 1 : column header row ("Başlık | Tip | İçerik / URL | ...")
-        //   i + 2 : title / first item row
-        //   i + 3 : "↓ Bu panel için ek içerik slotları" separator
-        //   i + 4 : slot01   …   i + 13 : slot10
-        const titleRow = rows[i + 2];
-        if (!titleRow) continue;
+    if (hasOldFormat) {
+        // --- OLD FORMAT: separate Panel ID blocks ---
+        for (let i = m + 1; i <= sceneEnd; i++) {
+            const row = rows[i];
+            if (!row) continue;
+            const a = String(row[0] ?? '');
+            const idMatch = a.match(/Panel ID:\s*([a-zA-Z0-9_]+)/);
+            if (!idMatch) continue;
+            const panelId = idMatch[1];
+            const titleRow = rows[i + 2];
+            if (!titleRow) continue;
 
-        // Panel heading: column A of the title row, stripped of
-        // "[Buton: X]" / "[camN]" / any trailing [..] annotation.
-        let heading = String(titleRow[0] ?? '').trim();
-        heading = heading.replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+            let heading = String(titleRow[0] ?? '').trim();
+            heading = heading.replace(/\s*\[[^\]]*\]\s*$/, '').trim();
 
-        const items = [];
-        const pushItem = (r) => {
-            if (!r) return;
-            const rawB = (r[1] !== null && r[1] !== undefined) ? String(r[1]).trim() : '';
-            const rawC = (r[2] !== null && r[2] !== undefined) ? String(r[2]).trim() : '';
-            const bEmpty = !rawB || rawB.toLowerCase() === 'null';
-            const cEmpty = !rawC || rawC.toLowerCase() === 'null';
-            if (bEmpty && cEmpty) return;
-
-            let tip, content;
-            if (!bEmpty && KNOWN_TIPS.has(rawB.toLowerCase())) {
-                // New schema: B = Tip, C = content
-                tip = rawB.toLowerCase();
-                content = cEmpty ? '' : rawC;
-            } else if (!bEmpty) {
-                // Legacy schema: B holds plain text content
-                tip = 'text';
-                content = rawB;
-            } else {
-                return;
+            const items = [];
+            const firstItem = readPanelItem(titleRow);
+            if (firstItem) items.push(firstItem);
+            for (let j = i + 4; j <= sceneEnd; j++) {
+                const slotRow = rows[j];
+                if (!slotRow) continue;
+                const slotA = String(slotRow[0] ?? '').trim();
+                if (slotA.includes('Panel ID:')) break;
+                if (/^\s*\d+\s*·/.test(slotA)) break;
+                const it = readPanelItem(slotRow);
+                if (it) items.push(it);
             }
-            if (!content) return;
-
-            const read = (idx) => {
-                const v = r[idx];
-                if (v === null || v === undefined) return '';
-                const s = String(v).trim();
-                return (!s || s.toLowerCase() === 'null') ? '' : s;
-            };
-
-            items.push({
-                tip,
-                content,
-                width:   read(3),
-                height:  read(4),
-                caption: read(5),
-                extra:   read(6)
-            });
-        };
-
-        // First item: the title row
-        pushItem(titleRow);
-
-        // Additional items: slot rows until the next panel / section
-        for (let j = i + 4; j <= sceneEnd; j++) {
-            const slotRow = rows[j];
-            if (!slotRow) continue;
-            const slotA = String(slotRow[0] ?? '').trim();
-            if (slotA.includes('Panel ID:')) break;
-            if (/^\s*\d+\s*·/.test(slotA)) break;
-            pushItem(slotRow);
+            panels[panelId] = { title: heading, items };
         }
+    } else {
+        // --- FLAT FORMAT: single list with Kod tags in col H ---
+        // Items are grouped by Kod. The first item in each group
+        // donates its col-A value as the group heading.
+        for (let i = m + 2; i <= sceneEnd; i++) {
+            const row = rows[i];
+            if (!row) continue;
+            const kod = (row[7] !== null && row[7] !== undefined)
+                ? String(row[7]).trim() : '';
+            if (!kod || kod.toLowerCase() === 'null') continue;
 
-        panels[panelId] = { title: heading, items };
+            const it = readPanelItem(row);
+            if (!it) continue;
+
+            if (!panels[kod]) {
+                let heading = String(row[0] ?? '').trim();
+                heading = heading.replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+                panels[kod] = { title: heading, items: [] };
+            }
+            panels[kod].items.push(it);
+        }
     }
     return panels;
 }

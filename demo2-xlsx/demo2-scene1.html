@@ -111,9 +111,11 @@
 
         function selectVariant(index) {
             toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === index));
-            const optId = `opt${index + 1}`;
-            updatePanelsById(`html_scene1_${optId}_left`, `html_scene1_${optId}_right`);
             const btn = sceneCfg.buttons[index];
+            // Use the toggle's Kod tag (e.g. "toggle-1") to find matching
+            // panel items tagged "toggle-1-left" / "toggle-1-right"
+            const kod = btn.kod || `toggle-${index + 1}`;
+            updatePanelsById(`${kod}-left`, `${kod}-right`);
             descriptionEl.textContent = `Info for ${btn?.name || ''}`;
             descriptionEl.style.display = 'block';
         }
