@@ -408,10 +408,349 @@
            scene 4 behavior: fixed cameras, clipping, nav dots, teleport
            =============================================================== */
         function initCamerasMode() {
-            // TODO: Prompt 4 — full cameras mode implementation
-            // For now, fall back to orbit mode as a baseline
-            console.log('cameras mode — will be implemented in Prompt 4');
-            initOrbitMode();
+            const cam = sceneCfg.camera;
+            const defaultFov = num(cam['Default FOV']) || 80;
+            const aspect = window.innerWidth / window.innerHeight;
+            const CLIP_FRUSTUM = 12;
+
+            // Dual cameras
+            const perspCamera = new THREE.PerspectiveCamera(defaultFov, aspect, 0.1, 1000);
+            const orthoCamera = new THREE.OrthographicCamera(
+                -CLIP_FRUSTUM * aspect / 2, CLIP_FRUSTUM * aspect / 2,
+                CLIP_FRUSTUM / 2, -CLIP_FRUSTUM / 2, 0.1, 1000
+            );
+
+            const cameraPositions = sceneCfg.buttons.map(b => parseCameraPositionAction(b.action));
+            if (cameraPositions[0]) {
+                perspCamera.position.set(cameraPositions[0].pos.x, cameraPositions[0].pos.y, cameraPositions[0].pos.z);
+            }
+            camera = perspCamera;
+
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.maxPolarAngle = (Math.PI / 2) * 0.98;
+            if (cameraPositions[0]) {
+                orbitControls.target.set(cameraPositions[0].lookAt.x, cameraPositions[0].lookAt.y, cameraPositions[0].lookAt.z);
+            }
+            orbitControls.update();
+
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Clip mode state
+            let activeMode = 'toggle-1';
+            let clippingPlane = null;
+            let clippedMeshes = [];
+            let sceneBBox = null;
+            let camEditor = null;
+
+            // Nav dots state
+            let navDots = [];
+            const _navRC = new THREE.Raycaster();
+            const _navMouse = new THREE.Vector2();
+            let _hoveredDot = null;
+
+            const toggleButtons = Array.from(document.querySelectorAll('#modelToggleBar .vea-model-toggle'));
+
+            // ---- selectCamera ----
+            function selectCamera(index) {
+                toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === index));
+                const camPos = cameraPositions[index];
+                if (!camPos) return;
+
+                camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
+                camera.lookAt(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
+                camera.fov = camPos.fov;
+                camera.updateProjectionMatrix();
+
+                const lookDir = new THREE.Vector3(
+                    camPos.lookAt.x - camPos.pos.x,
+                    camPos.lookAt.y - camPos.pos.y,
+                    camPos.lookAt.z - camPos.pos.z
+                ).normalize().multiplyScalar(0.01);
+                orbitControls.target.set(
+                    camPos.pos.x + lookDir.x,
+                    camPos.pos.y + lookDir.y,
+                    camPos.pos.z + lookDir.z
+                );
+                orbitControls.enablePan = false;
+                orbitControls.enableZoom = true;
+                orbitControls.enableRotate = true;
+                orbitControls.minDistance = 0.001;
+                orbitControls.maxDistance = 0.02;
+                orbitControls.update();
+
+                const btn = sceneCfg.buttons[index];
+                const panelKey = btn?.id || `cam${index + 1}`;
+                updatePanelsById(`${panelKey}-left`, `${panelKey}-right`);
+                const kod = btn?.kod || 'toggle-1';
+                if (hotspotMgr) hotspotMgr.setToggle(kod);
+                descriptionEl.textContent = `Camera: ${btn?.name || ''}`;
+                descriptionEl.style.display = 'block';
+                updateNavDots(index);
+            }
+
+            // ---- Clip mode ----
+            function computeSceneBBox() {
+                sceneBBox = new THREE.Box3();
+                scene.traverse(c => {
+                    if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    if (!c.geometry) return;
+                    if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
+                    if (!c.geometry.boundingBox) return;
+                    const size = new THREE.Vector3();
+                    c.geometry.boundingBox.getSize(size);
+                    if (size.x > 500 || size.y > 500 || size.z > 500) return;
+                    const worldBB = c.geometry.boundingBox.clone();
+                    worldBB.applyMatrix4(c.matrixWorld);
+                    sceneBBox.union(worldBB);
+                });
+                if (sceneBBox.isEmpty()) sceneBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
+            }
+
+            function enterClipMode(buttonIndex) {
+                activeMode = 'toggle-2';
+                toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === buttonIndex));
+                computeSceneBBox();
+
+                const center = new THREE.Vector3();
+                sceneBBox.getCenter(center);
+                const dist = 20;
+                orthoCamera.position.set(
+                    center.x + dist * Math.cos(Math.PI / 4),
+                    center.y + dist * Math.sin(Math.PI / 4),
+                    center.z + dist * Math.cos(Math.PI / 4)
+                );
+                orthoCamera.lookAt(center);
+                const a = window.innerWidth / window.innerHeight;
+                orthoCamera.left = -CLIP_FRUSTUM * a / 2;
+                orthoCamera.right = CLIP_FRUSTUM * a / 2;
+                orthoCamera.top = CLIP_FRUSTUM / 2;
+                orthoCamera.bottom = -CLIP_FRUSTUM / 2;
+                orthoCamera.updateProjectionMatrix();
+
+                camera = orthoCamera;
+                composer.passes[0].camera = camera;
+                orbitControls.object = camera;
+                orbitControls.target.copy(center);
+                orbitControls.enablePan = true;
+                orbitControls.enableZoom = true;
+                orbitControls.enableRotate = true;
+                orbitControls.minDistance = 0;
+                orbitControls.maxDistance = Infinity;
+                orbitControls.update();
+
+                const maxY = sceneBBox.max.y;
+                const height = maxY - sceneBBox.min.y;
+                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), maxY - 0.5 * height);
+
+                clippedMeshes = [];
+                scene.traverse(c => {
+                    if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    const orig = c.material;
+                    const clone = orig.clone();
+                    clone.clippingPlanes = [clippingPlane];
+                    clone.clipShadows = false;
+                    clone.needsUpdate = true;
+                    c.material = clone;
+                    clippedMeshes.push({ mesh: c, origMaterial: orig });
+                });
+                renderer.localClippingEnabled = true;
+
+                const bloomPass = composer.passes.find(p => p.strength !== undefined);
+                if (bloomPass) { bloomPass._origStrength = bloomPass.strength; bloomPass.strength = 0.1; }
+
+                if (hotspotMgr) hotspotMgr.camera = camera;
+                if (camEditor) camEditor.camera = camera;
+                for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                _setHoveredDot(null);
+                if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
+                leftHtmlPanel.style.display = 'none';
+                rightHtmlPanel.style.display = 'none';
+                descriptionEl.textContent = 'Plan Görünümü';
+                descriptionEl.style.display = 'block';
+            }
+
+            function exitClipMode() {
+                activeMode = 'toggle-1';
+                for (const entry of clippedMeshes) {
+                    const cloned = entry.mesh.material;
+                    entry.mesh.material = entry.origMaterial;
+                    cloned.dispose();
+                }
+                clippedMeshes = [];
+                renderer.localClippingEnabled = false;
+                clippingPlane = null;
+
+                const bloomPass = composer.passes.find(p => p._origStrength !== undefined);
+                if (bloomPass) { bloomPass.strength = bloomPass._origStrength; delete bloomPass._origStrength; }
+
+                camera = perspCamera;
+                composer.passes[0].camera = camera;
+                if (hotspotMgr) hotspotMgr.camera = camera;
+                if (camEditor) camEditor.camera = camera;
+                orbitControls.object = camera;
+                orbitControls.enablePan = false;
+                orbitControls.minDistance = 0.001;
+                orbitControls.maxDistance = 0.02;
+                orbitControls.update();
+            }
+
+            // ---- Nav dots ----
+            function _makeNavLabel(text) {
+                const c = document.createElement('canvas');
+                c.width = 256; c.height = 64;
+                const x = c.getContext('2d');
+                x.fillStyle = 'rgba(0,0,0,0.75)';
+                x.beginPath(); x.roundRect(4, 4, 248, 56, 12); x.fill();
+                x.fillStyle = '#fff'; x.font = 'bold 22px Arial';
+                x.textAlign = 'center'; x.textBaseline = 'middle';
+                x.fillText(text, 128, 32);
+                const mat = new THREE.SpriteMaterial({
+                    map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+                });
+                const s = new THREE.Sprite(mat);
+                s.scale.set(1.0, 0.25, 1);
+                return s;
+            }
+
+            function createNavDots() {
+                const dotGeo = new THREE.CircleGeometry(0.12, 32);
+                const ringGeo = new THREE.RingGeometry(0.13, 0.18, 32);
+                sceneCfg.buttons.forEach((btn, i) => {
+                    const cp = cameraPositions[i];
+                    if (!cp) return;
+                    const dx = btn.dotPos ? btn.dotPos.x : cp.pos.x;
+                    const dy = btn.dotPos ? btn.dotPos.y : 0.02;
+                    const dz = btn.dotPos ? btn.dotPos.z : cp.pos.z;
+
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+                    const mesh = new THREE.Mesh(dotGeo.clone(), mat);
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.set(dx, dy, dz);
+                    mesh.userData._navDotIdx = i;
+                    scene.add(mesh);
+
+                    const ringMat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0, side: THREE.DoubleSide });
+                    const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.set(dx, dy + 0.005, dz);
+                    scene.add(ring);
+
+                    const label = _makeNavLabel(btn.name || '');
+                    label.position.set(dx, dy + 0.43, dz);
+                    label.visible = false;
+                    scene.add(label);
+                    navDots.push({ mesh, ring, label, camIndex: i });
+                });
+            }
+
+            function updateNavDots(selectedCamIndex) {
+                for (const dot of navDots) {
+                    const show = dot.camIndex !== selectedCamIndex && activeMode === 'toggle-1';
+                    dot.mesh.visible = show;
+                    dot.ring.visible = show;
+                    if (!show) dot.label.visible = false;
+                }
+            }
+
+            function _setHoveredDot(dot) {
+                if (_hoveredDot === dot) return;
+                if (_hoveredDot) {
+                    _hoveredDot.label.visible = false;
+                    _hoveredDot.mesh.material.opacity = 0.7;
+                    _hoveredDot.ring.material.opacity = 0;
+                }
+                _hoveredDot = dot;
+                if (_hoveredDot) {
+                    _hoveredDot.label.visible = true;
+                    _hoveredDot.mesh.material.opacity = 1.0;
+                    _hoveredDot.ring.material.opacity = 0.8;
+                }
+                renderer.domElement.style.cursor = dot ? 'pointer' : '';
+            }
+
+            function updateNavDotsHover() {
+                if (activeMode !== 'toggle-1' || navDots.length === 0) return;
+                if (camEditor && camEditor.active) return;
+                const meshes = navDots.filter(d => d.mesh.visible).map(d => d.mesh);
+                if (meshes.length === 0) { _setHoveredDot(null); return; }
+                _navRC.setFromCamera(_navMouse, camera);
+                const hits = _navRC.intersectObjects(meshes);
+                _setHoveredDot(hits.length > 0 ? navDots.find(d => d.mesh === hits[0].object) : null);
+            }
+
+            // ---- Toggle buttons ----
+            document.getElementById('modelLabel').style.display = 'block';
+            sceneCfg.buttons.forEach((cfg, i) => {
+                if (!toggleButtons[i]) return;
+                const btn = toggleButtons[i];
+                btn.textContent = cfg.name;
+                btn.dataset.id = cfg.id;
+                btn.style.display = 'block';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = (cfg.action || '').trim();
+                    if (action === 'CLIP_MODE') {
+                        if (activeMode === 'toggle-2') return;
+                        enterClipMode(i);
+                    } else {
+                        if (activeMode === 'toggle-2') exitClipMode();
+                        selectCamera(i);
+                    }
+                });
+            });
+
+            // ---- Nav dot events ----
+            renderer.domElement.addEventListener('pointermove', (e) => {
+                _navMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+            });
+            renderer.domElement.addEventListener('click', () => {
+                if (camEditor && camEditor.active) return;
+                if (_hoveredDot) selectCamera(_hoveredDot.camIndex);
+            });
+
+            // ---- Load models then wire everything up ----
+            loadAllModels().then(() => {
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                camEditor = new CameraEditor(scene, camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
+
+                camEditor.onToggle = (active) => {
+                    hotspotMgr.suspended = active;
+                    if (active) {
+                        _setHoveredDot(null);
+                        for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                    }
+                };
+
+                hotspotMgr.onTeleport = (hsData) => {
+                    let bestIdx = 0, bestDist = Infinity;
+                    cameraPositions.forEach((cp, i) => {
+                        if (!cp) return;
+                        const dx = cp.pos.x - hsData.pos.x;
+                        const dz = cp.pos.z - hsData.pos.z;
+                        const dist = dx * dx + dz * dz;
+                        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+                    });
+                    if (activeMode === 'toggle-2') exitClipMode();
+                    selectCamera(bestIdx);
+                };
+
+                hotspotMgr.loadHotspots();
+                createNavDots();
+                camEditor.setNavDots(navDots);
+                if (sceneCfg.buttons.length > 0) selectCamera(0);
+                fadeOutLoading();
+            }).catch(e => {
+                console.error(e);
+                sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
+            });
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+                updateNavDotsHover();
+            };
         }
 
         /* ===============================================================
