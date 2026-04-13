@@ -27,6 +27,7 @@ export class HotspotManager {
         this.hotspots = [];
         this.objects = [];
         this.editMode = false;
+        this.onTeleport = null; // callback(hotspotData) — scene sets this
         this.selectedObject = null;
         this.transformControls = null;
         this.gizmoMode = 'translate';
@@ -251,11 +252,26 @@ export class HotspotManager {
         const d = obj.data;
         const popup = document.createElement('div');
         popup.className = 'vea-hs-popup';
+
+        const titleText = (d.name || '').split('\n')[0];
+        const hasTeleport = typeof this.onTeleport === 'function';
+        const teleportHtml = hasTeleport
+            ? `<button class="vea-hs-popup-teleport">Teleport → ${this._esc(titleText)}</button>`
+            : '';
+
         popup.innerHTML = `
-            <button class="vea-hs-popup-x" onclick="this.parentElement.remove()">✕</button>
+            <button class="vea-hs-popup-x">✕</button>
             <div class="vea-hs-popup-title">${this._esc(d.name)}</div>
-            <div class="vea-hs-popup-body">${this._renderContent(d.popupTip, d.popupContent)}</div>`;
+            <div class="vea-hs-popup-body">${this._renderContent(d.popupTip, d.popupContent)}</div>
+            ${teleportHtml}`;
         popup.querySelector('.vea-hs-popup-x').addEventListener('click', () => this._closePopup(obj));
+        if (hasTeleport) {
+            popup.querySelector('.vea-hs-popup-teleport').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._closePopup(obj);
+                this.onTeleport(d);
+            });
+        }
         this._popupContainer.appendChild(popup);
         obj.popupEl = popup; obj.popupOpen = true;
         this._updatePopupPosition(obj);
@@ -692,7 +708,26 @@ export class HotspotManager {
     // ---- CSS ----
 
     _injectCSS() {
-        // All CSS moved to demo2-style.css
+        if (document.getElementById('vea-hs-extra-css')) return;
+        const style = document.createElement('style');
+        style.id = 'vea-hs-extra-css';
+        style.textContent = `
+.vea-hs-popup-teleport {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 0;
+    background: rgba(201,169,110,0.85);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+}
+.vea-hs-popup-teleport:hover { background: rgba(201,169,110,1); }`;
+        document.head.appendChild(style);
     }
 }
 

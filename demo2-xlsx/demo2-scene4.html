@@ -346,6 +346,21 @@
                 document.getElementById('fullscreenButton').style.display = 'flex';
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
                 camEditor = new CameraEditor(scene, camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
+
+                // Teleport: match hotspot position to nearest camera button
+                hotspotMgr.onTeleport = (hsData) => {
+                    let bestIdx = 0, bestDist = Infinity;
+                    cameraPositions.forEach((cp, i) => {
+                        if (!cp) return;
+                        const dx = cp.pos.x - hsData.pos.x;
+                        const dz = cp.pos.z - hsData.pos.z;
+                        const dist = dx * dx + dz * dz;
+                        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+                    });
+                    if (activeMode === 'toggle-2') exitClipMode();
+                    selectCamera(bestIdx);
+                };
+
                 hotspotMgr.loadHotspots();
                 if (sceneCfg.buttons.length > 0) {
                     selectCamera(0);
