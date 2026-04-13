@@ -211,11 +211,20 @@ export class HotspotManager {
         const x = c.getContext('2d');
         x.clearRect(0, 0, 512, 128);
         x.fillStyle = 'rgba(0,0,0,0.7)';
-        x.beginPath(); x.roundRect(10, 20, 492, 88, 20); x.fill();
+        x.beginPath(); x.roundRect(10, 10, 492, 108, 20); x.fill();
         x.strokeStyle = 'rgba(201,169,110,0.6)'; x.lineWidth = 2; x.stroke();
-        x.fillStyle = '#fff'; x.font = 'bold 36px Arial';
         x.textAlign = 'center'; x.textBaseline = 'middle';
-        x.fillText(text || '', 256, 64);
+
+        const lines = String(text || '').split('\n');
+        if (lines.length > 1) {
+            x.fillStyle = '#fff'; x.font = 'bold 30px Arial';
+            x.fillText(lines[0], 256, 44);
+            x.fillStyle = 'rgba(201,169,110,1)'; x.font = '24px Arial';
+            x.fillText(lines[1], 256, 80);
+        } else {
+            x.fillStyle = '#fff'; x.font = 'bold 36px Arial';
+            x.fillText(text || '', 256, 64);
+        }
         const mat = new THREE.SpriteMaterial({
             map: new THREE.CanvasTexture(c), depthTest: true, sizeAttenuation: true
         });
