@@ -758,9 +758,6 @@
            scene 5 behavior: FPS, PointerLock, WASD, colliders, joystick
            =============================================================== */
         function initWalkthruMode() {
-            // TODO: Prompt 5 — full walkthru mode implementation
-            console.log('walkthru mode — will be implemented in Prompt 5');
-
             const cam = sceneCfg.camera;
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -776,8 +773,13 @@
             const instructionsEl = document.getElementById('instructions');
             instructionsEl.style.display = 'block';
 
+            function isMobile() {
+                return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+            }
+
             document.body.addEventListener('click', (e) => {
                 if (e.target.closest('button') || e.target.closest('#leftHtmlPanel') || e.target.closest('#rightHtmlPanel')) return;
+                if (isMobile()) return;
                 if (!pointerLockControls.isLocked) pointerLockControls.lock();
             });
             pointerLockControls.addEventListener('lock',   () => { instructionsEl.style.display = 'none'; });
@@ -785,12 +787,34 @@
 
             composer.insertPass(new RenderPass(scene, camera), 0);
 
+            // Mobile joystick
+            const mobileJoystickEnabled = yes(cam['Mobile Joystick']);
+            const mobileJoystickLeft = { x: 0, y: 0 };
+            const mobileJoystickRight = { x: 0, y: 0 };
+
+            function setupMobileJoystick() {
+                if (!mobileJoystickEnabled || !isMobile() || typeof nipplejs === 'undefined') return;
+                const leftZone = document.getElementById('joystickLeft');
+                const rightZone = document.getElementById('joystickRight');
+                leftZone.style.display = 'block';
+                rightZone.style.display = 'block';
+
+                const nleft = nipplejs.create({ zone: leftZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
+                nleft.on('move', (_, d) => { mobileJoystickLeft.x = d.vector.x; mobileJoystickLeft.y = d.vector.y; });
+                nleft.on('end', () => { mobileJoystickLeft.x = 0; mobileJoystickLeft.y = 0; });
+
+                const nright = nipplejs.create({ zone: rightZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
+                nright.on('move', (_, d) => { mobileJoystickRight.x = d.vector.x; mobileJoystickRight.y = d.vector.y; });
+                nright.on('end', () => { mobileJoystickRight.x = 0; mobileJoystickRight.y = 0; });
+            }
+
             const colliderMeshes = [];
             loadAllModels(colliderMeshes).then(() => {
                 showStaticPanels();
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, null);
                 hotspotMgr.loadHotspots();
                 fadeOutLoading();
+                setupMobileJoystick();
             }).catch(e => {
                 console.error(e);
                 sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
@@ -837,7 +861,24 @@
             });
 
             activeUpdateFn = (delta) => {
-                if (!pointerLockControls.isLocked) return;
+                // Mobile joystick → keys mapping
+                if (isMobile() && mobileJoystickEnabled) {
+                    if (mobileJoystickLeft.x !== 0 || mobileJoystickLeft.y !== 0) {
+                        keys.forward = mobileJoystickLeft.y > 0.2;
+                        keys.backward = mobileJoystickLeft.y < -0.2;
+                        keys.left = mobileJoystickLeft.x < -0.2;
+                        keys.right = mobileJoystickLeft.x > 0.2;
+                    } else {
+                        keys.forward = keys.backward = keys.left = keys.right = false;
+                    }
+                    if (Math.abs(mobileJoystickRight.x) > 0.1 || Math.abs(mobileJoystickRight.y) > 0.1) {
+                        camera.rotation.y -= mobileJoystickRight.x * 0.04;
+                        camera.rotation.x -= mobileJoystickRight.y * 0.025;
+                        camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, camera.rotation.x));
+                    }
+                }
+
+                if (!pointerLockControls.isLocked && !isMobile()) return;
                 if (colliderMeshes.length === 0) return;
 
                 const playerPos = pointerLockControls.getObject().position;
