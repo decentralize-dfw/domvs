@@ -235,19 +235,49 @@ function findMarker(rows, startIdx, endIdx, substring) {
     return -1;
 }
 
+/**
+ * Find a section by its marker text, then determine where its data
+ * rows end. A section ends at the first of:
+ *   1. The next "N · ..." section header
+ *   2. The next "▌ SAHNE" scene header
+ *   3. A fully-null row (all columns empty)
+ *   4. sceneEnd
+ *
+ * Returns { start, dataStart, end } where:
+ *   start     = the marker row index
+ *   dataStart = first data row (skips header row after marker)
+ *   end       = last row belonging to this section
+ * Returns null if marker not found.
+ */
+function findSectionRange(rows, sceneIdx, sceneEnd, markerText, headerRows) {
+    const start = findMarker(rows, sceneIdx, sceneEnd, markerText);
+    if (start < 0) return null;
+    const dataStart = start + (headerRows || 2); // default: skip marker + column header
+    let end = sceneEnd;
+    for (let i = start + 1; i <= sceneEnd; i++) {
+        const a = rows[i]?.[0];
+        if (a != null) {
+            const s = String(a);
+            // Hit next section marker (N · ...) or next scene
+            if (/^\s*\d+\s*·/.test(s) || s.includes('▌ SAHNE')) {
+                end = i - 1;
+                break;
+            }
+        }
+    }
+    return { start, dataStart, end };
+}
+
 /* ---------- Camera section ---------- */
 function parseCameraSection(rows, sceneIdx, sceneEnd) {
     const cam = {};
-    const m = findMarker(rows, sceneIdx, sceneEnd, '1 · KAMERA');
-    if (m < 0) return cam;
-    // Skip the "Parametre | Değer" header row (m+1). Params start at m+2.
-    for (let i = m + 2; i <= sceneEnd && i < m + 10; i++) {
+    const sec = findSectionRange(rows, sceneIdx, sceneEnd, '1 · KAMERA', 2);
+    if (!sec) return cam;
+    for (let i = sec.dataStart; i <= sec.end; i++) {
         const row = rows[i];
         if (!row) continue;
         const first = row[0];
         if (first === null || first === undefined) break;
-        const firstStr = String(first);
-        if (firstStr.includes('·')) break; // Next section marker
         // 5 (key, value) pairs: (A,B), (D,E), (G,H), (J,K), (M,N)
         const pairs = [[0, 1], [3, 4], [6, 7], [9, 10], [12, 13]];
         for (const [kc, vc] of pairs) {
@@ -280,21 +310,10 @@ function parseCameraSection(rows, sceneIdx, sceneEnd) {
  */
 function parseModelsSection(rows, sceneIdx, sceneEnd, assets) {
     const models = [];
-    const m = findMarker(rows, sceneIdx, sceneEnd, '2 · KULLANILAN MODELLER');
-    if (m < 0) return models;
+    const sec = findSectionRange(rows, sceneIdx, sceneEnd, '2 · KULLANILAN MODELLER', 2);
+    if (!sec) return models;
 
-    // Stop before the next "N · ..." section marker in column A.
-    let stopIdx = sceneEnd;
-    for (let i = m + 1; i <= sceneEnd; i++) {
-        const a = rows[i]?.[0];
-        if (!a) continue;
-        if (/^\s*\d+\s*·/.test(String(a))) {
-            stopIdx = i - 1;
-            break;
-        }
-    }
-
-    for (let i = m + 2; i <= stopIdx; i++) {
+    for (let i = sec.dataStart; i <= sec.end; i++) {
         const row = rows[i];
         if (!row) continue;
 
@@ -376,23 +395,10 @@ function parseModelsSection(rows, sceneIdx, sceneEnd, assets) {
 /* ---------- Buttons section ---------- */
 function parseButtonsSection(rows, sceneIdx, sceneEnd) {
     const buttons = [];
-    const m = findMarker(rows, sceneIdx, sceneEnd, '3 · TOGGLE BUTONLARI');
-    if (m < 0) return buttons;
+    const sec = findSectionRange(rows, sceneIdx, sceneEnd, '3 · TOGGLE BUTONLARI', 1);
+    if (!sec) return buttons;
 
-    // Stop before the next "N · ..." section marker (same approach
-    // used by parseModelsSection) so floats / section headers can't
-    // be mistaken for button rows.
-    let stopIdx = sceneEnd;
-    for (let i = m + 1; i <= sceneEnd; i++) {
-        const a = rows[i]?.[0];
-        if (!a) continue;
-        if (/^\s*\d+\s*·/.test(String(a))) {
-            stopIdx = i - 1;
-            break;
-        }
-    }
-
-    for (let i = m + 1; i <= stopIdx; i++) {
+    for (let i = sec.dataStart; i <= sec.end; i++) {
         const row = rows[i];
         if (!row) continue;
         // A button row has a non-empty label in column B and a
@@ -495,21 +501,20 @@ function readPanelItem(r) {
 
 function parsePanelsSection(rows, sceneIdx, sceneEnd) {
     const panels = {};
-    const m = findMarker(rows, sceneIdx, sceneEnd, '4 · BİLGİ PANELLERİ');
-    if (m < 0) return panels;
+    const sec = findSectionRange(rows, sceneIdx, sceneEnd, '4 · BİLGİ PANELLERİ', 1);
+    if (!sec) return panels;
 
     // Detect format: "Panel ID:" rows → old per-panel blocks.
     // No "Panel ID:" → flat list with Kod tags in col H.
     let hasOldFormat = false;
-    for (let i = m + 1; i <= sceneEnd; i++) {
+    for (let i = sec.dataStart; i <= sec.end; i++) {
         const a = String(rows[i]?.[0] ?? '');
         if (a.includes('Panel ID:')) { hasOldFormat = true; break; }
-        if (/^\s*\d+\s*·/.test(a)) break;
     }
 
     if (hasOldFormat) {
         // --- OLD FORMAT: separate Panel ID blocks ---
-        for (let i = m + 1; i <= sceneEnd; i++) {
+        for (let i = sec.dataStart; i <= sec.end; i++) {
             const row = rows[i];
             if (!row) continue;
             const a = String(row[0] ?? '');
@@ -525,12 +530,11 @@ function parsePanelsSection(rows, sceneIdx, sceneEnd) {
             const items = [];
             const firstItem = readPanelItem(titleRow);
             if (firstItem) items.push(firstItem);
-            for (let j = i + 4; j <= sceneEnd; j++) {
+            for (let j = i + 4; j <= sec.end; j++) {
                 const slotRow = rows[j];
                 if (!slotRow) continue;
                 const slotA = String(slotRow[0] ?? '').trim();
                 if (slotA.includes('Panel ID:')) break;
-                if (/^\s*\d+\s*·/.test(slotA)) break;
                 const it = readPanelItem(slotRow);
                 if (it) items.push(it);
             }
@@ -540,7 +544,7 @@ function parsePanelsSection(rows, sceneIdx, sceneEnd) {
         // --- FLAT FORMAT: single list with Kod tags in col H ---
         // Items are grouped by Kod. The first item in each group
         // donates its col-A value as the group heading.
-        for (let i = m + 2; i <= sceneEnd; i++) {
+        for (let i = sec.dataStart + 1; i <= sec.end; i++) {
             const row = rows[i];
             if (!row) continue;
             const kod = (row[7] !== null && row[7] !== undefined)
@@ -776,12 +780,11 @@ export function renderPanelHtml(panel) {
  *   O: Sahne (0-5)
  */
 function parseHotspotsSection(rows, sceneIdx, sceneEnd) {
-    const m = findMarker(rows, sceneIdx, sceneEnd, '5 · HOTSPOT');
-    if (m < 0) return [];
+    const sec = findSectionRange(rows, sceneIdx, sceneEnd, '5 · HOTSPOT', 2);
+    if (!sec) return [];
 
     const all = [];
-    // Data starts at m+2 (m+1 is the column header row)
-    for (let i = m + 2; i <= sceneEnd; i++) {
+    for (let i = sec.dataStart; i <= sec.end; i++) {
         const row = rows[i];
         if (!row) continue;
         const name = row[1];
