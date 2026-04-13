@@ -517,15 +517,25 @@ export class HotspotManager {
         // Virgülle yazarsak "10,169" → 10.169 olarak doğru algılar.
         const fmtNum = (n) => n.toFixed(3).replace('.', ',');
 
+        // TSV cell quoting: if a value contains \n, \t or " it must be
+        // wrapped in double-quotes (with internal " escaped as "").
+        const tsvCell = (v) => {
+            const s = String(v ?? '');
+            if (s.includes('\t') || s.includes('\n') || s.includes('"')) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        };
+
         const rows = this.objects.map((obj, i) => {
             const d = obj.data, g = obj.group, p = g.position, rot = g.rotation;
             return [
                 i + 1,
-                d.name,
+                tsvCell(d.name),
                 d.hotspotTip,
                 d.hotspotUrl,
                 d.popupTip,
-                d.popupContent,
+                tsvCell(d.popupContent),
                 fmtNum(p.x), fmtNum(p.y), fmtNum(p.z),
                 fmtNum(rot.x), fmtNum(rot.y), fmtNum(rot.z),
                 fmtNum(g.scale.x),
