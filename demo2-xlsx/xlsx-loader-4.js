@@ -19,15 +19,11 @@
 // --- Central reference file that holds the xlsx URL ---
 export const LINK_TXT_URL = 'https://mergvs.com/demo2-xlsx/link.txt';
 
-// --- Section start rows (1-indexed, matching Excel) ---
-const SCENE_START_ROWS = {
-    0: 38,
-    1: 152,
-    2: 266,
-    3: 380,
-    4: 494,
-    5: 607
-};
+// --- Scene start rows are now auto-detected from ▌ SAHNE markers ---
+// No hardcoded row numbers needed. The scanner below finds every
+// "▌ SAHNE N" header row and maps scene index → row automatically.
+// To add a scene: just insert a new "▌ SAHNE 6 — Title · Subtitle"
+// block anywhere in the sheet — the loader picks it up.
 
 /**
  * Fetch link.txt and return the first non-empty, non-comment line.
@@ -68,9 +64,23 @@ export async function loadVeaConfig(xlsxPath) {
     const rows = sheetToRowArray(ws);
 
     const assets = parseGlobalAssets(rows);
+
+    // Auto-detect scene blocks by scanning for "▌ SAHNE N" markers.
+    // Each marker row contains "▌ SAHNE <number>" in column A.
+    // The number becomes the scene index key in the scenes{} map.
+    const sceneStartRows = {};
+    for (let i = 0; i < rows.length; i++) {
+        const a = rows[i]?.[0];
+        if (!a) continue;
+        const m = String(a).match(/▌\s*SAHNE\s+(\d+)/u);
+        if (m) {
+            sceneStartRows[parseInt(m[1], 10)] = i + 1; // convert 0-based index to 1-based Excel row
+        }
+    }
+
     const scenes = {};
-    for (const idx in SCENE_START_ROWS) {
-        scenes[idx] = parseScene(rows, SCENE_START_ROWS[idx], assets);
+    for (const idx in sceneStartRows) {
+        scenes[idx] = parseScene(rows, sceneStartRows[idx], assets);
     }
 
     return {
