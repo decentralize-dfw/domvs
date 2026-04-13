@@ -35,16 +35,16 @@
     <!-- ===== ORBIT / CAMERAS MODE UI ===== -->
     <p id="modelLabel" class="vea-model-label" style="display:none">Oda</p>
     <div id="modelToggleBar">
-        <button id="modelToggleBtn1" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn2" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn3" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn4" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn5" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn6" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn7" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn8" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn9" class="vea-model-toggle"></button>
-        <button id="modelToggleBtn10" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn1" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn2" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn3" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn4" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn5" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn6" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn7" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn8" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn9" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn10" class="vea-model-toggle" style="display:none"></button>
     </div>
 
     <!-- ===== PANELS & DESCRIPTION ===== -->
@@ -387,10 +387,15 @@
             composer.insertPass(new RenderPass(scene, camera), 0);
 
             loadAllModels().then(() => {
-                showStaticPanels();
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
                 hotspotMgr.loadHotspots();
-                if (sceneCfg.buttons.length > 0) toggleButtons[0]?.click();
+                if (sceneCfg.buttons.length > 0) {
+                    // Toggle-based panels — first button click loads them
+                    toggleButtons[0]?.click();
+                } else {
+                    // No buttons — try static left/right panels
+                    showStaticPanels();
+                }
                 fadeOutLoading();
             }).catch(e => {
                 console.error(e);
