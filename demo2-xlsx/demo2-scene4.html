@@ -60,7 +60,7 @@
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
         import { PMREMGenerator } from 'three';
         import {
-            loadVeaConfig, yes, num,
+            loadVeaConfig, yes, num, isMouseBreak,
             renderPanelHtml, assetUrlFor,
             parseCameraPositionAction
         } from 'https://mergvs.com/demo2-xlsx/xlsx-loader-4.js';
@@ -234,6 +234,14 @@
             orbitControls.dampingFactor = 0.05;
             orbitControls.autoRotate      = yes(cam['Auto-Rotate']);
             orbitControls.autoRotateSpeed = num(cam['Auto-Rotate Speed']) || 1.0;
+            // mouse-break: auto-rotate starts, stops on first interaction
+            if (isMouseBreak(cam['Auto-Rotate'])) {
+                const stopRotate = () => {
+                    orbitControls.autoRotate = false;
+                    renderer.domElement.removeEventListener('pointerdown', stopRotate);
+                };
+                renderer.domElement.addEventListener('pointerdown', stopRotate);
+            }
             orbitControls.enablePan       = yes(cam['Enable Pan']);
             orbitControls.enableZoom      = yes(cam['Enable Zoom']);
             orbitControls.enableRotate    = yes(cam['Enable Rotate']);

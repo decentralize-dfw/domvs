@@ -127,7 +127,15 @@ function sheetToRowArray(ws) {
 /* ---------- Value coercion helpers ---------- */
 export function yes(v) {
     if (v === null || v === undefined) return false;
-    return /^yes$/i.test(String(v).trim());
+    const s = String(v).trim().toLowerCase();
+    // "mouse-break" is truthy (starts rotating, stops on interaction)
+    if (s === 'mouse-break') return true;
+    return /^yes$/i.test(s);
+}
+/** Returns true if the raw cell value is exactly "mouse-break". */
+export function isMouseBreak(v) {
+    if (v === null || v === undefined) return false;
+    return String(v).trim().toLowerCase() === 'mouse-break';
 }
 export function num(v) {
     if (v === null || v === undefined) return 0;
