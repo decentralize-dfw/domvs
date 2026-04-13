@@ -766,6 +766,7 @@ export class CameraEditor {
         this._clipPercent = 0; // 0 = no clip, 20 = cut top 20%
         this._sceneBBox = null;
         this._dimmedMeshes = []; // track exactly which meshes we dimmed
+        this._navDots = null; // scene sets via setNavDots()
 
         this._parseFromButtons();
         this._setupTransformControls();
@@ -783,12 +784,14 @@ export class CameraEditor {
             if (m) {
                 const p = m[1].split(',').map(s => parseFloat(s.trim()));
                 const l = m[2].split(',').map(s => parseFloat(s.trim()));
+                const dp = btn.dotPos;
                 this._cameras.push({
                     name: btn.name,
                     kod: btn.kod || btn.id,
                     pos: { x: p[0]||0, y: p[1]||0, z: p[2]||0 },
                     lookAt: { x: l[0]||0, y: l[1]||0, z: l[2]||0 },
-                    fov: m[3] ? parseFloat(m[3]) : 80
+                    fov: m[3] ? parseFloat(m[3]) : 80,
+                    dotPos: dp ? { x: dp.x, y: dp.y, z: dp.z } : { x: p[0]||0, y: 0.02, z: p[2]||0 }
                 });
             }
         }
@@ -961,7 +964,9 @@ export class CameraEditor {
         }
     }
 
-    // ---- 3D HELPERS: camera icon + eye icon + dashed line ----
+    setNavDots(dots) { this._navDots = dots; }
+
+    // ---- 3D HELPERS: camera icon + eye icon + dashed line + floor dot ----
 
     _createHelpers() {
         this._removeHelpers();
@@ -1021,7 +1026,21 @@ export class CameraEditor {
             label.userData._isCamHelper = true;
             this.scene.add(label);
 
-            this._helpers.push({ posMesh, lookMesh, line, label, camData: cam, color });
+            // Floor nav-dot marker (green circle)
+            const dotGeo = new THREE.CircleGeometry(0.18, 32);
+            const dotMat = new THREE.MeshBasicMaterial({
+                color: 0x44ff88, transparent: true, opacity: 0.9,
+                side: THREE.DoubleSide, depthTest: true
+            });
+            const dotMesh = new THREE.Mesh(dotGeo, dotMat);
+            dotMesh.rotation.x = -Math.PI / 2;
+            dotMesh.position.set(cam.dotPos.x, cam.dotPos.y, cam.dotPos.z);
+            dotMesh.userData._isCamHelper = true;
+            dotMesh.userData._camIdx = i;
+            dotMesh.userData._type = 'dot';
+            this.scene.add(dotMesh);
+
+            this._helpers.push({ posMesh, lookMesh, dotMesh, line, label, camData: cam, color });
         });
     }
 
@@ -1029,6 +1048,7 @@ export class CameraEditor {
         for (const h of this._helpers) {
             this.scene.remove(h.posMesh); h.posMesh.geometry.dispose(); h.posMesh.material.dispose();
             this.scene.remove(h.lookMesh); h.lookMesh.geometry.dispose(); h.lookMesh.material.dispose();
+            if (h.dotMesh) { this.scene.remove(h.dotMesh); h.dotMesh.geometry.dispose(); h.dotMesh.material.dispose(); }
             this.scene.remove(h.line); h.line.geometry.dispose(); h.line.material.dispose();
             this.scene.remove(h.label); h.label.material.map?.dispose(); h.label.material.dispose();
         }
@@ -1044,6 +1064,20 @@ export class CameraEditor {
             h.camData.lookAt.x = h.lookMesh.position.x;
             h.camData.lookAt.y = h.lookMesh.position.y;
             h.camData.lookAt.z = h.lookMesh.position.z;
+            // Dot position
+            if (h.dotMesh) {
+                h.camData.dotPos.x = h.dotMesh.position.x;
+                h.camData.dotPos.y = h.dotMesh.position.y;
+                h.camData.dotPos.z = h.dotMesh.position.z;
+                // Also update the real nav dot in the scene
+                const idx = this._helpers.indexOf(h);
+                if (this._navDots && this._navDots[idx]) {
+                    const nd = this._navDots[idx];
+                    nd.mesh.position.set(h.dotMesh.position.x, h.dotMesh.position.y, h.dotMesh.position.z);
+                    nd.ring.position.set(h.dotMesh.position.x, h.dotMesh.position.y + 0.005, h.dotMesh.position.z);
+                    nd.label.position.set(h.dotMesh.position.x, h.dotMesh.position.y + 0.43, h.dotMesh.position.z);
+                }
+            }
             // Update line
             const pts = h.line.geometry.attributes.position;
             pts.setXYZ(0, h.posMesh.position.x, h.posMesh.position.y, h.posMesh.position.z);
@@ -1059,7 +1093,9 @@ export class CameraEditor {
     _selectHelper(helperObj, type) {
         this._selectedHelper = helperObj;
         this._dragMode = type;
-        const target = type === 'pos' ? helperObj.posMesh : helperObj.lookMesh;
+        const target = type === 'dot' ? helperObj.dotMesh
+                     : type === 'pos' ? helperObj.posMesh
+                     : helperObj.lookMesh;
         this._transformControls.attach(target);
 
         // Highlight in list
@@ -1088,6 +1124,17 @@ export class CameraEditor {
             const grid = document.createElement('div');
             grid.className = 'vea-hs-list-grid';
 
+            const syncDot = (axis, v) => {
+                cam.dotPos[axis] = v;
+                if (h?.dotMesh) h.dotMesh.position[axis] = v;
+                const idx = i;
+                if (this._navDots && this._navDots[idx]) {
+                    this._navDots[idx].mesh.position[axis] = v;
+                    this._navDots[idx].ring.position[axis === 'y' ? axis : axis] = v + (axis === 'y' ? 0.005 : 0);
+                    if (axis !== 'y') this._navDots[idx].label.position[axis] = v;
+                    if (axis === 'y') this._navDots[idx].label.position.y = v + 0.43;
+                }
+            };
             const fields = [
                 { label: 'PX', get: () => cam.pos.x, set: v => { cam.pos.x = v; if(h) h.posMesh.position.x = v; } },
                 { label: 'PY', get: () => cam.pos.y, set: v => { cam.pos.y = v; if(h) h.posMesh.position.y = v; } },
@@ -1096,6 +1143,9 @@ export class CameraEditor {
                 { label: 'LY', get: () => cam.lookAt.y, set: v => { cam.lookAt.y = v; if(h) h.lookMesh.position.y = v; } },
                 { label: 'LZ', get: () => cam.lookAt.z, set: v => { cam.lookAt.z = v; if(h) h.lookMesh.position.z = v; } },
                 { label: 'FOV', get: () => cam.fov, set: v => { cam.fov = v; } },
+                { label: 'DX', get: () => cam.dotPos.x, set: v => syncDot('x', v) },
+                { label: 'DY', get: () => cam.dotPos.y, set: v => syncDot('y', v) },
+                { label: 'DZ', get: () => cam.dotPos.z, set: v => syncDot('z', v) },
             ];
 
             for (const f of fields) {
@@ -1136,12 +1186,18 @@ export class CameraEditor {
             lookBtn.className = 'vea-cam-go';
             lookBtn.textContent = '◉ LookAt';
             lookBtn.addEventListener('click', e => { e.stopPropagation(); if(h) this._selectHelper(h, 'look'); });
+            const dotBtn = document.createElement('button');
+            dotBtn.className = 'vea-cam-go';
+            dotBtn.textContent = '● Dot';
+            dotBtn.style.color = '#44ff88';
+            dotBtn.addEventListener('click', e => { e.stopPropagation(); if(h) this._selectHelper(h, 'dot'); });
             const goBtn = document.createElement('button');
             goBtn.className = 'vea-cam-go';
             goBtn.textContent = '▶ Git';
             goBtn.addEventListener('click', e => { e.stopPropagation(); this._goToCamera(i); });
             btnRow.appendChild(posBtn);
             btnRow.appendChild(lookBtn);
+            btnRow.appendChild(dotBtn);
             btnRow.appendChild(goBtn);
             grid.appendChild(btnRow);
 
@@ -1180,7 +1236,9 @@ export class CameraEditor {
         const rows = this._cameras.map((cam, i) => {
             return [
                 i + 1, cam.name, cam.kod,
-                `Pos(${fmtNum(cam.pos.x)}, ${fmtNum(cam.pos.y)}, ${fmtNum(cam.pos.z)})   → LookAt(${fmtNum(cam.lookAt.x)}, ${fmtNum(cam.lookAt.y)}, ${fmtNum(cam.lookAt.z)})   · FOV ${cam.fov.toFixed(0)}`
+                `Pos(${fmtNum(cam.pos.x)}, ${fmtNum(cam.pos.y)}, ${fmtNum(cam.pos.z)})   → LookAt(${fmtNum(cam.lookAt.x)}, ${fmtNum(cam.lookAt.y)}, ${fmtNum(cam.lookAt.z)})   · FOV ${cam.fov.toFixed(0)}`,
+                '', // Kod column
+                fmtNum(cam.dotPos.x), fmtNum(cam.dotPos.y), fmtNum(cam.dotPos.z)
             ].join('\t');
         });
         navigator.clipboard.writeText(rows.join('\n')).then(() => {
@@ -1251,7 +1309,7 @@ export class CameraEditor {
             const rc = new THREE.Raycaster();
             rc.setFromCamera(mouse, this.camera);
             const meshes = [];
-            for (const h of this._helpers) { meshes.push(h.posMesh); meshes.push(h.lookMesh); }
+            for (const h of this._helpers) { meshes.push(h.posMesh); meshes.push(h.lookMesh); if (h.dotMesh) meshes.push(h.dotMesh); }
             const hits = rc.intersectObjects(meshes);
             if (hits.length > 0) {
                 const hit = hits[0].object;
