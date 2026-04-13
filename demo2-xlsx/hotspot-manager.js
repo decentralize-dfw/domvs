@@ -58,13 +58,13 @@ export class HotspotManager {
     }
 
     setToggle(toggleKod) {
+        this._activeToggle = toggleKod;
+        if (this.editMode) return; // edit modda toggle uygulanmaz
         for (const obj of this.objects) {
             const tk = obj.data.toggleKod;
             if (!tk) {
-                // toggleKod boş → her zaman görünür
                 obj.group.visible = true;
             } else {
-                // toggleKod dolu → sadece eşleşen toggle'da görünür
                 obj.group.visible = (tk === toggleKod);
             }
         }
@@ -347,6 +347,12 @@ export class HotspotManager {
         this._editToolbar.style.display = 'flex';
         this._editListPanel.style.display = 'block';
 
+        // Show ALL hotspots regardless of toggle (so every one is selectable)
+        for (const obj of this.objects) {
+            obj.group.visible = true;
+            if (obj.label) obj.label.visible = true;
+        }
+
         // Dim scene models
         this.scene.traverse(c => {
             if (c.isMesh && !c.userData.isHotspotSprite) {
@@ -389,6 +395,9 @@ export class HotspotManager {
         this.transformControls.enabled = false;
         this.selectedObject = null;
         if (this.orbitControls) this.orbitControls.enabled = true;
+
+        // Re-apply last toggle so hidden hotspots hide again
+        if (this._activeToggle) this.setToggle(this._activeToggle);
     }
 
     _selectObject(obj) {
@@ -508,15 +517,25 @@ export class HotspotManager {
         // Virgülle yazarsak "10,169" → 10.169 olarak doğru algılar.
         const fmtNum = (n) => n.toFixed(3).replace('.', ',');
 
+        // TSV cell quoting: if a value contains \n, \t or " it must be
+        // wrapped in double-quotes (with internal " escaped as "").
+        const tsvCell = (v) => {
+            const s = String(v ?? '');
+            if (s.includes('\t') || s.includes('\n') || s.includes('"')) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        };
+
         const rows = this.objects.map((obj, i) => {
             const d = obj.data, g = obj.group, p = g.position, rot = g.rotation;
             return [
                 i + 1,
-                d.name,
+                tsvCell(d.name),
                 d.hotspotTip,
                 d.hotspotUrl,
                 d.popupTip,
-                d.popupContent,
+                tsvCell(d.popupContent),
                 fmtNum(p.x), fmtNum(p.y), fmtNum(p.z),
                 fmtNum(rot.x), fmtNum(rot.y), fmtNum(rot.z),
                 fmtNum(g.scale.x),
