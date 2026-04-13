@@ -392,11 +392,20 @@ function parseButtonsSection(rows, sceneIdx, sceneEnd) {
         if (/^buton\s+(etiketi|id)$/i.test(nameStr)) continue;
         if (/^buton\s+id$/i.test(idStr)) continue;
 
+        // Columns F(5), G(6), H(7): optional nav-dot position override
+        // If all three are filled, the floor dot uses these coords
+        // instead of the camera position parsed from the action string.
+        const rawF = row[5], rawG = row[6], rawH = row[7];
+        const hasNavDot = (rawF !== null && rawF !== undefined && rawF !== '' && String(rawF).toLowerCase() !== 'null')
+                       && (rawG !== null && rawG !== undefined && rawG !== '' && String(rawG).toLowerCase() !== 'null')
+                       && (rawH !== null && rawH !== undefined && rawH !== '' && String(rawH).toLowerCase() !== 'null');
+
         buttons.push({
             name:   nameStr,
             id:     idStr,
             action: row[3] ? String(row[3]).trim() : '',
-            kod:    row[4] ? String(row[4]).trim() : ''
+            kod:    row[4] ? String(row[4]).trim() : '',
+            dotPos: hasNavDot ? { x: parseFloat(rawF) || 0, y: parseFloat(rawG) || 0, z: parseFloat(rawH) || 0 } : null
         });
     }
     return buttons;

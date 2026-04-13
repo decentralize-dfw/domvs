@@ -365,6 +365,7 @@
 
                 hotspotMgr.loadHotspots();
                 createNavDots();
+                camEditor.setNavDots(navDots);
                 if (sceneCfg.buttons.length > 0) {
                     selectCamera(0);
                 }
@@ -530,6 +531,11 @@
                 const cp = cameraPositions[i];
                 if (!cp) return; // skip CLIP_MODE etc.
 
+                // Use custom dotPos from Excel if set, else camera position
+                const dx = btn.dotPos ? btn.dotPos.x : cp.pos.x;
+                const dy = btn.dotPos ? btn.dotPos.y : 0.02;
+                const dz = btn.dotPos ? btn.dotPos.z : cp.pos.z;
+
                 // White dot flat on floor
                 const mat = new THREE.MeshBasicMaterial({
                     color: 0xffffff, transparent: true, opacity: 0.7,
@@ -537,7 +543,7 @@
                 });
                 const mesh = new THREE.Mesh(dotGeo.clone(), mat);
                 mesh.rotation.x = -Math.PI / 2;
-                mesh.position.set(cp.pos.x, 0.02, cp.pos.z);
+                mesh.position.set(dx, dy, dz);
                 mesh.userData._navDotIdx = i;
                 scene.add(mesh);
 
@@ -548,12 +554,12 @@
                 });
                 const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
                 ring.rotation.x = -Math.PI / 2;
-                ring.position.set(cp.pos.x, 0.025, cp.pos.z);
+                ring.position.set(dx, dy + 0.005, dz);
                 scene.add(ring);
 
                 // Name label (hidden by default)
                 const label = _makeNavLabel(btn.name || '');
-                label.position.set(cp.pos.x, 0.45, cp.pos.z);
+                label.position.set(dx, dy + 0.43, dz);
                 label.visible = false;
                 scene.add(label);
 
