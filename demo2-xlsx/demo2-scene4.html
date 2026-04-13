@@ -349,6 +349,15 @@
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
                 camEditor = new CameraEditor(scene, camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
 
+                // Suspend hotspot + nav dot interaction when cam editor is active
+                camEditor.onToggle = (active) => {
+                    hotspotMgr.suspended = active;
+                    if (active) {
+                        _setHoveredDot(null);
+                        for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                    }
+                };
+
                 // Teleport: match hotspot position to nearest camera button
                 hotspotMgr.onTeleport = (hsData) => {
                     let bestIdx = 0, bestDist = Infinity;
@@ -595,6 +604,7 @@
 
         function updateNavDotsHover() {
             if (activeMode !== 'toggle-1' || navDots.length === 0) return;
+            if (camEditor && camEditor.active) return;
 
             const meshes = [];
             for (const d of navDots) { if (d.mesh.visible) meshes.push(d.mesh); }
@@ -660,6 +670,7 @@
 
             // Nav dot click → direct teleport (no popup)
             renderer.domElement.addEventListener('click', () => {
+                if (camEditor && camEditor.active) return;
                 if (_hoveredDot) {
                     selectCamera(_hoveredDot.camIndex);
                 }
