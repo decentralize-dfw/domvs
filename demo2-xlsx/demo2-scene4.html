@@ -169,6 +169,8 @@
 
             descriptionEl.textContent = `Camera: ${btn?.name || ''}`;
             descriptionEl.style.display = 'block';
+
+            updateNavDots(index);
         }
 
         async function init() {
@@ -362,6 +364,7 @@
                 };
 
                 hotspotMgr.loadHotspots();
+                createNavDots();
                 if (sceneCfg.buttons.length > 0) {
                     selectCamera(0);
                 }
@@ -466,7 +469,11 @@
             if (hotspotMgr) hotspotMgr.camera = camera;
             if (camEditor) camEditor.camera = camera;
 
-            // 6. Show toggle-2 hotspots
+            // 6. Hide nav dots in plan view
+            for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+            _setHoveredDot(null);
+
+            // 7. Show toggle-2 hotspots
             if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
 
             // 7. Hide side panels
@@ -507,6 +514,111 @@
             orbitControls.update();
         }
 
+        // ---- MATTERPORT-STYLE NAV DOTS ----
+
+        let navDots = []; // { mesh, label, ring, camIndex }
+        const _navRC = new THREE.Raycaster();
+        const _navMouse = new THREE.Vector2();
+        let _hoveredDot = null;
+
+        function createNavDots() {
+            const dotGeo = new THREE.CircleGeometry(0.12, 32);
+            // Outer ring for hover glow
+            const ringGeo = new THREE.RingGeometry(0.13, 0.18, 32);
+
+            sceneCfg.buttons.forEach((btn, i) => {
+                const cp = cameraPositions[i];
+                if (!cp) return; // skip CLIP_MODE etc.
+
+                // White dot flat on floor
+                const mat = new THREE.MeshBasicMaterial({
+                    color: 0xffffff, transparent: true, opacity: 0.7,
+                    side: THREE.DoubleSide, depthTest: true
+                });
+                const mesh = new THREE.Mesh(dotGeo.clone(), mat);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.position.set(cp.pos.x, 0.02, cp.pos.z);
+                mesh.userData._navDotIdx = i;
+                scene.add(mesh);
+
+                // Hover ring (hidden by default)
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: 0xc9a96e, transparent: true, opacity: 0,
+                    side: THREE.DoubleSide, depthTest: true
+                });
+                const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.set(cp.pos.x, 0.025, cp.pos.z);
+                scene.add(ring);
+
+                // Name label (hidden by default)
+                const label = _makeNavLabel(btn.name || '');
+                label.position.set(cp.pos.x, 0.45, cp.pos.z);
+                label.visible = false;
+                scene.add(label);
+
+                navDots.push({ mesh, ring, label, camIndex: i });
+            });
+        }
+
+        function _makeNavLabel(text) {
+            const c = document.createElement('canvas');
+            c.width = 256; c.height = 64;
+            const x = c.getContext('2d');
+            x.fillStyle = 'rgba(0,0,0,0.75)';
+            x.beginPath(); x.roundRect(4, 4, 248, 56, 12); x.fill();
+            x.fillStyle = '#fff'; x.font = 'bold 22px Arial';
+            x.textAlign = 'center'; x.textBaseline = 'middle';
+            x.fillText(text, 128, 32);
+            const mat = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+            });
+            const s = new THREE.Sprite(mat);
+            s.scale.set(1.0, 0.25, 1);
+            return s;
+        }
+
+        function updateNavDots(selectedCamIndex) {
+            for (const dot of navDots) {
+                const show = dot.camIndex !== selectedCamIndex && activeMode === 'toggle-1';
+                dot.mesh.visible = show;
+                dot.ring.visible = show;
+                if (!show) dot.label.visible = false;
+            }
+        }
+
+        function updateNavDotsHover() {
+            if (activeMode !== 'toggle-1' || navDots.length === 0) return;
+
+            const meshes = [];
+            for (const d of navDots) { if (d.mesh.visible) meshes.push(d.mesh); }
+            if (meshes.length === 0) { _setHoveredDot(null); return; }
+
+            _navRC.setFromCamera(_navMouse, camera);
+            const hits = _navRC.intersectObjects(meshes);
+            const hitDot = hits.length > 0
+                ? navDots.find(d => d.mesh === hits[0].object) : null;
+            _setHoveredDot(hitDot);
+        }
+
+        function _setHoveredDot(dot) {
+            if (_hoveredDot === dot) return;
+            // Un-hover previous
+            if (_hoveredDot) {
+                _hoveredDot.label.visible = false;
+                _hoveredDot.mesh.material.opacity = 0.7;
+                _hoveredDot.ring.material.opacity = 0;
+            }
+            _hoveredDot = dot;
+            // Hover new
+            if (_hoveredDot) {
+                _hoveredDot.label.visible = true;
+                _hoveredDot.mesh.material.opacity = 1.0;
+                _hoveredDot.ring.material.opacity = 0.8;
+            }
+            renderer.domElement.style.cursor = dot ? 'pointer' : '';
+        }
+
         function setupEventListeners() {
             window.addEventListener('resize', () => {
                 const aspect = window.innerWidth / window.innerHeight;
@@ -531,12 +643,28 @@
                     document.exitFullscreen().catch(() => {});
                 }
             });
+
+            // Nav dot hover tracking
+            renderer.domElement.addEventListener('pointermove', (e) => {
+                _navMouse.set(
+                    (e.clientX / innerWidth) * 2 - 1,
+                    -(e.clientY / innerHeight) * 2 + 1
+                );
+            });
+
+            // Nav dot click → direct teleport (no popup)
+            renderer.domElement.addEventListener('click', () => {
+                if (_hoveredDot) {
+                    selectCamera(_hoveredDot.camIndex);
+                }
+            });
         }
 
         function animate() {
             const delta = clock.getDelta();
             if (orbitControls) orbitControls.update(delta);
             if (hotspotMgr) hotspotMgr.update(delta);
+            updateNavDotsHover();
             if (composer) composer.render();
         }
 
