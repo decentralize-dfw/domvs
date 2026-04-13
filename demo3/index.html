@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>VEA · Demo v2 (xlsx)</title>
+    <title>VEA · Demo v3</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -233,7 +233,7 @@
 </head>
 <body>
     <div id="topbar">
-        <div class="brand">VEA<span class="v">demo v2</span></div>
+        <div class="brand">VEA<span class="v">demo v3</span></div>
         <div class="divider"></div>
 
         <div class="track-info">
@@ -264,27 +264,21 @@
 
     <div id="boot">
         <div class="title">VEA</div>
-        <div class="sub">demo v2 · reading config…</div>
+        <div class="sub">demo v3 · reading config…</div>
     </div>
 
     <script type="module">
         import { loadVeaConfig } from 'https://mergvs.com/demo3/xlsx-loader-4.js';
 
-        // Base URL where scene files live. Candidate scene files are
-        // resolved against this base; a file is only added to TRACKS if
-        // a HEAD request returns 200, so scenes that haven't been
-        // migrated yet are automatically skipped.
-        const SCENES_BASE_URL = 'https://mergvs.com/demo3/';
-        const SCENE_CANDIDATES = [
-            { index: 0, file: 'demo3-scene0.html' },
-            { index: 1, file: 'demo3-scene1.html' },
-            { index: 2, file: 'demo3-scene2.html' },
-            { index: 3, file: 'demo3-scene3.html' },
-            { index: 4, file: 'demo3-scene4.html' },
-            { index: 5, file: 'demo3-scene5.html' }
-        ].map(s => ({ ...s, url: SCENES_BASE_URL + s.file }));
+        // Scene runner URL — all scenes use this single file with ?scene=N
+        const SCENE_RUNNER = 'https://mergvs.com/demo3/demo3-scene.html';
 
-        let TRACKS = [];
+        // Type badges for the topbar
+        const TYPE_BADGE = {
+            orbit: '⟳', cameras: '📷', walkthru: '🚶', panoramic: '⬡'
+        };
+
+        let TRACKS = []; // built dynamically from Excel
         let currentTrack = 0;
 
         const frame      = document.getElementById('scene-frame');
@@ -299,21 +293,13 @@
 
         function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
-        async function fileExists(path) {
-            try {
-                const r = await fetch(path, { method: 'HEAD' });
-                return r.ok;
-            } catch {
-                return false;
-            }
-        }
-
         function buildDots() {
             dotsEl.innerHTML = '';
-            TRACKS.forEach((_, i) => {
+            TRACKS.forEach((t, i) => {
                 const d = document.createElement('span');
                 d.className = 'dot';
                 d.dataset.index = i;
+                d.title = `${t.title} ${TYPE_BADGE[t.type] || ''}`;
                 d.addEventListener('click', () => goTo(i));
                 dotsEl.appendChild(d);
             });
@@ -328,9 +314,10 @@
                 btnNext.disabled = true;
                 return;
             }
+            const t = TRACKS[currentTrack];
             trackNum.textContent   = pad2(currentTrack + 1);
             trackTotal.textContent = pad2(TRACKS.length);
-            trackTitle.textContent = TRACKS[currentTrack].title;
+            trackTitle.textContent = `${TYPE_BADGE[t.type] || ''} ${t.title}`.trim();
 
             Array.from(dotsEl.children).forEach((d, i) => {
                 d.classList.toggle('active', i === currentTrack);
@@ -344,7 +331,7 @@
             if (TRACKS.length === 0) return;
             fade.classList.add('visible');
             setTimeout(() => {
-                frame.src = TRACKS[currentTrack].file;
+                frame.src = TRACKS[currentTrack].url;
                 setTimeout(() => fade.classList.remove('visible'), 220);
             }, 280);
         }
@@ -366,7 +353,7 @@
             if (e.code === 'ArrowLeft')  { e.preventDefault(); prev(); }
         });
 
-        // --- Bootstrap ---
+        // --- Bootstrap: read scenes from Excel, build TRACKS dynamically ---
         (async function bootstrap() {
             let config;
             try {
@@ -377,26 +364,22 @@
                 return;
             }
 
-            // Check which scene files actually exist
-            const results = await Promise.all(
-                SCENE_CANDIDATES.map(async (c) => ({
-                    ...c,
-                    exists: await fileExists(c.url)
-                }))
-            );
-
-            TRACKS = results
-                .filter(r => r.exists)
-                .map(r => ({
-                    index: r.index,
-                    file:  r.url,
-                    title: config.scenes[r.index]?.title || `Scene ${r.index}`
-                }));
+            // Build TRACKS from Excel scenes — sorted by scene index
+            const sceneIndices = Object.keys(config.scenes).map(Number).sort((a, b) => a - b);
+            TRACKS = sceneIndices.map(idx => {
+                const s = config.scenes[idx];
+                return {
+                    index: idx,
+                    url:   `${SCENE_RUNNER}?scene=${idx}`,
+                    title: s.title || `Scene ${idx}`,
+                    type:  s.type || 'orbit'
+                };
+            });
 
             buildDots();
             updateUi();
             if (TRACKS.length > 0) {
-                frame.src = TRACKS[0].file;
+                frame.src = TRACKS[0].url;
             }
 
             // Hide boot overlay
