@@ -183,6 +183,7 @@
                     root.scale.set(entry.scale.x || 1, entry.scale.y || 1, entry.scale.z || 1);
                     root.visible = entry.visible;
                     if (entry.id) root.userData.id = entry.id;
+                    if (entry.toggleKod) root.userData._toggleKod = entry.toggleKod;
                     root.traverse((c) => {
                         if (c.isMesh) {
                             c.castShadow = true;
@@ -352,13 +353,28 @@
                         e.stopPropagation();
                         toggleButtons.forEach((b, j) => b.classList.toggle('selected', j === i));
                         const kod = cfg.kod || `toggle-${i + 1}`;
-                        // Toggle model visibility
-                        scene.traverse(c => {
-                            if (c.userData?.id && c.userData._toggleKod) {
-                                c.visible = (c.userData._toggleKod === kod);
+
+                        // Toggle model visibility (root-level check)
+                        scene.children.forEach(child => {
+                            if (child.userData._toggleKod) {
+                                child.visible = (child.userData._toggleKod === kod);
                             }
                         });
-                        const panelKey = cfg.id || `toggle-${i + 1}`;
+
+                        // Move camera if action has Pos() → LookAt()
+                        const camPos = parseCameraPositionAction(cfg.action);
+                        if (camPos) {
+                            camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
+                            orbitControls.target.set(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
+                            if (camPos.fov && camera.isPerspectiveCamera) {
+                                camera.fov = camPos.fov;
+                                camera.updateProjectionMatrix();
+                            }
+                            orbitControls.update();
+                        }
+
+                        // Panel lookup: try btn.id first, fall back to kod
+                        const panelKey = cfg.id || kod;
                         updatePanelsById(`${panelKey}-left`, `${panelKey}-right`);
                         if (hotspotMgr) hotspotMgr.setToggle(kod);
                         descriptionEl.textContent = cfg.name;
