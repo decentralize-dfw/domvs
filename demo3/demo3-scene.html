@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA Demo3 — Scene Runner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://mergvs.com/demo3/demo3-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/distribution/nipplejs.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- ===== LOADING SCREEN ===== -->
+    <div id="loading">
+        <div class="loading-title">VEA</div>
+        <div class="loading-subtitle" id="loadingSubtitle">Real Estate Experience</div>
+        <div class="loading-bar-track"><div id="loadingProgressBar"></div></div>
+        <div class="loading-tagline" id="loadingTagline">xlsx-driven</div>
+    </div>
+
+    <img id="backgroundImg">
+    <div id="sceneLoadingIndicator">Sahne Yükleniyor…</div>
+    <div id="sceneTransitionOverlay"></div>
+
+    <!-- ===== ORBIT / CAMERAS MODE UI ===== -->
+    <p id="modelLabel" class="vea-model-label" style="display:none">Oda</p>
+    <div id="modelToggleBar">
+        <button id="modelToggleBtn1" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn2" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn3" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn4" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn5" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn6" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn7" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn8" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn9" class="vea-model-toggle"></button>
+        <button id="modelToggleBtn10" class="vea-model-toggle"></button>
+    </div>
+
+    <!-- ===== PANELS & DESCRIPTION ===== -->
+    <div id="leftHtmlPanel"></div>
+    <div id="rightHtmlPanel"></div>
+    <div id="description"></div>
+
+    <!-- ===== WALKTHRU MODE UI ===== -->
+    <div id="instructions" style="display:none">
+        <h1>Walk-Thru</h1>
+        <p>Başlamak için ekrana tıklayın · WASD ile gezin</p>
+    </div>
+    <div id="joystickLeft" class="joystick-zone" style="display:none"></div>
+    <div id="joystickRight" class="joystick-zone" style="display:none"></div>
+
+    <!-- ===== COMMON ===== -->
+    <button id="fullscreenButton" class="fab-info-btn" title="Tam Ekran" style="display:none">⛶</button>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { PMREMGenerator } from 'three';
+        import {
+            loadVeaConfig, yes, num, isMouseBreak,
+            renderPanelHtml, assetUrlFor,
+            parseCameraPositionAction, isColliderEntry
+        } from 'https://mergvs.com/demo3/xlsx-loader-4.js';
+        import { HotspotManager, CameraEditor } from 'https://mergvs.com/demo3/hotspot-manager.js';
+
+        /* ===============================================================
+           SHARED STATE
+           =============================================================== */
+        const SCENE_INDEX = parseInt(new URLSearchParams(location.search).get('scene') ?? '0');
+
+        let scene, renderer, composer, camera, pmremGenerator;
+        let config = null;
+        let sceneCfg = null;
+        let hotspotMgr = null;
+        const clock = new THREE.Clock();
+
+        // Mode-specific state — set by initXxxMode(), used by updateXxxMode()
+        let activeUpdateFn = null; // called every frame with (delta)
+
+        // DOM refs
+        const loadingEl              = document.getElementById('loading');
+        const loadingSubtitleEl      = document.getElementById('loadingSubtitle');
+        const loadingTaglineEl       = document.getElementById('loadingTagline');
+        const backgroundImgEl        = document.getElementById('backgroundImg');
+        const sceneLoadingIndicatorEl = document.getElementById('sceneLoadingIndicator');
+        const leftHtmlPanel          = document.getElementById('leftHtmlPanel');
+        const rightHtmlPanel         = document.getElementById('rightHtmlPanel');
+        const descriptionEl          = document.getElementById('description');
+
+        /* ===============================================================
+           LOADING HELPERS
+           =============================================================== */
+        function setLoadingProgress(pct) {
+            const bar = document.getElementById('loadingProgressBar');
+            if (bar) {
+                bar.style.animation = 'none';
+                bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+                bar.style.background = '#c9a96e';
+            }
+        }
+        function fadeOutLoading() {
+            setLoadingProgress(100);
+            setTimeout(() => {
+                loadingEl.classList.add('fading');
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 550);
+            }, 300);
+        }
+
+        /* ===============================================================
+           ENVIRONMENT (shared by all modes except panoramic)
+           =============================================================== */
+        function setupEnvironment() {
+            if (config.hdriUrl) {
+                new RGBELoader().load(config.hdriUrl, (texture) => {
+                    texture.mapping = THREE.EquirectangularReflectionMapping;
+                    scene.background = texture;
+                    scene.environment = pmremGenerator.fromEquirectangular(texture).texture;
+                    pmremGenerator.dispose();
+                    texture.dispose();
+                    scene.environmentIntensity = 0.7;
+                    setLoadingProgress(80);
+                }, (xhr) => {
+                    if (xhr.total) setLoadingProgress(Math.round((xhr.loaded / xhr.total) * 60));
+                });
+            }
+
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.5));
+
+            const sun = new THREE.DirectionalLight(0xffffff, 3.6);
+            sun.position.set(12, 24, 12);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far  = 160;
+            sun.shadow.camera.left = -55; sun.shadow.camera.right = 55;
+            sun.shadow.camera.top  = 55;  sun.shadow.camera.bottom = -55;
+            sun.shadow.bias = -0.0001;
+            sun.shadow.normalBias = 0.025;
+            scene.add(sun);
+        }
+
+        /* ===============================================================
+           MODEL LOADER (shared by orbit, cameras, walkthru)
+           =============================================================== */
+        function createGltfLoader() {
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+            dracoLoader.setDecoderConfig({ type: 'js' });
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+            return gltfLoader;
+        }
+
+        function loadVisibleModel(gltfLoader, entry) {
+            return new Promise((resolve, reject) => {
+                const url = assetUrlFor(config, entry);
+                if (!url) { resolve(null); return; }
+                gltfLoader.load(url, (gltf) => {
+                    const root = gltf.scene;
+                    root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
+                    root.rotation.set(entry.rot.x, entry.rot.y, entry.rot.z);
+                    root.scale.set(entry.scale.x || 1, entry.scale.y || 1, entry.scale.z || 1);
+                    root.visible = entry.visible;
+                    if (entry.id) root.userData.id = entry.id;
+                    if (entry.toggleKod) root.userData._toggleKod = entry.toggleKod;
+                    root.traverse((c) => {
+                        if (c.isMesh) {
+                            c.castShadow = true;
+                            c.receiveShadow = true;
+                            if (c.material && c.material.emissive) c.material.emissiveIntensity = 1;
+                        }
+                    });
+                    scene.add(root);
+                    resolve(root);
+                }, undefined, reject);
+            });
+        }
+
+        function loadColliderModel(gltfLoader, entry, colliderMeshes) {
+            return new Promise((resolve, reject) => {
+                const url = assetUrlFor(config, entry);
+                if (!url) { resolve(null); return; }
+                gltfLoader.load(url, (gltf) => {
+                    const root = gltf.scene;
+                    root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
+                    root.visible = false;
+                    root.traverse((c) => {
+                        if (c.isMesh) {
+                            c.material = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+                            colliderMeshes.push(c);
+                        }
+                    });
+                    scene.add(root);
+                    resolve();
+                }, undefined, reject);
+            });
+        }
+
+        /**
+         * Load all models for the scene. Returns a promise.
+         * For walkthru mode, pass a colliderMeshes array to collect colliders.
+         */
+        function loadAllModels(colliderMeshes) {
+            const gltfLoader = createGltfLoader();
+            sceneLoadingIndicatorEl.style.display = 'block';
+
+            const promises = sceneCfg.models.map((entry) => {
+                if (colliderMeshes && isColliderEntry(config, entry)) {
+                    return loadColliderModel(gltfLoader, entry, colliderMeshes);
+                }
+                return loadVisibleModel(gltfLoader, entry);
+            });
+
+            return Promise.all(promises).then(() => {
+                sceneLoadingIndicatorEl.style.display = 'none';
+                backgroundImgEl.style.display = 'none';
+                document.getElementById('fullscreenButton').style.display = 'flex';
+            });
+        }
+
+        /* ===============================================================
+           PANEL HELPERS
+           =============================================================== */
+        function updatePanelsById(leftId, rightId) {
+            const L = sceneCfg.panels[leftId];
+            const R = sceneCfg.panels[rightId];
+            leftHtmlPanel.innerHTML  = renderPanelHtml(L);
+            rightHtmlPanel.innerHTML = renderPanelHtml(R);
+            leftHtmlPanel.style.display  = L ? 'block' : 'none';
+            rightHtmlPanel.style.display = R ? 'block' : 'none';
+            leftHtmlPanel.scrollTop  = 0;
+            rightHtmlPanel.scrollTop = 0;
+        }
+
+        function showStaticPanels() {
+            leftHtmlPanel.innerHTML  = renderPanelHtml(sceneCfg.panels['left']);
+            rightHtmlPanel.innerHTML = renderPanelHtml(sceneCfg.panels['right']);
+            leftHtmlPanel.style.display  = 'block';
+            rightHtmlPanel.style.display = 'block';
+        }
+
+        /* ===============================================================
+           RESIZE HANDLER
+           =============================================================== */
+        function setupResizeHandler() {
+            window.addEventListener('resize', () => {
+                const aspect = window.innerWidth / window.innerHeight;
+                if (camera.isOrthographicCamera) {
+                    const fs = camera.userData._frustumSize || 40;
+                    camera.left   = -fs * aspect / 2;
+                    camera.right  =  fs * aspect / 2;
+                    camera.top    =  fs / 2;
+                    camera.bottom = -fs / 2;
+                } else {
+                    camera.aspect = aspect;
+                }
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        /* ===============================================================
+           FULLSCREEN
+           =============================================================== */
+        function setupFullscreenButton() {
+            document.getElementById('fullscreenButton').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                    document.exitFullscreen().catch(() => {});
+                }
+            });
+        }
+
+        /* ===============================================================
+           ORBIT MODE (type: orbit) — Prompt 3
+           scenes 0-3 behavior: OrbitControls, toggles, panels, hotspots
+           =============================================================== */
+        function initOrbitMode() {
+            const cam = sceneCfg.camera;
+            const aspect = window.innerWidth / window.innerHeight;
+            const isOrtho = String(cam['Kamera Türü'] || '').toLowerCase() === 'orthographic';
+            const frustumSize = num(cam['Frustum Size']) || 40;
+
+            if (isOrtho) {
+                camera = new THREE.OrthographicCamera(
+                    -frustumSize * aspect / 2, frustumSize * aspect / 2,
+                    frustumSize / 2, -frustumSize / 2, 0.1, 1000
+                );
+                camera.userData._frustumSize = frustumSize;
+            } else {
+                const fov = num(cam['Default FOV']) || 75;
+                camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
+            }
+
+            camera.position.set(num(cam['Cam Pos X']), num(cam['Cam Pos Y']), num(cam['Cam Pos Z']));
+            const lookAt = new THREE.Vector3(num(cam['LookAt X']), num(cam['LookAt Y']), num(cam['LookAt Z']));
+            camera.lookAt(lookAt);
+
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping  = true;
+            orbitControls.dampingFactor  = 0.05;
+            orbitControls.target.copy(lookAt);
+            orbitControls.autoRotate     = yes(cam['Auto-Rotate']);
+            orbitControls.autoRotateSpeed = num(cam['Auto-Rotate Speed']) || 1.0;
+            if (isMouseBreak(cam['Auto-Rotate'])) {
+                const stopRotate = () => {
+                    orbitControls.autoRotate = false;
+                    renderer.domElement.removeEventListener('pointerdown', stopRotate);
+                };
+                renderer.domElement.addEventListener('pointerdown', stopRotate);
+            }
+            orbitControls.enablePan    = yes(cam['Enable Pan']);
+            orbitControls.enableZoom   = yes(cam['Enable Zoom']);
+            orbitControls.enableRotate = yes(cam['Enable Rotate']);
+            orbitControls.maxPolarAngle = (Math.PI / 2) * 0.98;
+            orbitControls.update();
+
+            // Setup toggle buttons if present
+            const toggleButtons = Array.from(document.querySelectorAll('#modelToggleBar .vea-model-toggle'));
+            if (sceneCfg.buttons.length > 0) {
+                document.getElementById('modelLabel').style.display = 'block';
+                sceneCfg.buttons.forEach((cfg, i) => {
+                    if (!toggleButtons[i]) return;
+                    const btn = toggleButtons[i];
+                    btn.textContent = cfg.name;
+                    btn.dataset.id = cfg.id;
+                    btn.style.display = 'block';
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleButtons.forEach((b, j) => b.classList.toggle('selected', j === i));
+                        const kod = cfg.kod || `toggle-${i + 1}`;
+
+                        // Toggle model visibility (root-level check)
+                        scene.children.forEach(child => {
+                            if (child.userData._toggleKod) {
+                                child.visible = (child.userData._toggleKod === kod);
+                            }
+                        });
+
+                        // Move camera if action has Pos() → LookAt()
+                        const camPos = parseCameraPositionAction(cfg.action);
+                        if (camPos) {
+                            camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
+                            orbitControls.target.set(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
+                            if (camPos.fov && camera.isPerspectiveCamera) {
+                                camera.fov = camPos.fov;
+                                camera.updateProjectionMatrix();
+                            }
+                            orbitControls.update();
+                        }
+
+                        // Panel lookup: try btn.id first, fall back to kod
+                        const panelKey = cfg.id || kod;
+                        updatePanelsById(`${panelKey}-left`, `${panelKey}-right`);
+                        if (hotspotMgr) hotspotMgr.setToggle(kod);
+                        descriptionEl.textContent = cfg.name;
+                        descriptionEl.style.display = 'block';
+                    });
+                });
+            }
+
+            // Build composer + load models
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            loadAllModels().then(() => {
+                showStaticPanels();
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr.loadHotspots();
+                if (sceneCfg.buttons.length > 0) toggleButtons[0]?.click();
+                fadeOutLoading();
+            }).catch(e => {
+                console.error(e);
+                sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
+            });
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+            };
+        }
+
+        /* ===============================================================
+           CAMERAS MODE (type: cameras) — Prompt 4
+           scene 4 behavior: fixed cameras, clipping, nav dots, teleport
+           =============================================================== */
+        function initCamerasMode() {
+            const cam = sceneCfg.camera;
+            const defaultFov = num(cam['Default FOV']) || 80;
+            const aspect = window.innerWidth / window.innerHeight;
+            const CLIP_FRUSTUM = 12;
+
+            // Dual cameras
+            const perspCamera = new THREE.PerspectiveCamera(defaultFov, aspect, 0.1, 1000);
+            const orthoCamera = new THREE.OrthographicCamera(
+                -CLIP_FRUSTUM * aspect / 2, CLIP_FRUSTUM * aspect / 2,
+                CLIP_FRUSTUM / 2, -CLIP_FRUSTUM / 2, 0.1, 1000
+            );
+
+            const cameraPositions = sceneCfg.buttons.map(b => parseCameraPositionAction(b.action));
+            if (cameraPositions[0]) {
+                perspCamera.position.set(cameraPositions[0].pos.x, cameraPositions[0].pos.y, cameraPositions[0].pos.z);
+            }
+            camera = perspCamera;
+
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.maxPolarAngle = (Math.PI / 2) * 0.98;
+            if (cameraPositions[0]) {
+                orbitControls.target.set(cameraPositions[0].lookAt.x, cameraPositions[0].lookAt.y, cameraPositions[0].lookAt.z);
+            }
+            orbitControls.update();
+
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Clip mode state
+            let activeMode = 'toggle-1';
+            let clippingPlane = null;
+            let clippedMeshes = [];
+            let sceneBBox = null;
+            let camEditor = null;
+
+            // Nav dots state
+            let navDots = [];
+            const _navRC = new THREE.Raycaster();
+            const _navMouse = new THREE.Vector2();
+            let _hoveredDot = null;
+
+            const toggleButtons = Array.from(document.querySelectorAll('#modelToggleBar .vea-model-toggle'));
+
+            // ---- selectCamera ----
+            function selectCamera(index) {
+                toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === index));
+                const camPos = cameraPositions[index];
+                if (!camPos) return;
+
+                camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
+                camera.lookAt(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
+                camera.fov = camPos.fov;
+                camera.updateProjectionMatrix();
+
+                const lookDir = new THREE.Vector3(
+                    camPos.lookAt.x - camPos.pos.x,
+                    camPos.lookAt.y - camPos.pos.y,
+                    camPos.lookAt.z - camPos.pos.z
+                ).normalize().multiplyScalar(0.01);
+                orbitControls.target.set(
+                    camPos.pos.x + lookDir.x,
+                    camPos.pos.y + lookDir.y,
+                    camPos.pos.z + lookDir.z
+                );
+                orbitControls.enablePan = false;
+                orbitControls.enableZoom = true;
+                orbitControls.enableRotate = true;
+                orbitControls.minDistance = 0.001;
+                orbitControls.maxDistance = 0.02;
+                orbitControls.update();
+
+                const btn = sceneCfg.buttons[index];
+                const panelKey = btn?.id || `cam${index + 1}`;
+                updatePanelsById(`${panelKey}-left`, `${panelKey}-right`);
+                const kod = btn?.kod || 'toggle-1';
+                if (hotspotMgr) hotspotMgr.setToggle(kod);
+                descriptionEl.textContent = `Camera: ${btn?.name || ''}`;
+                descriptionEl.style.display = 'block';
+                updateNavDots(index);
+            }
+
+            // ---- Clip mode ----
+            function computeSceneBBox() {
+                sceneBBox = new THREE.Box3();
+                scene.traverse(c => {
+                    if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    if (!c.geometry) return;
+                    if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
+                    if (!c.geometry.boundingBox) return;
+                    const size = new THREE.Vector3();
+                    c.geometry.boundingBox.getSize(size);
+                    if (size.x > 500 || size.y > 500 || size.z > 500) return;
+                    const worldBB = c.geometry.boundingBox.clone();
+                    worldBB.applyMatrix4(c.matrixWorld);
+                    sceneBBox.union(worldBB);
+                });
+                if (sceneBBox.isEmpty()) sceneBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
+            }
+
+            function enterClipMode(buttonIndex) {
+                activeMode = 'toggle-2';
+                toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === buttonIndex));
+                computeSceneBBox();
+
+                const center = new THREE.Vector3();
+                sceneBBox.getCenter(center);
+                const dist = 20;
+                orthoCamera.position.set(
+                    center.x + dist * Math.cos(Math.PI / 4),
+                    center.y + dist * Math.sin(Math.PI / 4),
+                    center.z + dist * Math.cos(Math.PI / 4)
+                );
+                orthoCamera.lookAt(center);
+                const a = window.innerWidth / window.innerHeight;
+                orthoCamera.left = -CLIP_FRUSTUM * a / 2;
+                orthoCamera.right = CLIP_FRUSTUM * a / 2;
+                orthoCamera.top = CLIP_FRUSTUM / 2;
+                orthoCamera.bottom = -CLIP_FRUSTUM / 2;
+                orthoCamera.updateProjectionMatrix();
+
+                camera = orthoCamera;
+                composer.passes[0].camera = camera;
+                orbitControls.object = camera;
+                orbitControls.target.copy(center);
+                orbitControls.enablePan = true;
+                orbitControls.enableZoom = true;
+                orbitControls.enableRotate = true;
+                orbitControls.minDistance = 0;
+                orbitControls.maxDistance = Infinity;
+                orbitControls.update();
+
+                const maxY = sceneBBox.max.y;
+                const height = maxY - sceneBBox.min.y;
+                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), maxY - 0.5 * height);
+
+                clippedMeshes = [];
+                scene.traverse(c => {
+                    if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    const orig = c.material;
+                    const clone = orig.clone();
+                    clone.clippingPlanes = [clippingPlane];
+                    clone.clipShadows = false;
+                    clone.needsUpdate = true;
+                    c.material = clone;
+                    clippedMeshes.push({ mesh: c, origMaterial: orig });
+                });
+                renderer.localClippingEnabled = true;
+
+                const bloomPass = composer.passes.find(p => p.strength !== undefined);
+                if (bloomPass) { bloomPass._origStrength = bloomPass.strength; bloomPass.strength = 0.1; }
+
+                if (hotspotMgr) hotspotMgr.camera = camera;
+                if (camEditor) camEditor.camera = camera;
+                for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                _setHoveredDot(null);
+                if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
+                leftHtmlPanel.style.display = 'none';
+                rightHtmlPanel.style.display = 'none';
+                descriptionEl.textContent = 'Plan Görünümü';
+                descriptionEl.style.display = 'block';
+            }
+
+            function exitClipMode() {
+                activeMode = 'toggle-1';
+                for (const entry of clippedMeshes) {
+                    const cloned = entry.mesh.material;
+                    entry.mesh.material = entry.origMaterial;
+                    cloned.dispose();
+                }
+                clippedMeshes = [];
+                renderer.localClippingEnabled = false;
+                clippingPlane = null;
+
+                const bloomPass = composer.passes.find(p => p._origStrength !== undefined);
+                if (bloomPass) { bloomPass.strength = bloomPass._origStrength; delete bloomPass._origStrength; }
+
+                camera = perspCamera;
+                composer.passes[0].camera = camera;
+                if (hotspotMgr) hotspotMgr.camera = camera;
+                if (camEditor) camEditor.camera = camera;
+                orbitControls.object = camera;
+                orbitControls.enablePan = false;
+                orbitControls.minDistance = 0.001;
+                orbitControls.maxDistance = 0.02;
+                orbitControls.update();
+            }
+
+            // ---- Nav dots ----
+            function _makeNavLabel(text) {
+                const c = document.createElement('canvas');
+                c.width = 256; c.height = 64;
+                const x = c.getContext('2d');
+                x.fillStyle = 'rgba(0,0,0,0.75)';
+                x.beginPath(); x.roundRect(4, 4, 248, 56, 12); x.fill();
+                x.fillStyle = '#fff'; x.font = 'bold 22px Arial';
+                x.textAlign = 'center'; x.textBaseline = 'middle';
+                x.fillText(text, 128, 32);
+                const mat = new THREE.SpriteMaterial({
+                    map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+                });
+                const s = new THREE.Sprite(mat);
+                s.scale.set(1.0, 0.25, 1);
+                return s;
+            }
+
+            function createNavDots() {
+                const dotGeo = new THREE.CircleGeometry(0.12, 32);
+                const ringGeo = new THREE.RingGeometry(0.13, 0.18, 32);
+                sceneCfg.buttons.forEach((btn, i) => {
+                    const cp = cameraPositions[i];
+                    if (!cp) return;
+                    const dx = btn.dotPos ? btn.dotPos.x : cp.pos.x;
+                    const dy = btn.dotPos ? btn.dotPos.y : 0.02;
+                    const dz = btn.dotPos ? btn.dotPos.z : cp.pos.z;
+
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+                    const mesh = new THREE.Mesh(dotGeo.clone(), mat);
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.set(dx, dy, dz);
+                    mesh.userData._navDotIdx = i;
+                    scene.add(mesh);
+
+                    const ringMat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0, side: THREE.DoubleSide });
+                    const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.set(dx, dy + 0.005, dz);
+                    scene.add(ring);
+
+                    const label = _makeNavLabel(btn.name || '');
+                    label.position.set(dx, dy + 0.43, dz);
+                    label.visible = false;
+                    scene.add(label);
+                    navDots.push({ mesh, ring, label, camIndex: i });
+                });
+            }
+
+            function updateNavDots(selectedCamIndex) {
+                for (const dot of navDots) {
+                    const show = dot.camIndex !== selectedCamIndex && activeMode === 'toggle-1';
+                    dot.mesh.visible = show;
+                    dot.ring.visible = show;
+                    if (!show) dot.label.visible = false;
+                }
+            }
+
+            function _setHoveredDot(dot) {
+                if (_hoveredDot === dot) return;
+                if (_hoveredDot) {
+                    _hoveredDot.label.visible = false;
+                    _hoveredDot.mesh.material.opacity = 0.7;
+                    _hoveredDot.ring.material.opacity = 0;
+                }
+                _hoveredDot = dot;
+                if (_hoveredDot) {
+                    _hoveredDot.label.visible = true;
+                    _hoveredDot.mesh.material.opacity = 1.0;
+                    _hoveredDot.ring.material.opacity = 0.8;
+                }
+                renderer.domElement.style.cursor = dot ? 'pointer' : '';
+            }
+
+            function updateNavDotsHover() {
+                if (activeMode !== 'toggle-1' || navDots.length === 0) return;
+                if (camEditor && camEditor.active) return;
+                const meshes = navDots.filter(d => d.mesh.visible).map(d => d.mesh);
+                if (meshes.length === 0) { _setHoveredDot(null); return; }
+                _navRC.setFromCamera(_navMouse, camera);
+                const hits = _navRC.intersectObjects(meshes);
+                _setHoveredDot(hits.length > 0 ? navDots.find(d => d.mesh === hits[0].object) : null);
+            }
+
+            // ---- Toggle buttons ----
+            document.getElementById('modelLabel').style.display = 'block';
+            sceneCfg.buttons.forEach((cfg, i) => {
+                if (!toggleButtons[i]) return;
+                const btn = toggleButtons[i];
+                btn.textContent = cfg.name;
+                btn.dataset.id = cfg.id;
+                btn.style.display = 'block';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = (cfg.action || '').trim();
+                    if (action === 'CLIP_MODE') {
+                        if (activeMode === 'toggle-2') return;
+                        enterClipMode(i);
+                    } else {
+                        if (activeMode === 'toggle-2') exitClipMode();
+                        selectCamera(i);
+                    }
+                });
+            });
+
+            // ---- Nav dot events ----
+            renderer.domElement.addEventListener('pointermove', (e) => {
+                _navMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+            });
+            renderer.domElement.addEventListener('click', () => {
+                if (camEditor && camEditor.active) return;
+                if (_hoveredDot) selectCamera(_hoveredDot.camIndex);
+            });
+
+            // ---- Load models then wire everything up ----
+            loadAllModels().then(() => {
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                camEditor = new CameraEditor(scene, camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
+
+                camEditor.onToggle = (active) => {
+                    hotspotMgr.suspended = active;
+                    if (active) {
+                        _setHoveredDot(null);
+                        for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                    }
+                };
+
+                hotspotMgr.onTeleport = (hsData) => {
+                    let bestIdx = 0, bestDist = Infinity;
+                    cameraPositions.forEach((cp, i) => {
+                        if (!cp) return;
+                        const dx = cp.pos.x - hsData.pos.x;
+                        const dz = cp.pos.z - hsData.pos.z;
+                        const dist = dx * dx + dz * dz;
+                        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+                    });
+                    if (activeMode === 'toggle-2') exitClipMode();
+                    selectCamera(bestIdx);
+                };
+
+                hotspotMgr.loadHotspots();
+                createNavDots();
+                camEditor.setNavDots(navDots);
+                if (sceneCfg.buttons.length > 0) selectCamera(0);
+                fadeOutLoading();
+            }).catch(e => {
+                console.error(e);
+                sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
+            });
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+                updateNavDotsHover();
+            };
+        }
+
+        /* ===============================================================
+           WALKTHRU MODE (type: walkthru) — Prompt 5
+           scene 5 behavior: FPS, PointerLock, WASD, colliders, joystick
+           =============================================================== */
+        function initWalkthruMode() {
+            const cam = sceneCfg.camera;
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            const pointerLockControls = new PointerLockControls(camera, renderer.domElement);
+            const startPos = {
+                x: num(cam['Başlangıç Pos X']),
+                y: num(cam['Başlangıç Pos Y']) || num(cam['Player Height (m)']) || 1.6,
+                z: num(cam['Başlangıç Pos Z'])
+            };
+            pointerLockControls.getObject().position.set(startPos.x, startPos.y, startPos.z);
+            scene.add(pointerLockControls.getObject());
+
+            const instructionsEl = document.getElementById('instructions');
+            instructionsEl.style.display = 'block';
+
+            function isMobile() {
+                return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+            }
+
+            document.body.addEventListener('click', (e) => {
+                if (e.target.closest('button') || e.target.closest('#leftHtmlPanel') || e.target.closest('#rightHtmlPanel')) return;
+                if (isMobile()) return;
+                if (!pointerLockControls.isLocked) pointerLockControls.lock();
+            });
+            pointerLockControls.addEventListener('lock',   () => { instructionsEl.style.display = 'none'; });
+            pointerLockControls.addEventListener('unlock', () => { instructionsEl.style.display = 'block'; });
+
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Mobile joystick
+            const mobileJoystickEnabled = yes(cam['Mobile Joystick']);
+            const mobileJoystickLeft = { x: 0, y: 0 };
+            const mobileJoystickRight = { x: 0, y: 0 };
+
+            function setupMobileJoystick() {
+                if (!mobileJoystickEnabled || !isMobile() || typeof nipplejs === 'undefined') return;
+                const leftZone = document.getElementById('joystickLeft');
+                const rightZone = document.getElementById('joystickRight');
+                leftZone.style.display = 'block';
+                rightZone.style.display = 'block';
+
+                const nleft = nipplejs.create({ zone: leftZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
+                nleft.on('move', (_, d) => { mobileJoystickLeft.x = d.vector.x; mobileJoystickLeft.y = d.vector.y; });
+                nleft.on('end', () => { mobileJoystickLeft.x = 0; mobileJoystickLeft.y = 0; });
+
+                const nright = nipplejs.create({ zone: rightZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
+                nright.on('move', (_, d) => { mobileJoystickRight.x = d.vector.x; mobileJoystickRight.y = d.vector.y; });
+                nright.on('end', () => { mobileJoystickRight.x = 0; mobileJoystickRight.y = 0; });
+            }
+
+            const colliderMeshes = [];
+            loadAllModels(colliderMeshes).then(() => {
+                showStaticPanels();
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, null);
+                hotspotMgr.loadHotspots();
+                fadeOutLoading();
+                setupMobileJoystick();
+            }).catch(e => {
+                console.error(e);
+                sceneLoadingIndicatorEl.textContent = 'Yükleme hatası';
+            });
+
+            // Walkthru physics state
+            const playerHeight = num(cam['Player Height (m)']) || 1.6;
+            const playerRadius = num(cam['Player Radius (m)']) || 0.4;
+            const jumpVelocity = num(cam['Jump Velocity']) || 6;
+            const gravity      = num(cam['Gravity']) || -20;
+            const baseMoveSpeed = num(cam['Base Move Speed']) || 20;
+            const sprintMultiplier = num(cam['Sprint Multiplier']) || 4;
+            let currentMoveSpeed = baseMoveSpeed;
+            const playerVelocity = new THREE.Vector3();
+            const playerDirection = new THREE.Vector3();
+            let playerOnFloor = false;
+            const raycaster = new THREE.Raycaster();
+            const keys = { forward: false, backward: false, left: false, right: false, jump: false, sprint: false };
+
+            document.addEventListener('keydown', (e) => {
+                if (!pointerLockControls.isLocked) return;
+                switch (e.code) {
+                    case 'KeyW': keys.forward = true; break;
+                    case 'KeyS': keys.backward = true; break;
+                    case 'KeyA': keys.left = true; break;
+                    case 'KeyD': keys.right = true; break;
+                    case 'Space': if (playerOnFloor) keys.jump = true; break;
+                    case 'ShiftLeft': keys.sprint = true; currentMoveSpeed = baseMoveSpeed * sprintMultiplier; break;
+                    case 'KeyF':
+                        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+                        else document.exitFullscreen().catch(() => {});
+                        break;
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                switch (e.code) {
+                    case 'KeyW': keys.forward = false; break;
+                    case 'KeyS': keys.backward = false; break;
+                    case 'KeyA': keys.left = false; break;
+                    case 'KeyD': keys.right = false; break;
+                    case 'Space': keys.jump = false; break;
+                    case 'ShiftLeft': keys.sprint = false; currentMoveSpeed = baseMoveSpeed; break;
+                }
+            });
+
+            activeUpdateFn = (delta) => {
+                // Mobile joystick → keys mapping
+                if (isMobile() && mobileJoystickEnabled) {
+                    if (mobileJoystickLeft.x !== 0 || mobileJoystickLeft.y !== 0) {
+                        keys.forward = mobileJoystickLeft.y > 0.2;
+                        keys.backward = mobileJoystickLeft.y < -0.2;
+                        keys.left = mobileJoystickLeft.x < -0.2;
+                        keys.right = mobileJoystickLeft.x > 0.2;
+                    } else {
+                        keys.forward = keys.backward = keys.left = keys.right = false;
+                    }
+                    if (Math.abs(mobileJoystickRight.x) > 0.1 || Math.abs(mobileJoystickRight.y) > 0.1) {
+                        camera.rotation.y -= mobileJoystickRight.x * 0.04;
+                        camera.rotation.x -= mobileJoystickRight.y * 0.025;
+                        camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, camera.rotation.x));
+                    }
+                }
+
+                if (!pointerLockControls.isLocked && !isMobile()) return;
+                if (colliderMeshes.length === 0) return;
+
+                const playerPos = pointerLockControls.getObject().position;
+
+                // Gravity + floor
+                raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+                const floorHits = raycaster.intersectObjects(colliderMeshes);
+                const onFloor = floorHits.length > 0 && floorHits[0].distance < playerHeight + 0.1;
+
+                if (onFloor) {
+                    playerVelocity.y = Math.max(0, playerVelocity.y);
+                    if (keys.jump) { playerVelocity.y = jumpVelocity; keys.jump = false; }
+                    if (floorHits[0].distance < playerHeight) playerPos.y += (playerHeight - floorHits[0].distance);
+                } else {
+                    playerVelocity.y += gravity * delta;
+                }
+                playerPos.y += playerVelocity.y * delta;
+
+                // Horizontal movement
+                playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+                playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+                playerDirection.z = Number(keys.forward) - Number(keys.backward);
+                playerDirection.x = Number(keys.right) - Number(keys.left);
+                playerDirection.normalize();
+                if (keys.forward || keys.backward) playerVelocity.z -= playerDirection.z * currentMoveSpeed * delta;
+                if (keys.left || keys.right) playerVelocity.x -= playerDirection.x * currentMoveSpeed * delta;
+                pointerLockControls.moveRight(-playerVelocity.x * delta);
+                pointerLockControls.moveForward(-playerVelocity.z * delta);
+
+                // Wall collision
+                const hPos = new THREE.Vector3(playerPos.x, playerPos.y - playerHeight / 2, playerPos.z);
+                for (const dir of [new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0), new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1)]) {
+                    raycaster.set(hPos, dir);
+                    const wallHits = raycaster.intersectObjects(colliderMeshes);
+                    if (wallHits.length > 0 && wallHits[0].distance < playerRadius) {
+                        const pen = playerRadius - wallHits[0].distance;
+                        playerPos.x -= dir.x * (pen + 0.01);
+                        playerPos.z -= dir.z * (pen + 0.01);
+                        if (dir.x !== 0) playerVelocity.x = 0;
+                        if (dir.z !== 0) playerVelocity.z = 0;
+                    }
+                }
+
+                // Final floor snap
+                raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+                const finalHits = raycaster.intersectObjects(colliderMeshes);
+                playerOnFloor = false;
+                if (finalHits.length > 0 && finalHits[0].distance < playerHeight + 0.1) {
+                    playerOnFloor = true;
+                    if (finalHits[0].distance < playerHeight) {
+                        playerPos.y = finalHits[0].point.y + playerHeight;
+                        if (playerVelocity.y < 0) playerVelocity.y = 0;
+                    }
+                }
+
+                if (hotspotMgr) hotspotMgr.update(delta);
+            };
+        }
+
+        /* ===============================================================
+           PANORAMIC MODE (type: panoramic) — Prompt 6
+           360° equirectangular sphere view
+           =============================================================== */
+        function initPanoramicMode() {
+            const cam = sceneCfg.camera;
+            const fov = num(cam['Start FOV']) || 90;
+            const panoUrl = String(cam['Pano Image URL'] || '').trim();
+            const showFloorDots = yes(cam['Show Floor Dots']);
+
+            camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 1100);
+            camera.position.set(0, 0, 0);
+
+            // OrbitControls — rotate only (look around inside sphere)
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.12;
+            orbitControls.enablePan = false;
+            orbitControls.enableZoom = false;
+            orbitControls.enableRotate = true;
+            orbitControls.rotateSpeed = -0.3; // inverted for inside-sphere feel
+            orbitControls.target.set(0, 0, -0.01);
+            orbitControls.update();
+
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Panorama sphere (inside-out)
+            const sphereGeo = new THREE.SphereGeometry(500, 64, 64);
+            sphereGeo.scale(-1, 1, 1); // flip normals → render inside
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+            const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            scene.add(sphereMesh);
+
+            // Load initial panorama texture
+            const texLoader = new THREE.TextureLoader();
+            let currentPanoUrl = '';
+
+            function loadPanorama(url, fadeIn) {
+                if (!url || url === currentPanoUrl) return;
+                currentPanoUrl = url;
+
+                // Fade overlay
+                const overlay = document.getElementById('sceneTransitionOverlay');
+                if (fadeIn && overlay) {
+                    overlay.style.opacity = '1';
+                    overlay.style.pointerEvents = 'auto';
+                }
+
+                texLoader.load(url, (tex) => {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.mapping = THREE.EquirectangularReflectionMapping;
+                    if (sphereMesh.material.map) sphereMesh.material.map.dispose();
+                    sphereMesh.material.map = tex;
+                    sphereMesh.material.color.set(0xffffff);
+                    sphereMesh.material.needsUpdate = true;
+
+                    if (fadeIn && overlay) {
+                        setTimeout(() => {
+                            overlay.style.opacity = '0';
+                            overlay.style.pointerEvents = 'none';
+                        }, 100);
+                    }
+                });
+            }
+
+            if (panoUrl) {
+                loadPanorama(panoUrl, false);
+                setLoadingProgress(90);
+            }
+
+            // Floor dots for panorama navigation (from hotspots)
+            const panoDots = [];
+            const _panoRC = new THREE.Raycaster();
+            const _panoMouse = new THREE.Vector2();
+            let _panoHovered = null;
+
+            function createPanoDots() {
+                if (!showFloorDots || !sceneCfg.hotspots) return;
+                const dotGeo = new THREE.CircleGeometry(0.5, 32);
+                const ringGeo = new THREE.RingGeometry(0.55, 0.8, 32);
+
+                for (const hs of sceneCfg.hotspots) {
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: 0xffffff, transparent: true, opacity: 0.7,
+                        side: THREE.DoubleSide, depthTest: true
+                    });
+                    const mesh = new THREE.Mesh(dotGeo.clone(), mat);
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.set(hs.pos.x, hs.pos.y, hs.pos.z);
+                    scene.add(mesh);
+
+                    const ringMat = new THREE.MeshBasicMaterial({
+                        color: 0xc9a96e, transparent: true, opacity: 0,
+                        side: THREE.DoubleSide, depthTest: true
+                    });
+                    const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.set(hs.pos.x, hs.pos.y + 0.01, hs.pos.z);
+                    scene.add(ring);
+
+                    // Hover label
+                    const lc = document.createElement('canvas');
+                    lc.width = 256; lc.height = 64;
+                    const lx = lc.getContext('2d');
+                    lx.fillStyle = 'rgba(0,0,0,0.75)';
+                    lx.beginPath(); lx.roundRect(4, 4, 248, 56, 12); lx.fill();
+                    lx.fillStyle = '#fff'; lx.font = 'bold 22px Arial';
+                    lx.textAlign = 'center'; lx.textBaseline = 'middle';
+                    lx.fillText(hs.name.split('\n')[0], 128, 32);
+                    const labelMat = new THREE.SpriteMaterial({
+                        map: new THREE.CanvasTexture(lc), depthTest: false, sizeAttenuation: true
+                    });
+                    const label = new THREE.Sprite(labelMat);
+                    label.scale.set(4, 1, 1);
+                    label.position.set(hs.pos.x, hs.pos.y + 2, hs.pos.z);
+                    label.visible = false;
+                    scene.add(label);
+
+                    panoDots.push({ mesh, ring, label, data: hs });
+                }
+            }
+
+            function _setPanoHovered(dot) {
+                if (_panoHovered === dot) return;
+                if (_panoHovered) {
+                    _panoHovered.label.visible = false;
+                    _panoHovered.mesh.material.opacity = 0.7;
+                    _panoHovered.ring.material.opacity = 0;
+                }
+                _panoHovered = dot;
+                if (_panoHovered) {
+                    _panoHovered.label.visible = true;
+                    _panoHovered.mesh.material.opacity = 1.0;
+                    _panoHovered.ring.material.opacity = 0.8;
+                }
+                renderer.domElement.style.cursor = dot ? 'pointer' : '';
+            }
+
+            renderer.domElement.addEventListener('pointermove', (e) => {
+                _panoMouse.set(
+                    (e.clientX / innerWidth) * 2 - 1,
+                    -(e.clientY / innerHeight) * 2 + 1
+                );
+            });
+
+            renderer.domElement.addEventListener('click', () => {
+                if (_panoHovered) {
+                    const targetUrl = _panoHovered.data.hotspotUrl;
+                    if (targetUrl) loadPanorama(targetUrl, true);
+                }
+            });
+
+            // HotspotManager for regular popups (non-floor-dot hotspots)
+            hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+            hotspotMgr.loadHotspots();
+
+            createPanoDots();
+            showStaticPanels();
+            fadeOutLoading();
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+
+                // Pano dot hover
+                if (panoDots.length > 0) {
+                    const meshes = panoDots.map(d => d.mesh);
+                    _panoRC.setFromCamera(_panoMouse, camera);
+                    const hits = _panoRC.intersectObjects(meshes);
+                    _setPanoHovered(hits.length > 0 ? panoDots.find(d => d.mesh === hits[0].object) : null);
+                }
+            };
+        }
+
+        /* ===============================================================
+           INIT — entry point
+           =============================================================== */
+        async function init() {
+            try {
+                config = await loadVeaConfig();
+            } catch (e) {
+                console.error('xlsx load failed:', e);
+                sceneLoadingIndicatorEl.textContent = 'xlsx yüklenemedi';
+                sceneLoadingIndicatorEl.style.display = 'block';
+                return;
+            }
+
+            sceneCfg = config.scenes[SCENE_INDEX];
+            if (!sceneCfg) {
+                sceneLoadingIndicatorEl.textContent = `Sahne ${SCENE_INDEX} bulunamadı`;
+                sceneLoadingIndicatorEl.style.display = 'block';
+                return;
+            }
+
+            // Update loading screen with scene info
+            loadingSubtitleEl.textContent = `Real Estate Experience · Scene ${SCENE_INDEX}`;
+            loadingTaglineEl.textContent = `${sceneCfg.title} · ${sceneCfg.type}`;
+            document.title = `VEA Demo3 — Scene ${SCENE_INDEX} · ${sceneCfg.title}`;
+
+            if (config.bgImageUrl) backgroundImgEl.src = config.bgImageUrl;
+
+            // Create shared Three.js infrastructure
+            scene = new THREE.Scene();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            document.body.appendChild(renderer.domElement);
+
+            pmremGenerator = new PMREMGenerator(renderer);
+
+            // Composer — mode will insert RenderPass at index 0
+            composer = new EffectComposer(renderer);
+            composer.addPass(new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.3, 0.88
+            ));
+            composer.addPass(new OutputPass());
+
+            // Environment (shared)
+            if (sceneCfg.type !== 'panoramic') {
+                setupEnvironment();
+            }
+
+            // Shared event listeners
+            setupResizeHandler();
+            setupFullscreenButton();
+
+            // Launch mode-specific initialization
+            switch (sceneCfg.type) {
+                case 'cameras':   initCamerasMode();   break;
+                case 'walkthru':  initWalkthruMode();  break;
+                case 'panoramic': initPanoramicMode();  break;
+                case 'orbit':
+                default:          initOrbitMode();      break;
+            }
+
+            renderer.setAnimationLoop(animate);
+        }
+
+        /* ===============================================================
+           ANIMATE LOOP
+           =============================================================== */
+        function animate() {
+            const delta = clock.getDelta();
+            if (activeUpdateFn) activeUpdateFn(delta);
+            if (composer) composer.render();
+        }
+
+        init();
+    </script>
+</body>
+</html>
