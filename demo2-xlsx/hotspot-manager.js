@@ -1236,13 +1236,16 @@ export class CameraEditor {
     }
 
     _copyToClipboard() {
-        const fmtNum = n => n.toFixed(3).replace('.', ',');
+        // Comma decimal for standalone cell values (Dot X/Y/Z) — Turkish locale
+        const fmtCell = n => n.toFixed(3).replace('.', ',');
+        // Dot decimal inside the action string — commas already separate X,Y,Z
+        const fmtAct = n => n.toFixed(3);
         const rows = this._cameras.map((cam, i) => {
             return [
                 i + 1, cam.name, cam.kod,
-                `Pos(${fmtNum(cam.pos.x)}, ${fmtNum(cam.pos.y)}, ${fmtNum(cam.pos.z)})   → LookAt(${fmtNum(cam.lookAt.x)}, ${fmtNum(cam.lookAt.y)}, ${fmtNum(cam.lookAt.z)})   · FOV ${cam.fov.toFixed(0)}`,
+                `Pos(${fmtAct(cam.pos.x)}, ${fmtAct(cam.pos.y)}, ${fmtAct(cam.pos.z)})   → LookAt(${fmtAct(cam.lookAt.x)}, ${fmtAct(cam.lookAt.y)}, ${fmtAct(cam.lookAt.z)})   · FOV ${cam.fov.toFixed(0)}`,
                 '', // Kod column
-                fmtNum(cam.dotPos.x), fmtNum(cam.dotPos.y), fmtNum(cam.dotPos.z)
+                fmtCell(cam.dotPos.x), fmtCell(cam.dotPos.y), fmtCell(cam.dotPos.z)
             ].join('\t');
         });
         navigator.clipboard.writeText(rows.join('\n')).then(() => {
