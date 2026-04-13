@@ -58,13 +58,13 @@ export class HotspotManager {
     }
 
     setToggle(toggleKod) {
+        this._activeToggle = toggleKod;
+        if (this.editMode) return; // edit modda toggle uygulanmaz
         for (const obj of this.objects) {
             const tk = obj.data.toggleKod;
             if (!tk) {
-                // toggleKod boş → her zaman görünür
                 obj.group.visible = true;
             } else {
-                // toggleKod dolu → sadece eşleşen toggle'da görünür
                 obj.group.visible = (tk === toggleKod);
             }
         }
@@ -347,6 +347,12 @@ export class HotspotManager {
         this._editToolbar.style.display = 'flex';
         this._editListPanel.style.display = 'block';
 
+        // Show ALL hotspots regardless of toggle (so every one is selectable)
+        for (const obj of this.objects) {
+            obj.group.visible = true;
+            if (obj.label) obj.label.visible = true;
+        }
+
         // Dim scene models
         this.scene.traverse(c => {
             if (c.isMesh && !c.userData.isHotspotSprite) {
@@ -389,6 +395,9 @@ export class HotspotManager {
         this.transformControls.enabled = false;
         this.selectedObject = null;
         if (this.orbitControls) this.orbitControls.enabled = true;
+
+        // Re-apply last toggle so hidden hotspots hide again
+        if (this._activeToggle) this.setToggle(this._activeToggle);
     }
 
     _selectObject(obj) {
