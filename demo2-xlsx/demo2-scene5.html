@@ -271,7 +271,7 @@
                 leftHtmlPanel.style.display  = 'block';
                 rightHtmlPanel.style.display = 'block';
                 document.getElementById('fullscreenButton').style.display = 'flex';
-                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, null);
                 hotspotMgr.loadHotspots();
                 fadeOutLoading();
                 updateMobileJoystick();
