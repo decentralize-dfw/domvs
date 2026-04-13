@@ -254,24 +254,26 @@ export class HotspotManager {
         popup.className = 'vea-hs-popup';
 
         const titleText = (d.name || '').split('\n')[0];
-        const hasTeleport = typeof this.onTeleport === 'function';
-        const teleportHtml = hasTeleport
-            ? `<button class="vea-hs-popup-teleport">Teleport → ${this._esc(titleText)}</button>`
-            : '';
+        const isTeleport = (d.popupTip || '').toLowerCase() === 'teleport';
 
-        popup.innerHTML = `
-            <button class="vea-hs-popup-x">✕</button>
-            <div class="vea-hs-popup-title">${this._esc(d.name)}</div>
-            <div class="vea-hs-popup-body">${this._renderContent(d.popupTip, d.popupContent)}</div>
-            ${teleportHtml}`;
-        popup.querySelector('.vea-hs-popup-x').addEventListener('click', () => this._closePopup(obj));
-        if (hasTeleport) {
+        if (isTeleport && typeof this.onTeleport === 'function') {
+            // Teleport popup — single action button, no body content
+            popup.innerHTML = `
+                <button class="vea-hs-popup-x">✕</button>
+                <div class="vea-hs-popup-title">${this._esc(titleText)}</div>
+                <button class="vea-hs-popup-teleport">Teleport → ${this._esc(titleText)}</button>`;
             popup.querySelector('.vea-hs-popup-teleport').addEventListener('click', (e) => {
                 e.stopPropagation();
                 this._closePopup(obj);
                 this.onTeleport(d);
             });
+        } else {
+            popup.innerHTML = `
+                <button class="vea-hs-popup-x">✕</button>
+                <div class="vea-hs-popup-title">${this._esc(d.name)}</div>
+                <div class="vea-hs-popup-body">${this._renderContent(d.popupTip, d.popupContent)}</div>`;
         }
+        popup.querySelector('.vea-hs-popup-x').addEventListener('click', () => this._closePopup(obj));
         this._popupContainer.appendChild(popup);
         obj.popupEl = popup; obj.popupOpen = true;
         this._updatePopupPosition(obj);

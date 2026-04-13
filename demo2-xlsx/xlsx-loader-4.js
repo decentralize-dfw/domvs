@@ -425,7 +425,7 @@ function parseButtonsSection(rows, sceneIdx, sceneEnd) {
  */
 const KNOWN_TIPS = new Set([
     'text', 'html', 'image', 'video',
-    'youtube', 'drive', 'iframe', 'link', 'glb'
+    'youtube', 'drive', 'iframe', 'link', 'glb', 'teleport'
 ]);
 
 /* ---------- Single-item reader (shared by both panel formats) ---------- */
