@@ -943,16 +943,173 @@
            360° equirectangular sphere view
            =============================================================== */
         function initPanoramicMode() {
-            // TODO: Prompt 6 — full panoramic mode implementation
-            console.log('panoramic mode — will be implemented in Prompt 6');
-
             const cam = sceneCfg.camera;
             const fov = num(cam['Start FOV']) || 90;
+            const panoUrl = String(cam['Pano Image URL'] || '').trim();
+            const showFloorDots = yes(cam['Show Floor Dots']);
+
             camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 1100);
+            camera.position.set(0, 0, 0);
+
+            // OrbitControls — rotate only (look around inside sphere)
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.12;
+            orbitControls.enablePan = false;
+            orbitControls.enableZoom = false;
+            orbitControls.enableRotate = true;
+            orbitControls.rotateSpeed = -0.3; // inverted for inside-sphere feel
+            orbitControls.target.set(0, 0, -0.01);
+            orbitControls.update();
 
             composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Panorama sphere (inside-out)
+            const sphereGeo = new THREE.SphereGeometry(500, 64, 64);
+            sphereGeo.scale(-1, 1, 1); // flip normals → render inside
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+            const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            scene.add(sphereMesh);
+
+            // Load initial panorama texture
+            const texLoader = new THREE.TextureLoader();
+            let currentPanoUrl = '';
+
+            function loadPanorama(url, fadeIn) {
+                if (!url || url === currentPanoUrl) return;
+                currentPanoUrl = url;
+
+                // Fade overlay
+                const overlay = document.getElementById('sceneTransitionOverlay');
+                if (fadeIn && overlay) {
+                    overlay.style.opacity = '1';
+                    overlay.style.pointerEvents = 'auto';
+                }
+
+                texLoader.load(url, (tex) => {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.mapping = THREE.EquirectangularReflectionMapping;
+                    if (sphereMesh.material.map) sphereMesh.material.map.dispose();
+                    sphereMesh.material.map = tex;
+                    sphereMesh.material.color.set(0xffffff);
+                    sphereMesh.material.needsUpdate = true;
+
+                    if (fadeIn && overlay) {
+                        setTimeout(() => {
+                            overlay.style.opacity = '0';
+                            overlay.style.pointerEvents = 'none';
+                        }, 100);
+                    }
+                });
+            }
+
+            if (panoUrl) {
+                loadPanorama(panoUrl, false);
+                setLoadingProgress(90);
+            }
+
+            // Floor dots for panorama navigation (from hotspots)
+            const panoDots = [];
+            const _panoRC = new THREE.Raycaster();
+            const _panoMouse = new THREE.Vector2();
+            let _panoHovered = null;
+
+            function createPanoDots() {
+                if (!showFloorDots || !sceneCfg.hotspots) return;
+                const dotGeo = new THREE.CircleGeometry(0.5, 32);
+                const ringGeo = new THREE.RingGeometry(0.55, 0.8, 32);
+
+                for (const hs of sceneCfg.hotspots) {
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: 0xffffff, transparent: true, opacity: 0.7,
+                        side: THREE.DoubleSide, depthTest: true
+                    });
+                    const mesh = new THREE.Mesh(dotGeo.clone(), mat);
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.set(hs.pos.x, hs.pos.y, hs.pos.z);
+                    scene.add(mesh);
+
+                    const ringMat = new THREE.MeshBasicMaterial({
+                        color: 0xc9a96e, transparent: true, opacity: 0,
+                        side: THREE.DoubleSide, depthTest: true
+                    });
+                    const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.set(hs.pos.x, hs.pos.y + 0.01, hs.pos.z);
+                    scene.add(ring);
+
+                    // Hover label
+                    const lc = document.createElement('canvas');
+                    lc.width = 256; lc.height = 64;
+                    const lx = lc.getContext('2d');
+                    lx.fillStyle = 'rgba(0,0,0,0.75)';
+                    lx.beginPath(); lx.roundRect(4, 4, 248, 56, 12); lx.fill();
+                    lx.fillStyle = '#fff'; lx.font = 'bold 22px Arial';
+                    lx.textAlign = 'center'; lx.textBaseline = 'middle';
+                    lx.fillText(hs.name.split('\n')[0], 128, 32);
+                    const labelMat = new THREE.SpriteMaterial({
+                        map: new THREE.CanvasTexture(lc), depthTest: false, sizeAttenuation: true
+                    });
+                    const label = new THREE.Sprite(labelMat);
+                    label.scale.set(4, 1, 1);
+                    label.position.set(hs.pos.x, hs.pos.y + 2, hs.pos.z);
+                    label.visible = false;
+                    scene.add(label);
+
+                    panoDots.push({ mesh, ring, label, data: hs });
+                }
+            }
+
+            function _setPanoHovered(dot) {
+                if (_panoHovered === dot) return;
+                if (_panoHovered) {
+                    _panoHovered.label.visible = false;
+                    _panoHovered.mesh.material.opacity = 0.7;
+                    _panoHovered.ring.material.opacity = 0;
+                }
+                _panoHovered = dot;
+                if (_panoHovered) {
+                    _panoHovered.label.visible = true;
+                    _panoHovered.mesh.material.opacity = 1.0;
+                    _panoHovered.ring.material.opacity = 0.8;
+                }
+                renderer.domElement.style.cursor = dot ? 'pointer' : '';
+            }
+
+            renderer.domElement.addEventListener('pointermove', (e) => {
+                _panoMouse.set(
+                    (e.clientX / innerWidth) * 2 - 1,
+                    -(e.clientY / innerHeight) * 2 + 1
+                );
+            });
+
+            renderer.domElement.addEventListener('click', () => {
+                if (_panoHovered) {
+                    const targetUrl = _panoHovered.data.hotspotUrl;
+                    if (targetUrl) loadPanorama(targetUrl, true);
+                }
+            });
+
+            // HotspotManager for regular popups (non-floor-dot hotspots)
+            hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+            hotspotMgr.loadHotspots();
+
+            createPanoDots();
+            showStaticPanels();
             fadeOutLoading();
-            activeUpdateFn = () => {};
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+
+                // Pano dot hover
+                if (panoDots.length > 0) {
+                    const meshes = panoDots.map(d => d.mesh);
+                    _panoRC.setFromCamera(_panoMouse, camera);
+                    const hits = _panoRC.intersectObjects(meshes);
+                    _setPanoHovered(hits.length > 0 ? panoDots.find(d => d.mesh === hits[0].object) : null);
+                }
+            };
         }
 
         /* ===============================================================
