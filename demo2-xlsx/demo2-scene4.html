@@ -422,6 +422,13 @@
             const clipY = maxY - 0.5 * height;
             clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), clipY);
 
+            // NOTE: clipShadows = false on purpose. The clipping plane is
+            // VISUAL ONLY — shadows still compute against the full unclipped
+            // geometry so lighting looks natural (ceiling still casts shadow
+            // even though it is visually hidden). Without this the exposed
+            // interior gets blown-out light from above.
+            // To revert: set clone.clipShadows = true below and remove the
+            // bloom strength reduction.
             clippedMeshes = [];
             scene.traverse(c => {
                 if (!c.isMesh) return;
@@ -429,12 +436,16 @@
                 const orig = c.material;
                 const clone = orig.clone();
                 clone.clippingPlanes = [clippingPlane];
-                clone.clipShadows = true;
+                clone.clipShadows = false;
                 clone.needsUpdate = true;
                 c.material = clone;
                 clippedMeshes.push({ mesh: c, origMaterial: orig });
             });
             renderer.localClippingEnabled = true;
+
+            // Reduce bloom to avoid glow on cut edges
+            const bloomPass = composer.passes.find(p => p.strength !== undefined);
+            if (bloomPass) { bloomPass._origStrength = bloomPass.strength; bloomPass.strength = 0.1; }
 
             // 5. Update camera references on managers
             if (hotspotMgr) hotspotMgr.camera = camera;
@@ -462,6 +473,10 @@
             clippedMeshes = [];
             renderer.localClippingEnabled = false;
             clippingPlane = null;
+
+            // Restore bloom strength
+            const bloomPass = composer.passes.find(p => p._origStrength !== undefined);
+            if (bloomPass) { bloomPass.strength = bloomPass._origStrength; delete bloomPass._origStrength; }
 
             // 2. Switch back to perspective camera
             camera = perspCamera;

@@ -76,14 +76,26 @@ export class HotspotManager {
         const dt = delta || 0.016;
         let anyHovered = false;
 
+        // Adaptive sizing: for orthographic cameras, compute world-units-
+        // per-pixel so labels/dots stay a constant screen-pixel size
+        // regardless of zoom. For perspective cameras use fixed world sizes.
+        let dotBase = 0.5;
+        let labelW = 4.5, labelH = 1.2, labelGap = 0.3;
+        if (this.camera && this.camera.isOrthographicCamera) {
+            const wpp = (this.camera.right - this.camera.left) / window.innerWidth;
+            dotBase  = 28 * wpp;     // ~28 px dot
+            labelW   = 160 * wpp;    // ~160 px wide label
+            labelH   = labelW * (128 / 512); // keep canvas aspect
+            labelGap = 12 * wpp;     // ~12 px gap above dot
+        }
+
         for (const obj of this.objects) {
             // Hover scale lerp
             const targetScale = obj.hovered ? 1.35 : 1.0;
             const curr = obj._hoverScale || 1.0;
             obj._hoverScale = THREE.MathUtils.lerp(curr, targetScale, lerpSpeed * dt);
             if (obj.sprite && obj.sprite.isSprite) {
-                const base = 0.5; // base sprite size
-                const s = base * obj._hoverScale;
+                const s = dotBase * obj._hoverScale;
                 obj.sprite.scale.set(s, s, s);
             }
             if (obj.hovered) anyHovered = true;
@@ -95,10 +107,9 @@ export class HotspotManager {
                 const center = new THREE.Vector3();
                 box.getCenter(center);
                 // Place label just above the top of bounding box
-                obj.label.position.set(center.x, topY + 0.3, center.z);
+                obj.label.position.set(center.x, topY + labelGap, center.z);
                 obj.label.visible = obj.group.visible;
-                // Fixed world-space size (won't change with hotspot scale)
-                obj.label.scale.set(4.5, 1.2, 1);
+                obj.label.scale.set(labelW, labelH, 1);
             }
             if (obj.popupOpen) this._updatePopupPosition(obj);
         }
