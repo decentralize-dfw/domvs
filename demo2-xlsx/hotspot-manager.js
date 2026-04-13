@@ -27,6 +27,7 @@ export class HotspotManager {
         this.hotspots = [];
         this.objects = [];
         this.editMode = false;
+        this.suspended = false; // true when CameraEditor is active
         this.onTeleport = null; // callback(hotspotData) — scene sets this
         this.selectedObject = null;
         this.transformControls = null;
@@ -624,6 +625,7 @@ export class HotspotManager {
 
         // Hover detection
         this.renderer.domElement.addEventListener('pointermove', e => {
+            if (this.suspended) return;
             const mouse = new THREE.Vector2(
                 (e.clientX / innerWidth) * 2 - 1,
                 -(e.clientY / innerHeight) * 2 + 1
@@ -645,7 +647,7 @@ export class HotspotManager {
 
         // Click on scene → detect hotspot
         this.renderer.domElement.addEventListener('click', e => {
-            // Skip if gizmo was just used
+            if (this.suspended) return;
             if (this._gizmoDragging) return;
 
             this.mouse.x = (e.clientX / innerWidth) * 2 - 1;
@@ -767,6 +769,7 @@ export class CameraEditor {
         this._sceneBBox = null;
         this._dimmedMeshes = []; // track exactly which meshes we dimmed
         this._navDots = null; // scene sets via setNavDots()
+        this.onToggle = null; // callback(active) — scene sets this
 
         this._parseFromButtons();
         this._setupTransformControls();
@@ -818,6 +821,7 @@ export class CameraEditor {
         this.active = !this.active;
         if (this.active) this._enterEditMode();
         else this._exitEditMode();
+        if (this.onToggle) this.onToggle(this.active);
     }
 
     _enterEditMode() {
