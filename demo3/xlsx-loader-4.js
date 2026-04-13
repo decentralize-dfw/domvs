@@ -1,10 +1,15 @@
 /* =============================================================
-   VEA DEMO 2 — XLSX CONFIG LOADER
+   VEA DEMO 3 — XLSX CONFIG LOADER
    -------------------------------------------------------------
-   Parses demo3-input_2.xlsx (Sheet: "VEA Config") into a
-   structured JS object. Scenes read all of their data from the
-   returned object so the xlsx can be edited without touching
-   HTML/JS.
+   Parses the xlsx (Sheet: "VEA Config") into a structured JS
+   object. Scenes read all of their data from the returned object
+   so the xlsx can be edited without touching HTML/JS.
+
+   Scene types (from Excel camera table "Tip" row):
+     orbit      — OrbitControls, toggle buttons, panels, hotspots
+     cameras    — Fixed camera positions, clipping mode, nav dots
+     walkthru   — FPS movement, PointerLockControls, colliders
+     panoramic  — 360° equirectangular sphere, floor dot navigation
 
    The actual xlsx URL is NOT hardcoded in scene files. Instead
    it lives in a single central file, link.txt, whose URL is the
@@ -86,6 +91,7 @@ export async function loadVeaConfig(xlsxPath) {
     return {
         assets,
         scenes,
+        sceneCount: Object.keys(scenes).length,
         bgImageUrl: findAssetByType(assets, 'JPEG')?.url || null,
         hdriUrl:    findAssetByType(assets, 'HDRI')?.url || null
     };
@@ -202,6 +208,10 @@ function parseGlobalAssets(rows) {
 }
 
 /* ---------- Scene block ---------- */
+
+/** Valid scene types — Excel Tip cell is lowercased and matched. */
+const VALID_SCENE_TYPES = new Set(['orbit', 'cameras', 'walkthru', 'panoramic']);
+
 function parseScene(rows, sceneStartRowExcel, assets) {
     const sceneIdx = sceneStartRowExcel - 1;
     let sceneEnd = rows.length - 1;
@@ -214,11 +224,17 @@ function parseScene(rows, sceneStartRowExcel, assets) {
     }
 
     const header = parseSceneHeader(rows[sceneIdx]?.[0]);
+    const camera = parseCameraSection(rows, sceneIdx, sceneEnd);
+
+    // Scene type from Excel camera table "Tip" row, default "orbit"
+    const rawType = String(camera['Tip'] || 'orbit').trim().toLowerCase();
+    const type = VALID_SCENE_TYPES.has(rawType) ? rawType : 'orbit';
 
     return {
+        type,
         title:    header.title,
         subtitle: header.subtitle,
-        camera:   parseCameraSection(rows, sceneIdx, sceneEnd),
+        camera,
         models:   parseModelsSection(rows, sceneIdx, sceneEnd, assets),
         buttons:  parseButtonsSection(rows, sceneIdx, sceneEnd),
         panels:   parsePanelsSection(rows, sceneIdx, sceneEnd),
