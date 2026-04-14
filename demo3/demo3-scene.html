@@ -373,8 +373,10 @@
                             orbitControls.update();
                         }
 
-                        // Panel lookup: try btn.id first, fall back to kod
-                        const panelKey = cfg.id || kod;
+                        // Panel lookup: try id-based keys, fall back to kod-based
+                        const idKey = cfg.id || kod;
+                        const hasIdPanels = sceneCfg.panels[`${idKey}-left`] || sceneCfg.panels[`${idKey}-right`];
+                        const panelKey = hasIdPanels ? idKey : kod;
                         updatePanelsById(`${panelKey}-left`, `${panelKey}-right`);
                         if (hotspotMgr) hotspotMgr.setToggle(kod);
                         descriptionEl.textContent = cfg.name;
