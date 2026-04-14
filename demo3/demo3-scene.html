@@ -507,12 +507,27 @@
             }
 
             // ---- Clip mode ----
-            // Compute scene bbox ONCE — called after models load, result cached
+            // Compute scene bbox from LOADED MODELS only.
+            // Called once after model load. Skips all helpers/furniture/gizmos.
+            // Stores result in _cachedBBox. Subsequent plan view entries reuse it.
             function _computeAndCacheBBox() {
+                // Ensure all world matrices are current
+                scene.updateMatrixWorld(true);
                 _cachedBBox = new THREE.Box3();
                 scene.traverse(c => {
-                    if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    if (!c.isMesh) return;
+                    // Skip ALL non-model objects
+                    if (c.userData.isHotspotSprite || c.userData._isCamHelper) return;
                     if (c.userData._isFurniture || c.userData._isDragGhost) return;
+                    // Skip TransformControls gizmo parts
+                    if (c.type === 'TransformControlsPlane' || c.type === 'TransformControlsGizmo') return;
+                    let p = c.parent;
+                    let isHelper = false;
+                    while (p && !isHelper) {
+                        if (p.isTransformControls || p.type === 'TransformControlsGizmo') isHelper = true;
+                        p = p.parent;
+                    }
+                    if (isHelper) return;
                     if (!c.geometry) return;
                     if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
                     if (!c.geometry.boundingBox) return;
@@ -563,9 +578,10 @@
                 orbitControls.maxDistance = Infinity;
                 orbitControls.update();
 
-                const maxY = sceneBBox.max.y;
-                const height = maxY - sceneBBox.min.y;
-                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), maxY - _clipPercent * height);
+                const height = sceneBBox.max.y - sceneBBox.min.y;
+                // Clip plane: cut at _clipPercent height from bottom
+                // Low % = cut low (floor plan only), High % = cut high (show more building)
+                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), sceneBBox.min.y + _clipPercent * height);
 
                 clippedMeshes = [];
                 scene.traverse(c => {
@@ -620,9 +636,8 @@
 
             function _updateClipPlane() {
                 if (!clippingPlane || !sceneBBox) return;
-                const maxY = sceneBBox.max.y;
-                const height = maxY - sceneBBox.min.y;
-                clippingPlane.constant = maxY - _clipPercent * height;
+                const height = sceneBBox.max.y - sceneBBox.min.y;
+                clippingPlane.constant = sceneBBox.min.y + _clipPercent * height;
             }
 
             function _switchToPerspView() {
@@ -916,7 +931,7 @@
                     if (prevMode === 'toggle-3' || prevMode === 'toggle-3-view') exitFurnitureMode();
                     if (prevMode === 'toggle-2' || prevMode === 'toggle-3' || prevMode === 'toggle-3-view') _switchToPerspView();
 
-                    if (action === 'CLIP_MODE') {
+                    if (action.startsWith('CLIP_MODE')) {
                         if (prevMode === 'toggle-2') return;
                         enterClipMode(i);
                     } else if (action === 'FURNITURE_EDIT') {
@@ -1075,13 +1090,9 @@
                 // Compute scene bounding box ONCE — frozen for all plan view modes
                 _computeAndCacheBBox();
 
-                // Parse clip percent from CLIP_MODE action (e.g. "CLIP_MODE·40")
-                const clipBtn = sceneCfg.buttons.find(b => (b.action || '').startsWith('CLIP_MODE'));
-                if (clipBtn) {
-                    const parts = clipBtn.action.split('·');
-                    if (parts[1]) _clipPercent = parseFloat(parts[1]) / 100;
-                }
-                if (isNaN(_clipPercent) || _clipPercent <= 0 || _clipPercent > 1) _clipPercent = 0.40;
+                // Read clip height % from camera config (Excel "1 · KAMERA" section)
+                const excelClip = num(sceneCfg.camera['Clip Height %']);
+                if (excelClip > 0 && excelClip <= 100) _clipPercent = excelClip / 100;
 
                 // Initialize FurnitureEditor
                 furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
