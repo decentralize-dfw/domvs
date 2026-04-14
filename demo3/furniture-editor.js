@@ -27,6 +27,7 @@ export class FurnitureEditor {
         this._recentlyDragged = false; // prevents click-deselect after drag
         this._active = false;
         this._cacheLoaded = false;
+        this._presets = [];     // [{ id, threeObject }] — locked, no gumball
 
         this.onChange = null;
 
@@ -162,6 +163,52 @@ export class FurnitureEditor {
         try { sessionStorage.removeItem(this._cacheKey); } catch (_) {}
         this._notifyChange();
     }
+
+    // ---- PRESETS (locked GLBs, no gumball, add/remove only) ----
+
+    /** Load a preset GLB into the scene. Returns the preset entry. */
+    async loadPreset(preset) {
+        // Remove existing preset with same id first
+        this.removePreset(preset.id);
+        const gltf = await new Promise((resolve, reject) => {
+            _gltfLoader.load(preset.url, resolve, undefined, reject);
+        });
+        const root = gltf.scene;
+        root.position.set(0, 0, 0);
+        root.userData._isPreset = true;
+        root.userData._presetId = preset.id;
+        root.traverse(child => {
+            child.userData._isFurniture = true;
+            child.userData._isPreset = true;
+        });
+        this.scene.add(root);
+        const entry = { id: preset.id, name: preset.name, threeObject: root };
+        this._presets.push(entry);
+        this._notifyChange();
+        return entry;
+    }
+
+    /** Remove a preset by id */
+    removePreset(presetId) {
+        const idx = this._presets.findIndex(p => p.id === presetId);
+        if (idx === -1) return;
+        const entry = this._presets[idx];
+        this.scene.remove(entry.threeObject);
+        entry.threeObject.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
+        this._presets.splice(idx, 1);
+        this._notifyChange();
+    }
+
+    /** Check if a preset is currently loaded */
+    isPresetLoaded(presetId) {
+        return this._presets.some(p => p.id === presetId);
+    }
+
+    /** Get all loaded presets */
+    get loadedPresets() { return this._presets; }
 
     async loadFromCache() {
         if (this._cacheLoaded) return;

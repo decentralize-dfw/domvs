@@ -1,7 +1,7 @@
-// furniture-panel.js — Thumbnail Grid UI (Prompt 3/7)
-// Category tabs + 3-column lazy-load thumbnail grid with click & drag-to-spawn
+// furniture-panel.js — Furniture Panel UI
+// Two main tabs: Presets (ready-made GLB sets) + Items (individual pieces)
 
-import { getCategories, getItemsByCategory, getAllItems } from './furniture-library.js';
+import { getCategories, getItemsByCategory, getAllItems, getAllPresets } from './furniture-library.js';
 
 const CATEGORY_LABELS = {
     des_sculpture: 'Sculpture',
@@ -15,87 +15,157 @@ const CATEGORY_LABELS = {
 
 export class FurniturePanel {
     /**
-     * @param {HTMLElement} containerEl — the panel element to render into (e.g. leftHtmlPanel)
-     * @param {Function} onSpawn — callback(libraryItem) when user clicks a thumbnail
+     * @param {HTMLElement} containerEl — the panel element (e.g. leftHtmlPanel)
+     * @param {Function} onSpawn — callback(libraryItem) for individual item spawn
+     * @param {Function} onPresetToggle — callback(preset, isLoading) for preset load/remove
      */
-    constructor(containerEl, onSpawn) {
+    constructor(containerEl, onSpawn, onPresetToggle) {
         this.container = containerEl;
         this.onSpawn = onSpawn || (() => {});
-        this._activeCat = null; // null = show all
+        this.onPresetToggle = onPresetToggle || (() => {});
+        this._activeCat = null;
+        this._activeMainTab = 'presets'; // 'presets' or 'items'
         this._root = null;
+        this._contentEl = null;
         this._gridEl = null;
-        this._observer = null; // IntersectionObserver for lazy-load
+        this._observer = null;
+        this._resizeObs = null;
+        this._editor = null; // set externally to check preset state
     }
+
+    /** Set the furniture editor reference (for checking loaded presets) */
+    setEditor(editor) { this._editor = editor; }
 
     /** Build the full UI into the container. */
     build() {
         this.container.innerHTML = '';
 
-        // Root wrapper
         this._root = document.createElement('div');
         this._root.className = 'vea-furniture-panel';
 
-        // Tab bar
-        const tabBar = document.createElement('div');
-        tabBar.className = 'vea-furniture-tabs';
+        // Main tab bar: Presets | Items
+        const mainBar = document.createElement('div');
+        mainBar.className = 'vea-furniture-main-tabs';
 
-        // "All" tab
-        const allTab = this._createTab('Tümü', null);
-        allTab.classList.add('active');
-        tabBar.appendChild(allTab);
+        const presetsTab = document.createElement('button');
+        presetsTab.className = 'vea-furniture-main-tab active';
+        presetsTab.textContent = 'Presets';
+        presetsTab.addEventListener('click', () => this._switchMainTab('presets', presetsTab));
+        mainBar.appendChild(presetsTab);
 
-        // Category tabs
-        for (const cat of getCategories()) {
-            tabBar.appendChild(this._createTab(CATEGORY_LABELS[cat] || cat, cat));
-        }
+        const itemsTab = document.createElement('button');
+        itemsTab.className = 'vea-furniture-main-tab';
+        itemsTab.textContent = 'Items';
+        itemsTab.addEventListener('click', () => this._switchMainTab('items', itemsTab));
+        mainBar.appendChild(itemsTab);
 
-        this._root.appendChild(tabBar);
+        this._root.appendChild(mainBar);
 
-        // Grid container
-        this._gridEl = document.createElement('div');
-        this._gridEl.className = 'vea-furniture-grid';
-        this._root.appendChild(this._gridEl);
+        // Content area
+        this._contentEl = document.createElement('div');
+        this._contentEl.className = 'vea-furniture-content';
+        this._root.appendChild(this._contentEl);
 
         this.container.appendChild(this._root);
 
-        // Setup lazy-load observer
-        this._setupLazyLoad();
-
-        // Setup square enforcer (JS measures width → sets height)
-        this._setupSquareObserver();
-
-        // Render initial grid (all items)
-        this._renderGrid(getAllItems());
+        // Show presets by default
+        this._renderPresets();
     }
 
-    /** Filter grid by category key (null = all). */
-    filterByCategory(cat) {
-        this._activeCat = cat;
-        const items = cat ? getItemsByCategory(cat) : getAllItems();
-        this._renderGrid(items);
-
-        // Update active tab
-        const tabs = this._root.querySelectorAll('.vea-furniture-tab');
-        tabs.forEach(t => {
-            t.classList.toggle('active', t.dataset.cat === (cat || ''));
-        });
-    }
-
-    /** Show the panel. */
     show() {
         this.container.style.display = 'block';
         this.container.classList.add('vea-furniture-wide');
     }
 
-    /** Hide the panel. */
     hide() {
         this.container.style.display = 'none';
         this.container.classList.remove('vea-furniture-wide');
     }
 
-    /** Whether the panel is currently visible. */
     get visible() {
         return this.container.style.display !== 'none';
+    }
+
+    /** Refresh the current view (e.g. after preset load/remove) */
+    refresh() {
+        if (this._activeMainTab === 'presets') this._renderPresets();
+    }
+
+    // ---- MAIN TAB SWITCHING ----
+
+    _switchMainTab(tab, btnEl) {
+        this._activeMainTab = tab;
+        this._root.querySelectorAll('.vea-furniture-main-tab').forEach(t => t.classList.remove('active'));
+        btnEl.classList.add('active');
+        if (tab === 'presets') this._renderPresets();
+        else this._renderItemsView();
+    }
+
+    // ---- PRESETS VIEW ----
+
+    _renderPresets() {
+        this._contentEl.innerHTML = '';
+        const presets = getAllPresets();
+
+        for (const preset of presets) {
+            const isLoaded = this._editor?.isPresetLoaded(preset.id);
+            const card = document.createElement('div');
+            card.className = 'vea-preset-card' + (isLoaded ? ' loaded' : '');
+
+            card.innerHTML = `
+                <div class="vea-preset-name">${preset.name}</div>
+                <div class="vea-preset-tags">${preset.tags.map(t => `<span class="vea-preset-tag">${t}</span>`).join('')}</div>
+                <div class="vea-preset-desc">${preset.description || ''}</div>
+                <button class="vea-preset-btn ${isLoaded ? 'remove' : 'add'}">${isLoaded ? 'Kaldır' : 'Yükle'}</button>
+            `;
+
+            card.querySelector('.vea-preset-btn').addEventListener('click', () => {
+                this.onPresetToggle(preset, !isLoaded);
+            });
+
+            this._contentEl.appendChild(card);
+        }
+
+        if (presets.length === 0) {
+            this._contentEl.innerHTML = '<p style="color:rgba(255,255,255,0.4);font-size:12px;padding:10px;">Henüz preset yok</p>';
+        }
+    }
+
+    // ---- ITEMS VIEW ----
+
+    _renderItemsView() {
+        this._contentEl.innerHTML = '';
+
+        // Category tab bar
+        const tabBar = document.createElement('div');
+        tabBar.className = 'vea-furniture-tabs';
+
+        const allTab = this._createTab('Tümü', null);
+        allTab.classList.add('active');
+        tabBar.appendChild(allTab);
+
+        for (const cat of getCategories()) {
+            tabBar.appendChild(this._createTab(CATEGORY_LABELS[cat] || cat, cat));
+        }
+        this._contentEl.appendChild(tabBar);
+
+        // Grid
+        this._gridEl = document.createElement('div');
+        this._gridEl.className = 'vea-furniture-grid';
+        this._contentEl.appendChild(this._gridEl);
+
+        this._setupLazyLoad();
+        this._setupSquareObserver();
+        this._renderGrid(getAllItems());
+    }
+
+    filterByCategory(cat) {
+        this._activeCat = cat;
+        const items = cat ? getItemsByCategory(cat) : getAllItems();
+        this._renderGrid(items);
+
+        const tabs = this._contentEl.querySelectorAll('.vea-furniture-tab');
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.cat === (cat || '')));
     }
 
     // ---- INTERNAL ----
@@ -114,13 +184,11 @@ export class FurniturePanel {
         for (const item of items) {
             this._gridEl.appendChild(this._createThumbCard(item));
         }
-        // Re-observe new images for lazy-load
         if (this._observer) {
             this._gridEl.querySelectorAll('img[data-src]').forEach(img => {
                 this._observer.observe(img);
             });
         }
-        // Force square after DOM update
         requestAnimationFrame(() => this._enforceSquare());
     }
 
@@ -129,7 +197,6 @@ export class FurniturePanel {
         card.className = 'vea-furniture-thumb';
         card.draggable = true;
 
-        // Thumbnail image wrapper (forced square)
         const imgWrap = document.createElement('div');
         imgWrap.className = 'vea-furniture-thumb-img';
         const img = document.createElement('img');
@@ -140,22 +207,17 @@ export class FurniturePanel {
         imgWrap.appendChild(img);
         card.appendChild(imgWrap);
 
-        // Label
         const label = document.createElement('span');
         label.className = 'vea-furniture-thumb-label';
-        // Clean name: remove .glb extension, replace underscores
         label.textContent = item.name.replace(/\.glb$/i, '').replace(/_/g, ' ');
         card.appendChild(label);
 
-        // Click → spawn
         card.addEventListener('click', () => this.onSpawn(item));
 
-        // Drag start → set item id for canvas drop
         card.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('application/x-furniture-id', item.id);
             e.dataTransfer.setData('text/plain', item.id);
             e.dataTransfer.effectAllowed = 'copy';
-            // Use thumbnail as drag image
             if (img.naturalWidth) {
                 e.dataTransfer.setDragImage(img, img.naturalWidth / 2, img.naturalHeight / 2);
             }
@@ -180,10 +242,6 @@ export class FurniturePanel {
         }, { root: this._gridEl, rootMargin: '100px' });
     }
 
-    /**
-     * JS-enforced square cards: measure first card's width, set ALL cards' height = width.
-     * Runs on grid resize (panel open, window resize, category switch).
-     */
     _setupSquareObserver() {
         if (this._resizeObs) this._resizeObs.disconnect();
         this._resizeObs = new ResizeObserver(() => this._enforceSquare());
@@ -191,6 +249,7 @@ export class FurniturePanel {
     }
 
     _enforceSquare() {
+        if (!this._gridEl) return;
         const cards = this._gridEl.querySelectorAll('.vea-furniture-thumb');
         if (cards.length === 0) return;
         const w = cards[0].offsetWidth;
@@ -199,7 +258,6 @@ export class FurniturePanel {
         for (const card of cards) card.style.height = h;
     }
 
-    /** Clean up. */
     dispose() {
         if (this._observer) this._observer.disconnect();
         if (this._resizeObs) this._resizeObs.disconnect();
