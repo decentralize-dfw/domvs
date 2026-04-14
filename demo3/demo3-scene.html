@@ -870,29 +870,65 @@
             });
 
             // ---- Furniture drag & drop on canvas ----
+            let _dragGhost = null;
+            const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const _dragHit = new THREE.Vector3();
+
+            function _projectToGround(clientX, clientY) {
+                const rect = renderer.domElement.getBoundingClientRect();
+                const mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+                const my = -((clientY - rect.top) / rect.height) * 2 + 1;
+                _furnRC.setFromCamera(new THREE.Vector2(mx, my), camera);
+                _furnRC.ray.intersectPlane(_dragPlane, _dragHit);
+                return _dragHit;
+            }
+
+            function _showDragGhost(pos) {
+                if (!_dragGhost) {
+                    const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0.35, depthWrite: false });
+                    _dragGhost = new THREE.Mesh(geo, mat);
+                    _dragGhost.userData._isDragGhost = true;
+                    scene.add(_dragGhost);
+                }
+                _dragGhost.position.set(pos.x, 0.2, pos.z);
+                _dragGhost.visible = true;
+            }
+
+            function _hideDragGhost() {
+                if (_dragGhost) {
+                    scene.remove(_dragGhost);
+                    _dragGhost.geometry.dispose();
+                    _dragGhost.material.dispose();
+                    _dragGhost = null;
+                }
+            }
+
+            renderer.domElement.addEventListener('dragenter', (e) => {
+                if (activeMode !== 'toggle-3') return;
+                e.preventDefault();
+            });
             renderer.domElement.addEventListener('dragover', (e) => {
                 if (activeMode !== 'toggle-3') return;
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'copy';
+                const hit = _projectToGround(e.clientX, e.clientY);
+                _showDragGhost(hit);
+            });
+            renderer.domElement.addEventListener('dragleave', () => {
+                _hideDragGhost();
             });
             renderer.domElement.addEventListener('drop', (e) => {
+                _hideDragGhost();
                 if (activeMode !== 'toggle-3' || !furnitureEditor) return;
                 e.preventDefault();
                 const itemId = e.dataTransfer.getData('application/x-furniture-id');
                 if (!itemId) return;
-                // Find library item by id
                 const allItems = getAllItems();
                 const libItem = allItems.find(i => i.id === itemId);
                 if (!libItem) return;
-                // Raycast to Y=0 plane
-                const rect = renderer.domElement.getBoundingClientRect();
-                const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-                const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-                _furnRC.setFromCamera(new THREE.Vector2(mx, my), camera);
-                const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-                const hitPoint = new THREE.Vector3();
-                _furnRC.ray.intersectPlane(groundPlane, hitPoint);
-                furnitureEditor.spawnItem(libItem, { x: hitPoint.x, y: 0, z: hitPoint.z }).then(() => {
+                const hit = _projectToGround(e.clientX, e.clientY);
+                furnitureEditor.spawnItem(libItem, { x: hit.x, y: 0, z: hit.z }).then(() => {
                     _updateSelectionInfo();
                 });
             });
