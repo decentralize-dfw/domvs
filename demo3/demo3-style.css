@@ -814,3 +814,105 @@ canvas.vea-hovering { cursor: pointer; }
     }
     #fullscreenButton { display: none !important; }
 }
+
+/* =========================================================
+   FURNITURE PANEL (Prompt 3)
+   ========================================================= */
+
+.vea-furniture-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+/* --- Category tab bar --- */
+.vea-furniture-tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.vea-furniture-tab {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 3px 7px;
+    border-radius: 6px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.vea-furniture-tab:hover {
+    background: rgba(201, 169, 110, 0.14);
+    color: var(--gold);
+    border-color: rgba(201, 169, 110, 0.45);
+}
+.vea-furniture-tab.active {
+    background: rgba(201, 169, 110, 0.22);
+    color: var(--gold);
+    border-color: rgba(201, 169, 110, 0.65);
+}
+
+/* --- 3-column thumbnail grid --- */
+.vea-furniture-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding-right: 2px;
+}
+.vea-furniture-grid::-webkit-scrollbar { width: 3px; }
+.vea-furniture-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 3px;
+}
+.vea-furniture-grid::-webkit-scrollbar-track { background: transparent; }
+
+/* --- Thumbnail card --- */
+.vea-furniture-thumb {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: grab;
+    border-radius: 6px;
+    padding: 4px;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    border: 1px solid transparent;
+}
+.vea-furniture-thumb:hover {
+    background: rgba(201, 169, 110, 0.12);
+    border-color: rgba(201, 169, 110, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.vea-furniture-thumb:active {
+    cursor: grabbing;
+}
+.vea-furniture-thumb img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: contain;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    pointer-events: none;
+}
+.vea-furniture-thumb-label {
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: center;
+    margin-top: 2px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
