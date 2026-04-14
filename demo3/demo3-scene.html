@@ -85,6 +85,7 @@
         import { FurnitureEditor } from './furniture-editor.js';
         import { FurniturePanel } from './furniture-panel.js';
         import { getAllItems, getItemsByCategory } from './furniture-library.js';
+        import { ClipModeManager } from './clip-mode.js';
 
         /* ===============================================================
            SHARED STATE
@@ -460,18 +461,40 @@
 
             composer.insertPass(new RenderPass(scene, camera), 0);
 
-            // Clip mode state
+            // Mode state
             let activeMode = 'toggle-1';
-            let clippingPlane = null;
-            let clippedMeshes = [];
-            let sceneBBox = null;
-            let _cachedBBox = null;   // computed ONCE after model load
-            let _clipPercent = 0.40;  // default 40%, overridable from Excel / slider
             let camEditor = null;
             let furnitureEditor = null;
             let furniturePanel = null;
             const _furnRC = new THREE.Raycaster();
             const _furnMouse = new THREE.Vector2();
+
+            // ClipModeManager — owns plan view (ortho, clipping, slider)
+            const clipMgr = new ClipModeManager({
+                scene, renderer, composer, orbitControls,
+                orthoCamera, perspCamera,
+                clipFrustum: CLIP_FRUSTUM,
+                clipPercentDefault: 0.40,
+                onCameraSwitch: (newCamera) => {
+                    camera = newCamera;
+                    if (hotspotMgr) hotspotMgr.camera = newCamera;
+                    if (camEditor) camEditor.camera = newCamera;
+                    if (furnitureEditor) furnitureEditor.camera = newCamera;
+                },
+                onEnterPlan: () => {
+                    // Dim nav dots, exempt transform control gumballs from clipping
+                    for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                    _setHoveredDot(null);
+                    if (furnitureEditor) furnitureEditor.exemptGumballFromClipping();
+                    if (camEditor?._transformControls) {
+                        camEditor._transformControls.traverse(c => {
+                            if (c.material) {
+                                (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => { m.clippingPlanes = []; });
+                            }
+                        });
+                    }
+                }
+            });
 
             // Nav dots state
             let navDots = [];
@@ -521,176 +544,14 @@
 
             // ---- Clip mode ----
             // Compute scene bbox from LOADED MODELS only.
-            // Called once after model load. Skips all helpers/furniture/gizmos.
-            // Stores result in _cachedBBox. Subsequent plan view entries reuse it.
-            function _computeAndCacheBBox() {
-                // Ensure all world matrices are current
-                scene.updateMatrixWorld(true);
-                _cachedBBox = new THREE.Box3();
-                scene.traverse(c => {
-                    if (!c.isMesh) return;
-                    // Skip ALL non-model objects
-                    if (c.userData.isHotspotSprite || c.userData._isCamHelper) return;
-                    if (c.userData._isFurniture || c.userData._isDragGhost) return;
-                    // Skip TransformControls gizmo parts
-                    if (c.type === 'TransformControlsPlane' || c.type === 'TransformControlsGizmo') return;
-                    let p = c.parent;
-                    let isHelper = false;
-                    while (p && !isHelper) {
-                        if (p.isTransformControls || p.type === 'TransformControlsGizmo') isHelper = true;
-                        p = p.parent;
-                    }
-                    if (isHelper) return;
-                    if (!c.geometry) return;
-                    if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
-                    if (!c.geometry.boundingBox) return;
-                    const size = new THREE.Vector3();
-                    c.geometry.boundingBox.getSize(size);
-                    if (size.x > 500 || size.y > 500 || size.z > 500) return;
-                    const worldBB = c.geometry.boundingBox.clone();
-                    worldBB.applyMatrix4(c.matrixWorld);
-                    _cachedBBox.union(worldBB);
-                });
-                if (_cachedBBox.isEmpty()) _cachedBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
-                sceneBBox = _cachedBBox.clone();
-            }
-
-            function _useCachedBBox() {
-                sceneBBox = _cachedBBox ? _cachedBBox.clone() : new THREE.Box3(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
-            }
-
-            // ---- Plan view helpers (shared by clip mode + furniture modes) ----
-            function _switchToPlanView(buttonIndex) {
-                toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === buttonIndex));
-                _useCachedBBox();
-
-                const center = new THREE.Vector3();
-                sceneBBox.getCenter(center);
-                const dist = 20;
-                orthoCamera.position.set(
-                    center.x + dist * Math.cos(Math.PI / 4),
-                    center.y + dist * Math.sin(Math.PI / 4),
-                    center.z + dist * Math.cos(Math.PI / 4)
-                );
-                orthoCamera.lookAt(center);
-                const a = window.innerWidth / window.innerHeight;
-                orthoCamera.left = -CLIP_FRUSTUM * a / 2;
-                orthoCamera.right = CLIP_FRUSTUM * a / 2;
-                orthoCamera.top = CLIP_FRUSTUM / 2;
-                orthoCamera.bottom = -CLIP_FRUSTUM / 2;
-                orthoCamera.updateProjectionMatrix();
-
-                camera = orthoCamera;
-                composer.passes[0].camera = camera;
-                orbitControls.object = camera;
-                orbitControls.target.copy(center);
-                orbitControls.enablePan = true;
-                orbitControls.enableZoom = true;
-                orbitControls.enableRotate = true;
-                orbitControls.minDistance = 0;
-                orbitControls.maxDistance = Infinity;
-                orbitControls.update();
-
-                const height = sceneBBox.max.y - sceneBBox.min.y;
-                // Clip plane: cut at _clipPercent height from bottom
-                // Low % = cut low (floor plan only), High % = cut high (show more building)
-                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), sceneBBox.min.y + _clipPercent * height);
-
-                clippedMeshes = [];
-                scene.traverse(c => {
-                    if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
-                    if (c.userData._isFurniture || c.userData._isDragGhost) return;
-                    const orig = c.material;
-                    const clone = orig.clone();
-                    clone.clippingPlanes = [clippingPlane];
-                    clone.clipShadows = false;
-                    clone.needsUpdate = true;
-                    c.material = clone;
-                    clippedMeshes.push({ mesh: c, origMaterial: orig });
-                });
-                renderer.localClippingEnabled = true;
-
-                const bloomPass = composer.passes.find(p => p.strength !== undefined);
-                if (bloomPass && bloomPass._origStrength === undefined) { bloomPass._origStrength = bloomPass.strength; bloomPass.strength = 0.1; }
-
-                if (hotspotMgr) hotspotMgr.camera = camera;
-                if (camEditor) camEditor.camera = camera;
-                if (furnitureEditor) furnitureEditor.camera = camera;
-                for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
-                _setHoveredDot(null);
-                _showClipSlider();
-                // Ensure gumball arrows are never clipped
-                if (furnitureEditor) furnitureEditor.exemptGumballFromClipping();
-                if (camEditor) {
-                    camEditor._transformControls?.traverse(c => {
-                        if (c.material) {
-                            (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => { m.clippingPlanes = []; });
-                        }
-                    });
-                }
-            }
-
-            // ---- Clip height slider ----
-            let _clipSliderEl = null;
-
-            function _showClipSlider() {
-                if (_clipSliderEl) { _clipSliderEl.style.display = 'flex'; return; }
-                _clipSliderEl = document.createElement('div');
-                _clipSliderEl.className = 'vea-clip-slider-wrap';
-                _clipSliderEl.innerHTML = `
-                    <label class="vea-clip-slider-label">Dikey Kesit Yüksekliği</label>
-                    <input type="range" class="vea-clip-slider" min="10" max="90" value="${Math.round(_clipPercent * 100)}" step="1">
-                    <span class="vea-clip-slider-value">${Math.round(_clipPercent * 100)}%</span>
-                `;
-                document.body.appendChild(_clipSliderEl);
-                const slider = _clipSliderEl.querySelector('.vea-clip-slider');
-                const valLabel = _clipSliderEl.querySelector('.vea-clip-slider-value');
-                slider.addEventListener('input', () => {
-                    _clipPercent = parseInt(slider.value) / 100;
-                    valLabel.textContent = slider.value + '%';
-                    _updateClipPlane();
-                });
-            }
-
-            function _hideClipSlider() {
-                if (_clipSliderEl) _clipSliderEl.style.display = 'none';
-            }
-
-            function _updateClipPlane() {
-                if (!clippingPlane || !sceneBBox) return;
-                const height = sceneBBox.max.y - sceneBBox.min.y;
-                clippingPlane.constant = sceneBBox.min.y + _clipPercent * height;
-            }
-
-            function _switchToPerspView() {
-                _hideClipSlider();
-                for (const entry of clippedMeshes) {
-                    const cloned = entry.mesh.material;
-                    entry.mesh.material = entry.origMaterial;
-                    cloned.dispose();
-                }
-                clippedMeshes = [];
-                renderer.localClippingEnabled = false;
-                clippingPlane = null;
-
-                const bloomPass = composer.passes.find(p => p._origStrength !== undefined);
-                if (bloomPass) { bloomPass.strength = bloomPass._origStrength; delete bloomPass._origStrength; }
-
-                camera = perspCamera;
-                composer.passes[0].camera = camera;
-                if (hotspotMgr) hotspotMgr.camera = camera;
-                if (camEditor) camEditor.camera = camera;
-                if (furnitureEditor) furnitureEditor.camera = camera;
-                orbitControls.object = camera;
-                orbitControls.enablePan = false;
-                orbitControls.minDistance = 0.001;
-                orbitControls.maxDistance = 0.02;
-                orbitControls.update();
-            }
+            // ---- Clip mode wrappers (delegate to ClipModeManager) ----
+            // All heavy lifting in clip-mode.js; these just sync activeMode + HUD
+            const _switchToPlanView = (i) => clipMgr.switchToPlanView(i, toggleButtons);
+            const _switchToPerspView = () => clipMgr.switchToPerspView();
 
             function enterClipMode(buttonIndex) {
                 activeMode = 'toggle-2';
-                _switchToPlanView(buttonIndex);
+                clipMgr.switchToPlanView(buttonIndex, toggleButtons);
                 if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
                 leftHtmlPanel.style.display = 'none';
                 rightHtmlPanel.style.display = 'none';
@@ -699,7 +560,7 @@
             }
 
             function exitClipMode() {
-                _switchToPerspView();
+                clipMgr.switchToPerspView();
                 activeMode = 'toggle-1';
             }
 
@@ -1223,11 +1084,11 @@
                 camEditor.setNavDots(navDots);
 
                 // Compute scene bounding box ONCE — frozen for all plan view modes
-                _computeAndCacheBBox();
+                clipMgr.computeAndCacheBBox();
 
                 // Read clip height % from camera config (Excel "1 · KAMERA" section)
                 const excelClip = num(sceneCfg.camera['Clip Height %']);
-                if (excelClip > 0 && excelClip <= 100) _clipPercent = excelClip / 100;
+                if (excelClip > 0 && excelClip <= 100) clipMgr.clipPercent = excelClip / 100;
 
                 // Initialize FurnitureEditor — shared cache key across interior scenes
                 furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
