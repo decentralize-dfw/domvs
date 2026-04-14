@@ -833,8 +833,20 @@
             function _updateSelectionInfo() {
                 if (activeMode !== 'toggle-3') return;
                 const sel = furnitureEditor?.selected;
+                const count = furnitureEditor?.itemCount || 0;
                 if (!sel) {
-                    rightHtmlPanel.innerHTML = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p></div>';
+                    let html = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p>';
+                    if (count > 0) html += `<button id="furnClearAllBtn" class="vea-furniture-clear-btn">Tümünü Temizle (${count})</button>`;
+                    html += '</div>';
+                    rightHtmlPanel.innerHTML = html;
+                    document.getElementById('furnClearAllBtn')?.addEventListener('click', () => {
+                        if (furnitureEditor) {
+                            while (furnitureEditor.placedItems.length > 0) {
+                                furnitureEditor.removeItem(furnitureEditor.placedItems[0]);
+                            }
+                            _updateSelectionInfo();
+                        }
+                    });
                     return;
                 }
                 const p = sel.position;
@@ -1140,8 +1152,9 @@
                 const excelClip = num(sceneCfg.camera['Clip Height %']);
                 if (excelClip > 0 && excelClip <= 100) _clipPercent = excelClip / 100;
 
-                // Initialize FurnitureEditor
+                // Initialize FurnitureEditor — shared cache key across interior scenes
                 furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
+                furnitureEditor.cacheKey = 'vea-furniture-interior';
                 furnitureEditor.onChange = () => {
                     _updateFurnitureBadge();
                     if (activeMode === 'toggle-3') _updateSelectionInfo();
@@ -1159,7 +1172,19 @@
                 // Load cached furniture (non-blocking)
                 furnitureEditor.loadFromCache().catch(() => {});
 
-                if (sceneCfg.buttons.length > 0) selectCamera(0);
+                // Auto-start first button's mode
+                if (sceneCfg.buttons.length > 0) {
+                    const firstAction = (sceneCfg.buttons[0].action || '').trim();
+                    if (firstAction.startsWith('CLIP_MODE')) {
+                        enterClipMode(0);
+                    } else if (firstAction === 'FURNITURE_EDIT') {
+                        enterFurnitureEdit(0);
+                    } else if (firstAction === 'FURNITURE_VIEW') {
+                        enterFurnitureView(0);
+                    } else {
+                        selectCamera(0);
+                    }
+                }
                 fadeOutLoading();
             }).catch(e => {
                 console.error(e);

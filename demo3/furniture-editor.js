@@ -135,7 +135,9 @@ export class FurnitureEditor {
 
     // ---- SESSION CACHE ----
 
-    get _cacheKey() { return `vea-furniture-${this.sceneIndex}`; }
+    /** Cache key — shared across all scenes using same interior model */
+    get _cacheKey() { return this._customCacheKey || `vea-furniture-${this.sceneIndex}`; }
+    set cacheKey(key) { this._customCacheKey = key; }
 
     saveToCache() {
         const data = this._items.map(i => ({
