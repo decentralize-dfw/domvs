@@ -82,10 +82,9 @@
             parseCameraPositionAction, isColliderEntry
         } from 'https://mergvs.com/demo3/xlsx-loader-4.js';
         import { HotspotManager, CameraEditor } from 'https://mergvs.com/demo3/hotspot-manager.js';
-        import { FurnitureEditor } from './furniture-editor.js';
-        import { FurniturePanel } from './furniture-panel.js';
-        import { getAllItems, getItemsByCategory } from './furniture-library.js';
         import { ClipModeManager } from './clip-mode.js';
+        import { FurnitureSceneIntegration } from './furniture-scene-integration.js';
+        import { FurnitureEditor } from './furniture-editor.js'; // walkthru mode uses directly to load cache
 
         /* ===============================================================
            SHARED STATE
@@ -464,10 +463,7 @@
             // Mode state
             let activeMode = 'toggle-1';
             let camEditor = null;
-            let furnitureEditor = null;
-            let furniturePanel = null;
-            const _furnRC = new THREE.Raycaster();
-            const _furnMouse = new THREE.Vector2();
+            let furnIntegration = null; // FurnitureSceneIntegration
 
             // ClipModeManager — owns plan view (ortho, clipping, slider)
             const clipMgr = new ClipModeManager({
@@ -479,13 +475,12 @@
                     camera = newCamera;
                     if (hotspotMgr) hotspotMgr.camera = newCamera;
                     if (camEditor) camEditor.camera = newCamera;
-                    if (furnitureEditor) furnitureEditor.camera = newCamera;
+                    if (furnIntegration?.furnitureEditor) furnIntegration.furnitureEditor.camera = newCamera;
                 },
                 onEnterPlan: () => {
-                    // Dim nav dots, exempt transform control gumballs from clipping
                     for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
                     _setHoveredDot(null);
-                    if (furnitureEditor) furnitureEditor.exemptGumballFromClipping();
+                    if (furnIntegration?.furnitureEditor) furnIntegration.furnitureEditor.exemptGumballFromClipping();
                     if (camEditor?._transformControls) {
                         camEditor._transformControls.traverse(c => {
                             if (c.material) {
@@ -565,240 +560,10 @@
             }
 
             // ---- Furniture modes ----
-            function enterFurnitureEdit(buttonIndex) {
-                activeMode = 'toggle-3';
-                _switchToPlanView(buttonIndex);
-
-                // Activate editor
-                if (furnitureEditor) {
-                    furnitureEditor.camera = camera;
-                    furnitureEditor._transformControls.camera = camera;
-                    furnitureEditor.activate();
-                }
-
-                // Show furniture panel in left panel
-                if (furniturePanel) {
-                    furniturePanel.build();
-                    furniturePanel.show();
-                }
-
-                // Right panel: selection info
-                rightHtmlPanel.innerHTML = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p></div>';
-                rightHtmlPanel.style.display = 'block';
-
-                if (hotspotMgr) hotspotMgr.suspended = true;
-                descriptionEl.textContent = 'Mobilya Editörü';
-                descriptionEl.style.display = 'block';
-            }
-
-            function enterFurnitureView(buttonIndex) {
-                activeMode = 'toggle-3-view';
-                _switchToPlanView(buttonIndex);
-
-                // Load cache if needed
-                if (furnitureEditor && furnitureEditor.placedItems.length === 0) {
-                    furnitureEditor.loadFromCache().catch(() => {});
-                }
-
-                // Show placed items list in left panel
-                _renderPlacedItemsList();
-                leftHtmlPanel.style.display = 'block';
-                rightHtmlPanel.style.display = 'none';
-
-                if (hotspotMgr) hotspotMgr.suspended = true;
-                descriptionEl.textContent = 'Mobilya Görünüm';
-                descriptionEl.style.display = 'block';
-            }
-
-            function exitFurnitureMode() {
-                if (furnitureEditor) furnitureEditor.deactivate();
-                if (furniturePanel) furniturePanel.hide();
-                if (hotspotMgr) hotspotMgr.suspended = false;
-            }
-
-            // ---- Furniture info popup (room camera mode) ----
-            let _furnPopupEl = null;
-            function _showFurniturePopup(placed, worldPoint) {
-                _closeFurniturePopup();
-                const name = placed.name.replace(/\.glb$/i, '').replace(/_/g, ' ');
-                _furnPopupEl = document.createElement('div');
-                _furnPopupEl.className = 'vea-furniture-popup';
-                _furnPopupEl.innerHTML = `<strong>${name}</strong><br><span style="font-size:11px;opacity:0.6">${placed.id}</span>`;
-                document.body.appendChild(_furnPopupEl);
-                // Position near click
-                const v = worldPoint.clone().project(camera);
-                const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-                const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
-                _furnPopupEl.style.left = x + 'px';
-                _furnPopupEl.style.top = (y - 60) + 'px';
-                // Auto-close after 3s or on click
-                setTimeout(_closeFurniturePopup, 3000);
-                _furnPopupEl.addEventListener('click', _closeFurniturePopup);
-            }
-            function _closeFurniturePopup() {
-                if (_furnPopupEl) { _furnPopupEl.remove(); _furnPopupEl = null; }
-            }
-
-            function _renderPlacedItemsList() {
-                if (!furnitureEditor) { leftHtmlPanel.innerHTML = ''; return; }
-                const items = furnitureEditor.placedItems;
-                if (items.length === 0) {
-                    leftHtmlPanel.innerHTML = '<p class="vea-furniture-info" style="color:rgba(255,255,255,0.5);">Henüz mobilya yerleştirilmedi</p>';
-                    return;
-                }
-                let html = `<h3 style="margin:0 0 8px;font-size:14px;color:#fff;">Yerleştirilen (${items.length})</h3>`;
-                items.forEach((item, idx) => {
-                    const p = item.position;
-                    html += `<div class="vea-furniture-placed-item" data-idx="${idx}">`;
-                    html += `<div style="font-size:12px;color:#fff;">${item.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
-                    html += `<div style="font-size:10px;color:rgba(255,255,255,0.4);">X: ${p.x.toFixed(1)} &nbsp; Z: ${p.z.toFixed(1)}</div>`;
-                    html += '</div>';
-                });
-                leftHtmlPanel.innerHTML = html;
-                leftHtmlPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
-                    el.addEventListener('click', () => {
-                        const idx = parseInt(el.dataset.idx);
-                        const item = furnitureEditor.placedItems[idx];
-                        if (item) {
-                            orbitControls.target.copy(item.threeObject.position);
-                            orbitControls.update();
-                        }
-                    });
-                });
-            }
-
-            let _furnSpinner = null;
-            function _showFurnSpinner() {
-                if (_furnSpinner) return;
-                _furnSpinner = document.createElement('div');
-                _furnSpinner.className = 'vea-furniture-loading';
-                _furnSpinner.textContent = 'Yükleniyor…';
-                document.body.appendChild(_furnSpinner);
-            }
-            function _hideFurnSpinner() {
-                if (_furnSpinner) { _furnSpinner.remove(); _furnSpinner = null; }
-            }
-
-            function _updateFurnitureBadge() {
-                const count = furnitureEditor ? furnitureEditor.itemCount : 0;
-                toggleButtons.forEach(btn => {
-                    // Find furniture toggle buttons by action
-                    const cfg = sceneCfg.buttons.find(b => b.id === btn.dataset.id);
-                    if (!cfg) return;
-                    const action = (cfg.action || '').trim();
-                    if (action === 'FURNITURE_EDIT' || action === 'FURNITURE_VIEW') {
-                        let badge = btn.querySelector('.vea-furniture-badge');
-                        if (count > 0) {
-                            if (!badge) {
-                                badge = document.createElement('span');
-                                badge.className = 'vea-furniture-badge';
-                                btn.appendChild(badge);
-                            }
-                            badge.textContent = count;
-                        } else if (badge) {
-                            badge.remove();
-                        }
-                    }
-                });
-            }
-
-            let _activeGizmoMode = 'translate';
-
-            function _updateSelectionInfo() {
-                if (activeMode !== 'toggle-3') return;
-                const sel = furnitureEditor?.selected;
-                const items = furnitureEditor?.placedItems || [];
-                const m = _activeGizmoMode;
-
-                let html = '<div class="vea-furniture-info">';
-
-                // Selected item section
-                if (sel) {
-                    const p = sel.position;
-                    html += `<h3>${sel.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</h3>`;
-                    html += `<p>X: ${p.x.toFixed(2)} &nbsp; Z: ${p.z.toFixed(2)}</p>`;
-                    html += '<div class="vea-furniture-mode-bar">';
-                    html += `<button class="vea-furniture-mode-btn${m === 'translate' ? ' active' : ''}" data-mode="translate">Taşı</button>`;
-                    html += `<button class="vea-furniture-mode-btn${m === 'rotate' ? ' active' : ''}" data-mode="rotate">Döndür</button>`;
-                    html += `<button class="vea-furniture-mode-btn${m === 'scale' ? ' active' : ''}" data-mode="scale">Boyut</button>`;
-                    html += '</div>';
-                    html += `<button id="furnDeleteBtn" class="vea-furniture-delete-btn">Sil</button>`;
-                    html += '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0">';
-                }
-
-                // Placed items list — always visible
-                html += `<h3 style="font-size:12px;margin:0 0 6px;">Yerleştirilen (${items.length})</h3>`;
-                if (items.length > 0) {
-                    for (let idx = 0; idx < items.length; idx++) {
-                        const it = items[idx];
-                        const ip = it.position;
-                        const ir = it.rotation;
-                        const is_ = it.scale;
-                        const isSel = sel && sel === it;
-                        html += `<div class="vea-furniture-placed-item${isSel ? ' active' : ''}" data-idx="${idx}">`;
-                        html += `<div style="font-size:11px;color:#fff;">${it.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
-                        html += `<div style="font-size:9px;color:rgba(255,255,255,0.4);">`;
-                        html += `P: ${ip.x.toFixed(1)}, ${ip.z.toFixed(1)}`;
-                        html += ` · R: ${(ir.y * 180 / Math.PI).toFixed(0)}°`;
-                        html += ` · S: ${is_.x.toFixed(2)}`;
-                        html += `</div></div>`;
-                    }
-                    html += `<button id="furnClearAllBtn" class="vea-furniture-clear-btn">Sahneyi Temizle</button>`;
-                } else {
-                    html += '<p style="font-size:11px;color:rgba(255,255,255,0.35);">Henüz mobilya yok</p>';
-                }
-
-                // Loaded presets section
-                const presets = furnitureEditor?.loadedPresets || [];
-                if (presets.length > 0) {
-                    html += '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0">';
-                    html += `<h3 style="font-size:12px;margin:0 0 6px;">Yüklü Preset'ler</h3>`;
-                    presets.forEach((p, pi) => {
-                        html += `<div class="vea-furniture-placed-item" style="display:flex;justify-content:space-between;align-items:center;">`;
-                        html += `<span style="font-size:11px;color:#fff;">${p.name}</span>`;
-                        html += `<button class="vea-preset-remove-btn" data-pidx="${pi}" style="padding:2px 8px;font-size:9px;background:rgba(220,50,50,0.5);color:#fff;border:none;border-radius:4px;cursor:pointer;">Kaldır</button>`;
-                        html += '</div>';
-                    });
-                }
-
-                html += '</div>';
-                rightHtmlPanel.innerHTML = html;
-
-                // Wire up events
-                if (sel) {
-                    rightHtmlPanel.querySelectorAll('.vea-furniture-mode-btn').forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            _activeGizmoMode = btn.dataset.mode;
-                            if (furnitureEditor) furnitureEditor.setMode(_activeGizmoMode);
-                            _updateSelectionInfo();
-                        });
-                    });
-                    document.getElementById('furnDeleteBtn')?.addEventListener('click', () => {
-                        if (furnitureEditor) { furnitureEditor.deleteSelected(); _updateSelectionInfo(); }
-                    });
-                }
-                // Placed item click → select
-                rightHtmlPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
-                    el.addEventListener('click', () => {
-                        const idx = parseInt(el.dataset.idx);
-                        const item = furnitureEditor?.placedItems[idx];
-                        if (item) { furnitureEditor.selectItem(item); _updateSelectionInfo(); }
-                    });
-                });
-                // Clear all
-                document.getElementById('furnClearAllBtn')?.addEventListener('click', () => {
-                    if (furnitureEditor) { furnitureEditor.clearAll(); _updateSelectionInfo(); }
-                });
-                // Preset remove buttons
-                rightHtmlPanel.querySelectorAll('.vea-preset-remove-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const pidx = parseInt(btn.dataset.pidx);
-                        const p = furnitureEditor?.loadedPresets[pidx];
-                        if (p) { furnitureEditor.removePreset(p.id); furniturePanel?.refresh(); _updateSelectionInfo(); }
-                    });
-                });
-            }
+            // ---- Furniture mode wrappers (delegate to FurnitureSceneIntegration) ----
+            const enterFurnitureEdit = (i) => { activeMode = 'toggle-3'; furnIntegration.enterEdit(i); };
+            const enterFurnitureView = (i) => { activeMode = 'toggle-3-view'; furnIntegration.enterView(i); };
+            const exitFurnitureMode = () => { furnIntegration?.exit(); };
 
             // ---- Nav dots ----
             function _makeNavLabel(text) {
@@ -917,135 +682,22 @@
                 });
             });
 
-            // ---- Nav dot events ----
+            // ---- Nav dot events (furniture pointer/click is handled by FurnitureSceneIntegration) ----
             renderer.domElement.addEventListener('pointermove', (e) => {
                 _navMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
-                _furnMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
             });
             renderer.domElement.addEventListener('click', () => {
                 if (camEditor && camEditor.active) return;
                 if (_hoveredDot) { selectCamera(_hoveredDot.camIndex); return; }
-
-                // Furniture selection in edit mode
-                if (activeMode === 'toggle-3' && furnitureEditor) {
-                    // Skip if just finished dragging gumball
-                    if (furnitureEditor.isDragging || furnitureEditor.wasRecentlyDragging) return;
-                    _furnRC.setFromCamera(_furnMouse, camera);
-                    const furnObjs = furnitureEditor.placedItems.map(i => i.threeObject);
-                    if (furnObjs.length > 0) {
-                        const hits = _furnRC.intersectObjects(furnObjs, true);
-                        if (hits.length > 0) {
-                            const placed = furnitureEditor.findByObject(hits[0].object);
-                            if (placed) { furnitureEditor.selectItem(placed); _updateSelectionInfo(); }
-                        } else {
-                            furnitureEditor.deselectItem();
-                            _updateSelectionInfo();
-                        }
-                    }
-                    return;
-                }
-
-                // Furniture click popup in room camera mode (toggle-1)
-                if (activeMode === 'toggle-1' && furnitureEditor && furnitureEditor.placedItems.length > 0) {
-                    _furnRC.setFromCamera(_furnMouse, camera);
-                    const furnObjs = furnitureEditor.placedItems.map(i => i.threeObject);
-                    const hits = _furnRC.intersectObjects(furnObjs, true);
-                    if (hits.length > 0) {
-                        const placed = furnitureEditor.findByObject(hits[0].object);
-                        if (placed) _showFurniturePopup(placed, hits[0].point);
-                    }
+                // Furniture edit selection + toggle-1 popup
+                if (furnIntegration) {
+                    furnIntegration.setActiveMode(activeMode);
+                    furnIntegration.handleCanvasClick();
                 }
             });
 
-            // ---- Furniture drag & drop on canvas ----
-            let _dragGhost = null;
-            const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-            const _dragHit = new THREE.Vector3();
-
-            function _projectToGround(clientX, clientY) {
-                const rect = renderer.domElement.getBoundingClientRect();
-                const mx = ((clientX - rect.left) / rect.width) * 2 - 1;
-                const my = -((clientY - rect.top) / rect.height) * 2 + 1;
-                _furnRC.setFromCamera(new THREE.Vector2(mx, my), camera);
-                _furnRC.ray.intersectPlane(_dragPlane, _dragHit);
-                return _dragHit;
-            }
-
-            function _showDragGhost(pos) {
-                if (!_dragGhost) {
-                    const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-                    const mat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0.35, depthWrite: false });
-                    _dragGhost = new THREE.Mesh(geo, mat);
-                    _dragGhost.userData._isDragGhost = true;
-                    scene.add(_dragGhost);
-                }
-                _dragGhost.position.set(pos.x, 0.2, pos.z);
-                _dragGhost.visible = true;
-            }
-
-            function _hideDragGhost() {
-                if (_dragGhost) {
-                    scene.remove(_dragGhost);
-                    _dragGhost.geometry.dispose();
-                    _dragGhost.material.dispose();
-                    _dragGhost = null;
-                }
-            }
-
-            renderer.domElement.addEventListener('dragenter', (e) => {
-                if (activeMode !== 'toggle-3') return;
-                e.preventDefault();
-            });
-            renderer.domElement.addEventListener('dragover', (e) => {
-                if (activeMode !== 'toggle-3') return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'copy';
-                const hit = _projectToGround(e.clientX, e.clientY);
-                _showDragGhost(hit);
-            });
-            renderer.domElement.addEventListener('dragleave', () => {
-                _hideDragGhost();
-            });
-            renderer.domElement.addEventListener('drop', (e) => {
-                _hideDragGhost();
-                if (activeMode !== 'toggle-3' || !furnitureEditor) return;
-                e.preventDefault();
-                const itemId = e.dataTransfer.getData('application/x-furniture-id');
-                if (!itemId) return;
-                const allItems = getAllItems();
-                const libItem = allItems.find(i => i.id === itemId);
-                if (!libItem) return;
-                const hit = _projectToGround(e.clientX, e.clientY);
-                _showFurnSpinner();
-                furnitureEditor.spawnItem(libItem, { x: hit.x, y: 0, z: hit.z }).then(() => {
-                    _hideFurnSpinner();
-                    _updateSelectionInfo();
-                }).catch(() => _hideFurnSpinner());
-            });
-
-            // ---- Furniture keyboard shortcuts ----
-            window.addEventListener('keydown', (e) => {
-                if (activeMode !== 'toggle-3' || !furnitureEditor || !furnitureEditor.active) return;
-                // Undo: Ctrl+Z
-                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-                    e.preventDefault();
-                    furnitureEditor.undo().then(() => _updateSelectionInfo());
-                    return;
-                }
-                // Redo: Ctrl+Y or Ctrl+Shift+Z
-                if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey) || (e.key === 'Z'))) {
-                    e.preventDefault();
-                    furnitureEditor.redo().then(() => _updateSelectionInfo());
-                    return;
-                }
-                if (e.key === 'r' || e.key === 'R') { _activeGizmoMode = 'rotate'; furnitureEditor.setMode('rotate'); _updateSelectionInfo(); }
-                if (e.key === 't' || e.key === 'T') { _activeGizmoMode = 'translate'; furnitureEditor.setMode('translate'); _updateSelectionInfo(); }
-                if (e.key === 's' || e.key === 'S') { _activeGizmoMode = 'scale'; furnitureEditor.setMode('scale'); _updateSelectionInfo(); }
-                if (e.key === 'Delete' || e.key === 'Backspace') {
-                    furnitureEditor.deleteSelected();
-                    _updateSelectionInfo();
-                }
-            });
+            // Drag-drop, keyboard shortcuts, ghost preview, spinner are all
+            // wired up inside FurnitureSceneIntegration.init() — see below.
 
             // ---- Load models then wire everything up ----
             loadAllModels().then(() => {
@@ -1091,40 +743,21 @@
                 if (excelClip > 0 && excelClip <= 100) clipMgr.clipPercent = excelClip / 100;
 
                 // Initialize FurnitureEditor — shared cache key across interior scenes
-                furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
-                furnitureEditor.cacheKey = 'vea-furniture-interior';
-                furnitureEditor.onChange = () => {
-                    _updateFurnitureBadge();
-                    if (activeMode === 'toggle-3') _updateSelectionInfo();
-                    if (activeMode === 'toggle-3-view') _renderPlacedItemsList();
-                };
-                furniturePanel = new FurniturePanel(leftHtmlPanel, (item) => {
-                    if (!furnitureEditor) return;
-                    _showFurnSpinner();
-                    const target = orbitControls.target;
-                    furnitureEditor.spawnItem(item, { x: target.x, y: 0, z: target.z }).then(() => {
-                        _hideFurnSpinner();
-                        _updateSelectionInfo();
-                    }).catch(() => _hideFurnSpinner());
-                }, (preset, isLoading) => {
-                    // Preset toggle callback
-                    if (!furnitureEditor) return;
-                    if (isLoading) {
-                        _showFurnSpinner();
-                        furnitureEditor.loadPreset(preset).then(() => {
-                            _hideFurnSpinner();
-                            furniturePanel.refresh();
-                            _updateSelectionInfo();
-                        }).catch(() => _hideFurnSpinner());
-                    } else {
-                        furnitureEditor.removePreset(preset.id);
-                        furniturePanel.refresh();
-                        _updateSelectionInfo();
-                    }
+                // Initialize furniture integration (editor + panel + UI + events)
+                furnIntegration = new FurnitureSceneIntegration({
+                    scene, renderer, orbitControls,
+                    leftPanel: leftHtmlPanel,
+                    rightPanel: rightHtmlPanel,
+                    descriptionEl,
+                    toggleButtons,
+                    sceneCfg,
+                    sceneIndex: SCENE_INDEX,
+                    getCamera: () => camera,
+                    getHotspotMgr: () => hotspotMgr,
+                    clipMgr,
+                    switchToPlanView: (i) => clipMgr.switchToPlanView(i, toggleButtons)
                 });
-                furniturePanel.setEditor(furnitureEditor);
-                // Load cached furniture (non-blocking)
-                furnitureEditor.loadFromCache().catch(() => {});
+                furnIntegration.init();
 
                 // Auto-start first button's mode
                 if (sceneCfg.buttons.length > 0) {
@@ -1148,7 +781,7 @@
             activeUpdateFn = (delta) => {
                 orbitControls.update(delta);
                 if (hotspotMgr) hotspotMgr.update(delta);
-                if (furnitureEditor) furnitureEditor.update(delta);
+                if (furnIntegration?.furnitureEditor) furnIntegration.furnitureEditor.update(delta);
                 updateNavDotsHover();
             };
         }
