@@ -429,18 +429,72 @@ canvas {
 .joystick-zone {
     position: fixed;
     bottom: 30px;
-    width: 120px;
-    height: 120px;
-    border-radius: 60px;
+    width: 160px;
+    height: 160px;
+    border-radius: 80px;
     z-index: 50;
     display: none;
-    opacity: 0.45;
+    opacity: 0.55;
     touch-action: none;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 #joystickLeft  { left: 20px;  }
 #joystickRight { right: 20px; }
-.joystick-zone .nipple .front { background: rgba(255, 255, 255, 0.8) !important; }
+.joystick-zone .nipple .front { background: rgba(201, 169, 110, 0.85) !important; }
 .joystick-zone .nipple .back  { background: rgba(255, 255, 255, 0.25) !important; }
+
+/* --- Mobile action buttons (Zıpla / Koş) --- */
+.mobile-action-btn {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-size: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 51;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    backdrop-filter: blur(6px);
+    transition: transform 0.1s ease, background 0.15s ease;
+}
+.mobile-action-btn.active {
+    background: rgba(201, 169, 110, 0.45);
+    border-color: var(--gold);
+    transform: scale(0.92);
+}
+#mobileJumpBtn   { right: 200px; bottom: 40px; }
+#mobileSprintBtn { right: 200px; bottom: 110px; }
+
+/* --- Mobile instruction hint (fades out after a few seconds) --- */
+#mobileHint {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    line-height: 1.4;
+    z-index: 60;
+    pointer-events: none;
+    text-align: center;
+    transition: opacity 0.6s ease;
+    opacity: 1;
+    max-width: 92vw;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+#mobileHint p { margin: 0; }
 
 /* --- INFO FABs (right side) --- */
 .fab-info-btn {
@@ -810,9 +864,27 @@ canvas.vea-hovering { cursor: pointer; }
         padding: 4px 8px;
     }
     .joystick-zone {
-        bottom: calc(40vh + 10px);
+        bottom: 20px;
+        width: 140px;
+        height: 140px;
     }
+    .mobile-action-btn {
+        width: 54px;
+        height: 54px;
+        font-size: 22px;
+    }
+    #mobileJumpBtn   { right: 180px; bottom: 30px; }
+    #mobileSprintBtn { right: 180px; bottom: 92px; }
     #fullscreenButton { display: none !important; }
+}
+
+/* Portrait phones — stack action buttons above right joystick */
+@media (max-width: 480px) and (orientation: portrait) {
+    .joystick-zone { width: 130px; height: 130px; bottom: 16px; }
+    #joystickLeft  { left: 12px; }
+    #joystickRight { right: 12px; }
+    #mobileJumpBtn   { right: 150px; bottom: 24px; }
+    #mobileSprintBtn { right: 150px; bottom: 82px; }
 }
 
 /* =========================================================

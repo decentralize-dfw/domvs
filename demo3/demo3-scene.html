@@ -57,8 +57,13 @@
         <h1>Walk-Thru</h1>
         <p>Başlamak için ekrana tıklayın · WASD ile gezin</p>
     </div>
+    <div id="mobileHint" style="display:none">
+        <p>🕹️ Sol: Hareket  ·  Sağ: Bakış  ·  ⤒ Zıpla  ·  ⚡ Koş</p>
+    </div>
     <div id="joystickLeft" class="joystick-zone" style="display:none"></div>
     <div id="joystickRight" class="joystick-zone" style="display:none"></div>
+    <button id="mobileJumpBtn" class="mobile-action-btn" style="display:none" aria-label="Zıpla">⤒</button>
+    <button id="mobileSprintBtn" class="mobile-action-btn mobile-sprint-btn" style="display:none" aria-label="Koş">⚡</button>
 
     <!-- ===== COMMON ===== -->
     <button id="fullscreenButton" class="fab-info-btn" title="Tam Ekran" style="display:none">⛶</button>
@@ -811,14 +816,17 @@
             scene.add(pointerLockControls.getObject());
 
             const instructionsEl = document.getElementById('instructions');
-            instructionsEl.style.display = 'block';
 
             function isMobile() {
                 return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
             }
 
+            // Desktop: show "click to start" overlay. Mobile: hide it — joysticks do the work.
+            instructionsEl.style.display = isMobile() ? 'none' : 'block';
+
             document.body.addEventListener('click', (e) => {
                 if (e.target.closest('button') || e.target.closest('#leftHtmlPanel') || e.target.closest('#rightHtmlPanel')) return;
+                if (e.target.closest('.joystick-zone') || e.target.closest('.mobile-action-btn')) return;
                 if (isMobile()) return;
                 if (!pointerLockControls.isLocked) pointerLockControls.lock();
             });
@@ -827,25 +835,83 @@
 
             composer.insertPass(new RenderPass(scene, camera), 0);
 
-            // Mobile joystick
+            // Mobile joystick — proportional analog input
             const mobileJoystickEnabled = yes(cam['Mobile Joystick']);
-            const mobileJoystickLeft = { x: 0, y: 0 };
-            const mobileJoystickRight = { x: 0, y: 0 };
+            const mobileJoystickLeft = { x: 0, y: 0, force: 0 };
+            const mobileJoystickRight = { x: 0, y: 0, force: 0 };
+            const DEADZONE = 0.08;        // very small — anything above this counts
+            const YAW_SENSITIVITY = 0.035;
+            const PITCH_SENSITIVITY = 0.022;
+            const PITCH_CLAMP = Math.PI / 3;  // ~60° up/down limit
 
             function setupMobileJoystick() {
                 if (!mobileJoystickEnabled || !isMobile() || typeof nipplejs === 'undefined') return;
                 const leftZone = document.getElementById('joystickLeft');
                 const rightZone = document.getElementById('joystickRight');
+                const jumpBtn = document.getElementById('mobileJumpBtn');
+                const sprintBtn = document.getElementById('mobileSprintBtn');
+                const hintEl = document.getElementById('mobileHint');
                 leftZone.style.display = 'block';
                 rightZone.style.display = 'block';
+                jumpBtn.style.display = 'flex';
+                sprintBtn.style.display = 'flex';
+                if (hintEl) {
+                    hintEl.style.display = 'block';
+                    setTimeout(() => { hintEl.style.opacity = '0'; }, 4000);
+                }
 
-                const nleft = nipplejs.create({ zone: leftZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
-                nleft.on('move', (_, d) => { mobileJoystickLeft.x = d.vector.x; mobileJoystickLeft.y = d.vector.y; });
-                nleft.on('end', () => { mobileJoystickLeft.x = 0; mobileJoystickLeft.y = 0; });
+                // Left joystick — movement (proportional magnitude)
+                const nleft = nipplejs.create({
+                    zone: leftZone, mode: 'semi', catchDistance: 150,
+                    color: 'white', size: 110, restOpacity: 0.55
+                });
+                nleft.on('move', (_, d) => {
+                    mobileJoystickLeft.x = d.vector.x;
+                    mobileJoystickLeft.y = d.vector.y;
+                    mobileJoystickLeft.force = Math.min(1, d.force ?? d.distance / 55);
+                });
+                nleft.on('end', () => {
+                    mobileJoystickLeft.x = 0; mobileJoystickLeft.y = 0; mobileJoystickLeft.force = 0;
+                });
 
-                const nright = nipplejs.create({ zone: rightZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
-                nright.on('move', (_, d) => { mobileJoystickRight.x = d.vector.x; mobileJoystickRight.y = d.vector.y; });
-                nright.on('end', () => { mobileJoystickRight.x = 0; mobileJoystickRight.y = 0; });
+                // Right joystick — camera look (proportional sensitivity)
+                const nright = nipplejs.create({
+                    zone: rightZone, mode: 'semi', catchDistance: 150,
+                    color: 'white', size: 110, restOpacity: 0.55
+                });
+                nright.on('move', (_, d) => {
+                    mobileJoystickRight.x = d.vector.x;
+                    mobileJoystickRight.y = d.vector.y;
+                    mobileJoystickRight.force = Math.min(1, d.force ?? d.distance / 55);
+                });
+                nright.on('end', () => {
+                    mobileJoystickRight.x = 0; mobileJoystickRight.y = 0; mobileJoystickRight.force = 0;
+                });
+
+                // Action buttons
+                jumpBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (playerOnFloor) keys.jump = true;
+                    jumpBtn.classList.add('active');
+                }, { passive: false });
+                jumpBtn.addEventListener('touchend', () => jumpBtn.classList.remove('active'));
+
+                sprintBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    keys.sprint = true;
+                    currentMoveSpeed = baseMoveSpeed * sprintMultiplier;
+                    sprintBtn.classList.add('active');
+                }, { passive: false });
+                sprintBtn.addEventListener('touchend', () => {
+                    keys.sprint = false;
+                    currentMoveSpeed = baseMoveSpeed;
+                    sprintBtn.classList.remove('active');
+                });
+                sprintBtn.addEventListener('touchcancel', () => {
+                    keys.sprint = false;
+                    currentMoveSpeed = baseMoveSpeed;
+                    sprintBtn.classList.remove('active');
+                });
             }
 
             const colliderMeshes = [];
@@ -914,25 +980,57 @@
                 }
             });
 
+            // Mobile analog state (proportional movement/look)
+            let analogMoveX = 0, analogMoveZ = 0; // -1..1 from left joystick
+            // Smooth camera rotation via Euler (applied in update, lerped toward target)
+            const _cameraEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+            let _targetYawDelta = 0, _targetPitchDelta = 0;
+
             activeUpdateFn = (delta) => {
-                // Mobile joystick → keys mapping
-                if (isMobile() && mobileJoystickEnabled) {
-                    if (mobileJoystickLeft.x !== 0 || mobileJoystickLeft.y !== 0) {
-                        keys.forward = mobileJoystickLeft.y > 0.2;
-                        keys.backward = mobileJoystickLeft.y < -0.2;
-                        keys.left = mobileJoystickLeft.x < -0.2;
-                        keys.right = mobileJoystickLeft.x > 0.2;
+                const mobile = isMobile();
+
+                // --- Mobile joystick → analog inputs ---
+                if (mobile && mobileJoystickEnabled) {
+                    // Movement — proportional: joystick magnitude drives speed
+                    const lx = mobileJoystickLeft.x, ly = mobileJoystickLeft.y;
+                    const lMag = Math.sqrt(lx * lx + ly * ly);
+                    if (lMag > DEADZONE) {
+                        analogMoveX = lx;
+                        analogMoveZ = ly;
+                        // Also drive digital keys for compatibility (e.g. animations)
+                        keys.forward = ly > DEADZONE;
+                        keys.backward = ly < -DEADZONE;
+                        keys.left = lx < -DEADZONE;
+                        keys.right = lx > DEADZONE;
                     } else {
+                        analogMoveX = 0; analogMoveZ = 0;
                         keys.forward = keys.backward = keys.left = keys.right = false;
                     }
-                    if (Math.abs(mobileJoystickRight.x) > 0.1 || Math.abs(mobileJoystickRight.y) > 0.1) {
-                        camera.rotation.y -= mobileJoystickRight.x * 0.04;
-                        camera.rotation.x -= mobileJoystickRight.y * 0.025;
-                        camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, camera.rotation.x));
+
+                    // Look — accumulate small per-frame deltas (smoother than direct rotation set)
+                    const rx = mobileJoystickRight.x, ry = mobileJoystickRight.y;
+                    const rMag = Math.sqrt(rx * rx + ry * ry);
+                    if (rMag > DEADZONE) {
+                        _targetYawDelta -= rx * YAW_SENSITIVITY;
+                        _targetPitchDelta -= ry * PITCH_SENSITIVITY;
                     }
                 }
 
-                if (!pointerLockControls.isLocked && !isMobile()) return;
+                // Apply accumulated look deltas (with decay — feels like inertia)
+                if (_targetYawDelta !== 0 || _targetPitchDelta !== 0) {
+                    _cameraEuler.setFromQuaternion(camera.quaternion);
+                    _cameraEuler.y += _targetYawDelta;
+                    _cameraEuler.x += _targetPitchDelta;
+                    _cameraEuler.x = Math.max(-PITCH_CLAMP, Math.min(PITCH_CLAMP, _cameraEuler.x));
+                    _cameraEuler.z = 0;
+                    camera.quaternion.setFromEuler(_cameraEuler);
+                    _targetYawDelta *= 0.6;  // decay for smooth stop
+                    _targetPitchDelta *= 0.6;
+                    if (Math.abs(_targetYawDelta) < 0.0001) _targetYawDelta = 0;
+                    if (Math.abs(_targetPitchDelta) < 0.0001) _targetPitchDelta = 0;
+                }
+
+                if (!pointerLockControls.isLocked && !mobile) return;
                 if (colliderMeshes.length === 0) return;
 
                 const playerPos = pointerLockControls.getObject().position;
@@ -951,14 +1049,20 @@
                 }
                 playerPos.y += playerVelocity.y * delta;
 
-                // Horizontal movement
+                // Horizontal movement — proportional on mobile, digital on desktop
                 playerVelocity.x -= playerVelocity.x * 10.0 * delta;
                 playerVelocity.z -= playerVelocity.z * 10.0 * delta;
-                playerDirection.z = Number(keys.forward) - Number(keys.backward);
-                playerDirection.x = Number(keys.right) - Number(keys.left);
-                playerDirection.normalize();
-                if (keys.forward || keys.backward) playerVelocity.z -= playerDirection.z * currentMoveSpeed * delta;
-                if (keys.left || keys.right) playerVelocity.x -= playerDirection.x * currentMoveSpeed * delta;
+                if (mobile && (analogMoveX !== 0 || analogMoveZ !== 0)) {
+                    // Analog: direct strength from joystick vector (magnitude limits speed)
+                    playerVelocity.z -= analogMoveZ * currentMoveSpeed * delta;
+                    playerVelocity.x -= (-analogMoveX) * currentMoveSpeed * delta;
+                } else {
+                    playerDirection.z = Number(keys.forward) - Number(keys.backward);
+                    playerDirection.x = Number(keys.right) - Number(keys.left);
+                    playerDirection.normalize();
+                    if (keys.forward || keys.backward) playerVelocity.z -= playerDirection.z * currentMoveSpeed * delta;
+                    if (keys.left || keys.right) playerVelocity.x -= playerDirection.x * currentMoveSpeed * delta;
+                }
                 pointerLockControls.moveRight(-playerVelocity.x * delta);
                 pointerLockControls.moveForward(-playerVelocity.z * delta);
 
