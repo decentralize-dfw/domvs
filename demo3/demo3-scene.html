@@ -1210,7 +1210,23 @@
                         _hideFurnSpinner();
                         _updateSelectionInfo();
                     }).catch(() => _hideFurnSpinner());
+                }, (preset, isLoading) => {
+                    // Preset toggle callback
+                    if (!furnitureEditor) return;
+                    if (isLoading) {
+                        _showFurnSpinner();
+                        furnitureEditor.loadPreset(preset).then(() => {
+                            _hideFurnSpinner();
+                            furniturePanel.refresh();
+                            _updateSelectionInfo();
+                        }).catch(() => _hideFurnSpinner());
+                    } else {
+                        furnitureEditor.removePreset(preset.id);
+                        furniturePanel.refresh();
+                        _updateSelectionInfo();
+                    }
                 });
+                furniturePanel.setEditor(furnitureEditor);
                 // Load cached furniture (non-blocking)
                 furnitureEditor.loadFromCache().catch(() => {});
 

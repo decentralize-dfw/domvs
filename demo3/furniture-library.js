@@ -210,3 +210,36 @@ export function getItemsByCategory(cat) {
 export function getCategories() {
   return Object.keys(FURNITURE_LIBRARY);
 }
+
+// ============================================================
+// PRESETS — Ready-made furniture sets (single GLB per preset)
+// Each preset is a complete room setup loaded as one model.
+// Tags allow filtering by room/area for future multi-room presets.
+// ============================================================
+
+export const FURNITURE_PRESETS = [
+  {
+    id: 'full-house-v2',
+    name: 'Tüm Ev (Mobilyalı)',
+    url: 'https://raw.githubusercontent.com/decentralize-dfw/vea-randomfiles/main/empty-house-furniture-opt-v2.glb',
+    tags: ['tüm-ev', 'salon', 'mutfak', 'yatak-odası-1', 'yatak-odası-2', 'banyo', 'wc'],
+    description: 'Tüm odalar mobilyalı — salon, mutfak, yatak odaları, banyo, WC'
+  }
+];
+
+/** Return all presets */
+export function getAllPresets() {
+  return FURNITURE_PRESETS;
+}
+
+/** Return presets matching a tag (e.g. 'salon', 'mutfak') */
+export function getPresetsByTag(tag) {
+  return FURNITURE_PRESETS.filter(p => p.tags.includes(tag));
+}
+
+/** Return all unique preset tags */
+export function getPresetTags() {
+  const tags = new Set();
+  for (const p of FURNITURE_PRESETS) p.tags.forEach(t => tags.add(t));
+  return [...tags];
+}
