@@ -82,6 +82,9 @@
             parseCameraPositionAction, isColliderEntry
         } from 'https://mergvs.com/demo3/xlsx-loader-4.js';
         import { HotspotManager, CameraEditor } from 'https://mergvs.com/demo3/hotspot-manager.js';
+        import { FurnitureEditor } from './furniture-editor.js';
+        import { FurniturePanel } from './furniture-panel.js';
+        import { getAllItems, getItemsByCategory } from './furniture-library.js';
 
         /* ===============================================================
            SHARED STATE
@@ -450,6 +453,10 @@
             let clippedMeshes = [];
             let sceneBBox = null;
             let camEditor = null;
+            let furnitureEditor = null;
+            let furniturePanel = null;
+            const _furnRC = new THREE.Raycaster();
+            const _furnMouse = new THREE.Vector2();
 
             // Nav dots state
             let navDots = [];
@@ -515,8 +522,8 @@
                 if (sceneBBox.isEmpty()) sceneBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
             }
 
-            function enterClipMode(buttonIndex) {
-                activeMode = 'toggle-2';
+            // ---- Plan view helpers (shared by clip mode + furniture modes) ----
+            function _switchToPlanView(buttonIndex) {
                 toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === buttonIndex));
                 computeSceneBBox();
 
@@ -554,6 +561,7 @@
                 clippedMeshes = [];
                 scene.traverse(c => {
                     if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    if (c.userData._furnitureId) return; // don't clip furniture
                     const orig = c.material;
                     const clone = orig.clone();
                     clone.clippingPlanes = [clippingPlane];
@@ -565,21 +573,16 @@
                 renderer.localClippingEnabled = true;
 
                 const bloomPass = composer.passes.find(p => p.strength !== undefined);
-                if (bloomPass) { bloomPass._origStrength = bloomPass.strength; bloomPass.strength = 0.1; }
+                if (bloomPass && bloomPass._origStrength === undefined) { bloomPass._origStrength = bloomPass.strength; bloomPass.strength = 0.1; }
 
                 if (hotspotMgr) hotspotMgr.camera = camera;
                 if (camEditor) camEditor.camera = camera;
+                if (furnitureEditor) furnitureEditor.camera = camera;
                 for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
                 _setHoveredDot(null);
-                if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
-                leftHtmlPanel.style.display = 'none';
-                rightHtmlPanel.style.display = 'none';
-                descriptionEl.textContent = 'Plan Görünümü';
-                descriptionEl.style.display = 'block';
             }
 
-            function exitClipMode() {
-                activeMode = 'toggle-1';
+            function _switchToPerspView() {
                 for (const entry of clippedMeshes) {
                     const cloned = entry.mesh.material;
                     entry.mesh.material = entry.origMaterial;
@@ -596,11 +599,162 @@
                 composer.passes[0].camera = camera;
                 if (hotspotMgr) hotspotMgr.camera = camera;
                 if (camEditor) camEditor.camera = camera;
+                if (furnitureEditor) furnitureEditor.camera = camera;
                 orbitControls.object = camera;
                 orbitControls.enablePan = false;
                 orbitControls.minDistance = 0.001;
                 orbitControls.maxDistance = 0.02;
                 orbitControls.update();
+            }
+
+            function enterClipMode(buttonIndex) {
+                activeMode = 'toggle-2';
+                _switchToPlanView(buttonIndex);
+                if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
+                leftHtmlPanel.style.display = 'none';
+                rightHtmlPanel.style.display = 'none';
+                descriptionEl.textContent = 'Plan Görünümü';
+                descriptionEl.style.display = 'block';
+            }
+
+            function exitClipMode() {
+                _switchToPerspView();
+                activeMode = 'toggle-1';
+            }
+
+            // ---- Furniture modes ----
+            function enterFurnitureEdit(buttonIndex) {
+                activeMode = 'toggle-3';
+                _switchToPlanView(buttonIndex);
+
+                // Activate editor
+                if (furnitureEditor) {
+                    furnitureEditor.camera = camera;
+                    furnitureEditor._transformControls.camera = camera;
+                    furnitureEditor.activate();
+                }
+
+                // Show furniture panel in left panel
+                if (furniturePanel) {
+                    furniturePanel.build();
+                    furniturePanel.show();
+                }
+
+                // Right panel: selection info
+                rightHtmlPanel.innerHTML = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p></div>';
+                rightHtmlPanel.style.display = 'block';
+
+                if (hotspotMgr) hotspotMgr.suspended = true;
+                descriptionEl.textContent = 'Mobilya Editörü';
+                descriptionEl.style.display = 'block';
+            }
+
+            function enterFurnitureView(buttonIndex) {
+                activeMode = 'toggle-3-view';
+                _switchToPlanView(buttonIndex);
+
+                // Load cache if needed
+                if (furnitureEditor && furnitureEditor.placedItems.length === 0) {
+                    furnitureEditor.loadFromCache().catch(() => {});
+                }
+
+                // Show placed items list in left panel
+                _renderPlacedItemsList();
+                leftHtmlPanel.style.display = 'block';
+                rightHtmlPanel.style.display = 'none';
+
+                if (hotspotMgr) hotspotMgr.suspended = true;
+                descriptionEl.textContent = 'Mobilya Görünüm';
+                descriptionEl.style.display = 'block';
+            }
+
+            function exitFurnitureMode() {
+                if (furnitureEditor) furnitureEditor.deactivate();
+                if (furniturePanel) furniturePanel.hide();
+                if (hotspotMgr) hotspotMgr.suspended = false;
+            }
+
+            function _renderPlacedItemsList() {
+                if (!furnitureEditor) { leftHtmlPanel.innerHTML = ''; return; }
+                const items = furnitureEditor.placedItems;
+                if (items.length === 0) {
+                    leftHtmlPanel.innerHTML = '<p class="vea-furniture-info" style="color:rgba(255,255,255,0.5);">Henüz mobilya yerleştirilmedi</p>';
+                    return;
+                }
+                let html = `<h3 style="margin:0 0 8px;font-size:14px;color:#fff;">Yerleştirilen (${items.length})</h3>`;
+                items.forEach((item, idx) => {
+                    const p = item.position;
+                    html += `<div class="vea-furniture-placed-item" data-idx="${idx}">`;
+                    html += `<div style="font-size:12px;color:#fff;">${item.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
+                    html += `<div style="font-size:10px;color:rgba(255,255,255,0.4);">X: ${p.x.toFixed(1)} &nbsp; Z: ${p.z.toFixed(1)}</div>`;
+                    html += '</div>';
+                });
+                leftHtmlPanel.innerHTML = html;
+                leftHtmlPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const idx = parseInt(el.dataset.idx);
+                        const item = furnitureEditor.placedItems[idx];
+                        if (item) {
+                            orbitControls.target.copy(item.threeObject.position);
+                            orbitControls.update();
+                        }
+                    });
+                });
+            }
+
+            let _furnSpinner = null;
+            function _showFurnSpinner() {
+                if (_furnSpinner) return;
+                _furnSpinner = document.createElement('div');
+                _furnSpinner.className = 'vea-furniture-loading';
+                _furnSpinner.textContent = 'Yükleniyor…';
+                document.body.appendChild(_furnSpinner);
+            }
+            function _hideFurnSpinner() {
+                if (_furnSpinner) { _furnSpinner.remove(); _furnSpinner = null; }
+            }
+
+            function _updateFurnitureBadge() {
+                const count = furnitureEditor ? furnitureEditor.itemCount : 0;
+                toggleButtons.forEach(btn => {
+                    // Find furniture toggle buttons by action
+                    const cfg = sceneCfg.buttons.find(b => b.id === btn.dataset.id);
+                    if (!cfg) return;
+                    const action = (cfg.action || '').trim();
+                    if (action === 'FURNITURE_EDIT' || action === 'FURNITURE_VIEW') {
+                        let badge = btn.querySelector('.vea-furniture-badge');
+                        if (count > 0) {
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'vea-furniture-badge';
+                                btn.appendChild(badge);
+                            }
+                            badge.textContent = count;
+                        } else if (badge) {
+                            badge.remove();
+                        }
+                    }
+                });
+            }
+
+            function _updateSelectionInfo() {
+                if (activeMode !== 'toggle-3') return;
+                const sel = furnitureEditor?.selected;
+                if (!sel) {
+                    rightHtmlPanel.innerHTML = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p></div>';
+                    return;
+                }
+                const p = sel.position;
+                let html = '<div class="vea-furniture-info">';
+                html += `<h3>${sel.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</h3>`;
+                html += `<p>X: ${p.x.toFixed(2)} &nbsp; Y: ${p.y.toFixed(2)} &nbsp; Z: ${p.z.toFixed(2)}</p>`;
+                html += `<button id="furnDeleteBtn">Sil</button>`;
+                html += `<p style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.35);">R: Döndür &nbsp; T: Taşı &nbsp; Del: Sil</p>`;
+                html += '</div>';
+                rightHtmlPanel.innerHTML = html;
+                document.getElementById('furnDeleteBtn')?.addEventListener('click', () => {
+                    if (furnitureEditor) { furnitureEditor.deleteSelected(); _updateSelectionInfo(); }
+                });
             }
 
             // ---- Nav dots ----
@@ -698,11 +852,23 @@
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const action = (cfg.action || '').trim();
+                    const prevMode = activeMode;
+
+                    // Exit previous mode if switching away
+                    if (prevMode === 'toggle-3' || prevMode === 'toggle-3-view') exitFurnitureMode();
+                    if (prevMode === 'toggle-2' || prevMode === 'toggle-3' || prevMode === 'toggle-3-view') _switchToPerspView();
+
                     if (action === 'CLIP_MODE') {
-                        if (activeMode === 'toggle-2') return;
+                        if (prevMode === 'toggle-2') return;
                         enterClipMode(i);
+                    } else if (action === 'FURNITURE_EDIT') {
+                        if (prevMode === 'toggle-3') return;
+                        enterFurnitureEdit(i);
+                    } else if (action === 'FURNITURE_VIEW') {
+                        if (prevMode === 'toggle-3-view') return;
+                        enterFurnitureView(i);
                     } else {
-                        if (activeMode === 'toggle-2') exitClipMode();
+                        activeMode = 'toggle-1';
                         selectCamera(i);
                     }
                 });
@@ -711,10 +877,104 @@
             // ---- Nav dot events ----
             renderer.domElement.addEventListener('pointermove', (e) => {
                 _navMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+                _furnMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
             });
             renderer.domElement.addEventListener('click', () => {
                 if (camEditor && camEditor.active) return;
-                if (_hoveredDot) selectCamera(_hoveredDot.camIndex);
+                if (_hoveredDot) { selectCamera(_hoveredDot.camIndex); return; }
+
+                // Furniture selection in edit mode
+                if (activeMode === 'toggle-3' && furnitureEditor && !furnitureEditor.isDragging) {
+                    _furnRC.setFromCamera(_furnMouse, camera);
+                    const furnObjs = furnitureEditor.placedItems.map(i => i.threeObject);
+                    if (furnObjs.length > 0) {
+                        const hits = _furnRC.intersectObjects(furnObjs, true);
+                        if (hits.length > 0) {
+                            const placed = furnitureEditor.findByObject(hits[0].object);
+                            if (placed) { furnitureEditor.selectItem(placed); _updateSelectionInfo(); }
+                        } else {
+                            furnitureEditor.deselectItem();
+                            _updateSelectionInfo();
+                        }
+                    }
+                }
+            });
+
+            // ---- Furniture drag & drop on canvas ----
+            let _dragGhost = null;
+            const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const _dragHit = new THREE.Vector3();
+
+            function _projectToGround(clientX, clientY) {
+                const rect = renderer.domElement.getBoundingClientRect();
+                const mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+                const my = -((clientY - rect.top) / rect.height) * 2 + 1;
+                _furnRC.setFromCamera(new THREE.Vector2(mx, my), camera);
+                _furnRC.ray.intersectPlane(_dragPlane, _dragHit);
+                return _dragHit;
+            }
+
+            function _showDragGhost(pos) {
+                if (!_dragGhost) {
+                    const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0.35, depthWrite: false });
+                    _dragGhost = new THREE.Mesh(geo, mat);
+                    _dragGhost.userData._isDragGhost = true;
+                    scene.add(_dragGhost);
+                }
+                _dragGhost.position.set(pos.x, 0.2, pos.z);
+                _dragGhost.visible = true;
+            }
+
+            function _hideDragGhost() {
+                if (_dragGhost) {
+                    scene.remove(_dragGhost);
+                    _dragGhost.geometry.dispose();
+                    _dragGhost.material.dispose();
+                    _dragGhost = null;
+                }
+            }
+
+            renderer.domElement.addEventListener('dragenter', (e) => {
+                if (activeMode !== 'toggle-3') return;
+                e.preventDefault();
+            });
+            renderer.domElement.addEventListener('dragover', (e) => {
+                if (activeMode !== 'toggle-3') return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                const hit = _projectToGround(e.clientX, e.clientY);
+                _showDragGhost(hit);
+            });
+            renderer.domElement.addEventListener('dragleave', () => {
+                _hideDragGhost();
+            });
+            renderer.domElement.addEventListener('drop', (e) => {
+                _hideDragGhost();
+                if (activeMode !== 'toggle-3' || !furnitureEditor) return;
+                e.preventDefault();
+                const itemId = e.dataTransfer.getData('application/x-furniture-id');
+                if (!itemId) return;
+                const allItems = getAllItems();
+                const libItem = allItems.find(i => i.id === itemId);
+                if (!libItem) return;
+                const hit = _projectToGround(e.clientX, e.clientY);
+                _showFurnSpinner();
+                furnitureEditor.spawnItem(libItem, { x: hit.x, y: 0, z: hit.z }).then(() => {
+                    _hideFurnSpinner();
+                    _updateSelectionInfo();
+                }).catch(() => _hideFurnSpinner());
+            });
+
+            // ---- Furniture keyboard shortcuts ----
+            window.addEventListener('keydown', (e) => {
+                if (activeMode !== 'toggle-3' || !furnitureEditor || !furnitureEditor.active) return;
+                if (e.key === 'r' || e.key === 'R') { furnitureEditor.setMode('rotate'); }
+                if (e.key === 't' || e.key === 'T') { furnitureEditor.setMode('translate'); }
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    furnitureEditor.deleteSelected();
+                    _updateSelectionInfo();
+                }
             });
 
             // ---- Load models then wire everything up ----
@@ -744,13 +1004,34 @@
                         const dist = dx * dx + dz * dz;
                         if (dist < bestDist) { bestDist = dist; bestIdx = i; }
                     });
-                    if (activeMode === 'toggle-2') exitClipMode();
+                    if (activeMode === 'toggle-3' || activeMode === 'toggle-3-view') exitFurnitureMode();
+                    if (activeMode !== 'toggle-1') { _switchToPerspView(); activeMode = 'toggle-1'; }
                     selectCamera(bestIdx);
                 };
 
                 hotspotMgr.loadHotspots();
                 createNavDots();
                 camEditor.setNavDots(navDots);
+
+                // Initialize FurnitureEditor
+                furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
+                furnitureEditor.onChange = () => {
+                    _updateFurnitureBadge();
+                    if (activeMode === 'toggle-3') _updateSelectionInfo();
+                    if (activeMode === 'toggle-3-view') _renderPlacedItemsList();
+                };
+                furniturePanel = new FurniturePanel(leftHtmlPanel, (item) => {
+                    if (!furnitureEditor) return;
+                    _showFurnSpinner();
+                    const target = orbitControls.target;
+                    furnitureEditor.spawnItem(item, { x: target.x, y: 0, z: target.z }).then(() => {
+                        _hideFurnSpinner();
+                        _updateSelectionInfo();
+                    }).catch(() => _hideFurnSpinner());
+                });
+                // Load cached furniture (non-blocking)
+                furnitureEditor.loadFromCache().catch(() => {});
+
                 if (sceneCfg.buttons.length > 0) selectCamera(0);
                 fadeOutLoading();
             }).catch(e => {
@@ -761,6 +1042,7 @@
             activeUpdateFn = (delta) => {
                 orbitControls.update(delta);
                 if (hotspotMgr) hotspotMgr.update(delta);
+                if (furnitureEditor) furnitureEditor.update(delta);
                 updateNavDotsHover();
             };
         }
