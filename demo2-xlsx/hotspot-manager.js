@@ -331,21 +331,11 @@ export class HotspotManager {
         this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
         this.transformControls.visible = false;
         this.transformControls.enabled = false;
+        this.transformControls.size = 1.5; // larger gumball arrows
 
-        // CRITICAL: stop orbit when gizmo is being dragged
         this.transformControls.addEventListener('dragging-changed', (e) => {
             this._gizmoDragging = e.value;
-            if (this.orbitControls) this.orbitControls.enabled = !e.value;
         });
-
-        // Capture-phase: disable OrbitControls before its handler fires
-        // when a gumball handle is being grabbed
-        this.renderer.domElement.addEventListener('pointerdown', () => {
-            if (!this.editMode) return;
-            if (this.transformControls.axis) {
-                if (this.orbitControls) this.orbitControls.enabled = false;
-            }
-        }, { capture: true });
 
         this.transformControls.addEventListener('change', () => {
             this._refreshList();
@@ -394,10 +384,17 @@ export class HotspotManager {
         // Hide panels
         document.querySelectorAll('#leftHtmlPanel,#rightHtmlPanel,#description').forEach(el => el.style.display = 'none');
 
-        // Enable gizmo
+        // Enable gizmo — left-click reserved for gumball
         this.transformControls.visible = true;
         this.transformControls.enabled = true;
         this.transformControls.setMode(this.gizmoMode);
+        if (this.orbitControls) {
+            this.orbitControls.mouseButtons = {
+                LEFT: null,
+                MIDDLE: THREE.MOUSE.ROTATE,
+                RIGHT: THREE.MOUSE.PAN
+            };
+        }
 
         this._buildList();
     }
@@ -422,7 +419,15 @@ export class HotspotManager {
         this.transformControls.visible = false;
         this.transformControls.enabled = false;
         this.selectedObject = null;
-        if (this.orbitControls) this.orbitControls.enabled = true;
+        if (this.orbitControls) {
+            this.orbitControls.enabled = true;
+            // Restore default mouse buttons
+            this.orbitControls.mouseButtons = {
+                LEFT: THREE.MOUSE.ROTATE,
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.PAN
+            };
+        }
 
         // Re-apply last toggle so hidden hotspots hide again
         if (this._activeToggle) this.setToggle(this._activeToggle);
@@ -814,21 +819,10 @@ export class CameraEditor {
         this._transformControls.visible = false;
         this._transformControls.enabled = false;
         this._transformControls.setMode('translate');
+        this._transformControls.size = 1.5; // larger gumball arrows
         this._transformControls.addEventListener('dragging-changed', e => {
             this._gizmoDragging = e.value;
-            if (this.orbitControls) this.orbitControls.enabled = !e.value;
         });
-
-        // CRITICAL: Capture-phase pointerdown — disable OrbitControls
-        // BEFORE its handler fires when a gumball handle is targeted.
-        // Without this, OrbitControls grabs the drag first and the
-        // gumball becomes impossible to use.
-        this.renderer.domElement.addEventListener('pointerdown', () => {
-            if (!this.active) return;
-            if (this._transformControls.axis) {
-                if (this.orbitControls) this.orbitControls.enabled = false;
-            }
-        }, { capture: true });
         this._transformControls.addEventListener('change', () => this._syncFromHelpers());
         this._transformControls.addEventListener('mouseDown', () => { this._gizmoDragging = true; });
         this._transformControls.addEventListener('mouseUp', () => {
@@ -857,13 +851,18 @@ export class CameraEditor {
         if (this.camera.fov) { this.camera.fov = 60; this.camera.updateProjectionMatrix(); }
         if (this.orbitControls) {
             this.orbitControls.target.set(0, 1, 0);
-            // Editor mode: free orbit + pan + zoom (unlock distances)
             this.orbitControls.enablePan = true;
             this.orbitControls.enableZoom = true;
             this.orbitControls.enableRotate = true;
             this.orbitControls.minDistance = 0;
             this.orbitControls.maxDistance = Infinity;
             this.orbitControls.enabled = true;
+            // Left-click reserved for gumball; orbit via middle/right
+            this.orbitControls.mouseButtons = {
+                LEFT: null,
+                MIDDLE: THREE.MOUSE.ROTATE,
+                RIGHT: THREE.MOUSE.PAN
+            };
             this.orbitControls.update();
         }
 
@@ -936,10 +935,15 @@ export class CameraEditor {
         if (this.camera.fov) { this.camera.fov = this._origFov; this.camera.updateProjectionMatrix(); }
         if (this.orbitControls) {
             this.orbitControls.target.copy(this._origCamTarget);
-            // Restore scene 4 locked-position orbit behavior
             this.orbitControls.enablePan = false;
             this.orbitControls.minDistance = 0.001;
             this.orbitControls.maxDistance = 0.02;
+            // Restore default mouse buttons (left=orbit)
+            this.orbitControls.mouseButtons = {
+                LEFT: THREE.MOUSE.ROTATE,
+                MIDDLE: THREE.MOUSE.DOLLY,
+                RIGHT: THREE.MOUSE.PAN
+            };
             this.orbitControls.update();
         }
 
