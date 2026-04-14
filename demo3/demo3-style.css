@@ -933,3 +933,77 @@ canvas.vea-hovering { cursor: pointer; }
     font-weight: 700;
     line-height: 1;
 }
+
+/* --- Placed items list (FURNITURE_VIEW) --- */
+.vea-furniture-placed-item {
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.vea-furniture-placed-item:hover {
+    background: rgba(201, 169, 110, 0.12);
+    border-color: rgba(201, 169, 110, 0.3);
+}
+
+/* --- Selection info panel (FURNITURE_EDIT right panel) --- */
+.vea-furniture-info {
+    padding: 4px 0;
+}
+.vea-furniture-info h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #fff;
+}
+.vea-furniture-info p {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin: 2px 0;
+}
+.vea-furniture-info button {
+    margin-top: 10px;
+    padding: 6px 14px;
+    background: rgba(220, 50, 50, 0.7);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.15s ease;
+}
+.vea-furniture-info button:hover {
+    background: rgba(220, 50, 50, 0.9);
+}
+
+/* --- Spawn loading overlay --- */
+.vea-furniture-loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    padding: 16px 28px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 13px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+.vea-furniture-loading::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: vea-furn-spin 0.6s linear infinite;
+}
+@keyframes vea-furn-spin {
+    to { transform: rotate(360deg); }
+}
