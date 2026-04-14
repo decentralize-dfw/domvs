@@ -728,6 +728,11 @@
                         _setHoveredDot(null);
                         for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
                     }
+                    // Dim hotspot sprites to 20% in editor, restore on exit
+                    for (const obj of hotspotMgr.objects) {
+                        if (obj.sprite?.material) obj.sprite.material.opacity = active ? 0.2 : 1.0;
+                        if (obj.label?.material) obj.label.material.opacity = active ? 0.2 : 1.0;
+                    }
                 };
 
                 hotspotMgr.onTeleport = (hsData) => {
