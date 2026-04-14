@@ -23,10 +23,12 @@ export class FurnitureEditor {
 
         this._items = [];
         this._selected = null;
+        this._prevScale = 1;  // tracks previous uniform scale for scale mode
         this._gizmoDragging = false;
         this._recentlyDragged = false;
         this._active = false;
         this._cacheLoaded = false;
+        this._cacheLoadPromise = null;  // resolves when loadFromCache finishes
         this._presets = [];
 
         // Undo/redo
@@ -43,6 +45,8 @@ export class FurnitureEditor {
     // ---- PUBLIC API ----
 
     async spawnItem(libraryItem, position) {
+        // Ensure cache load finished before mutating state (prevents race)
+        await this.ready();
         const pos = position || { x: 0, y: 0, z: 0 };
         const gltf = await new Promise((resolve, reject) => {
             _gltfLoader.load(libraryItem.url, resolve, undefined, reject);
@@ -68,6 +72,8 @@ export class FurnitureEditor {
     selectItem(placed) {
         if (!placed) { this.deselectItem(); return; }
         this._selected = placed;
+        // Reset uniform scale tracker to the newly selected item's current scale
+        this._prevScale = placed.threeObject.scale.x;
         this._transformControls.attach(placed.threeObject);
         this._transformControls.visible = true;
         this._transformControls.enabled = true;
@@ -152,21 +158,26 @@ export class FurnitureEditor {
         this._redoStack = []; // new action clears redo
     }
 
-    /** Snapshot: array of { id, url, name, pos, rot, scale } */
+    /** Snapshot: { items: [...], presets: [...] } */
     _takeSnapshot() {
-        return this._items.map(i => ({
-            id: i.id, url: i.url, name: i.name,
-            pos: { x: i.threeObject.position.x, y: i.threeObject.position.y, z: i.threeObject.position.z },
-            rot: { x: i.threeObject.rotation.x, y: i.threeObject.rotation.y, z: i.threeObject.rotation.z },
-            scale: { x: i.threeObject.scale.x, y: i.threeObject.scale.y, z: i.threeObject.scale.z }
-        }));
+        return {
+            items: this._items.map(i => ({
+                id: i.id, url: i.url, name: i.name,
+                pos: { x: i.threeObject.position.x, y: i.threeObject.position.y, z: i.threeObject.position.z },
+                rot: { x: i.threeObject.rotation.x, y: i.threeObject.rotation.y, z: i.threeObject.rotation.z },
+                scale: { x: i.threeObject.scale.x, y: i.threeObject.scale.y, z: i.threeObject.scale.z }
+            })),
+            presets: this._presets.map(p => ({
+                id: p.id, name: p.name, url: p.threeObject.userData._presetUrl
+            }))
+        };
     }
 
     /** Restore scene from a snapshot */
     async _restoreSnapshot(snapshot) {
         this._restoringSnapshot = true;
         this.deselectItem();
-        // Remove all current items from scene
+        // Remove all current items
         for (const item of this._items) {
             this.scene.remove(item.threeObject);
             item.threeObject.traverse(c => {
@@ -175,8 +186,19 @@ export class FurnitureEditor {
             });
         }
         this._items = [];
-        // Rebuild from snapshot
-        for (const entry of snapshot) {
+        // Remove all current presets
+        for (const p of this._presets) {
+            this.scene.remove(p.threeObject);
+            p.threeObject.traverse(c => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+            });
+        }
+        this._presets = [];
+        // Rebuild items from snapshot
+        const items = snapshot.items || [];
+        const presets = snapshot.presets || [];
+        for (const entry of items) {
             const gltf = await new Promise((resolve, reject) => {
                 _gltfLoader.load(entry.url, resolve, undefined, reject);
             });
@@ -191,7 +213,22 @@ export class FurnitureEditor {
             this.scene.add(root);
             this._items.push(this._makePlacedItem(entry.id, entry.url, entry.name, root));
         }
+        // Rebuild presets from snapshot
+        for (const entry of presets) {
+            const gltf = await new Promise((resolve, reject) => {
+                _gltfLoader.load(entry.url, resolve, undefined, reject);
+            });
+            const root = gltf.scene;
+            root.position.set(0, 0, 0);
+            root.userData._isPreset = true;
+            root.userData._presetId = entry.id;
+            root.userData._presetUrl = entry.url;
+            root.traverse(child => { child.userData._isFurniture = true; child.userData._isPreset = true; });
+            this.scene.add(root);
+            this._presets.push({ id: entry.id, name: entry.name, threeObject: root });
+        }
         this.saveToCache();
+        this._savePresetCache();
         this._restoringSnapshot = false;
         this._notifyChange();
     }
@@ -254,7 +291,9 @@ export class FurnitureEditor {
     // ---- PRESETS ----
 
     async loadPreset(preset) {
+        await this.ready();
         if (this.isPresetLoaded(preset.id)) return this._presets.find(p => p.id === preset.id);
+        this._pushUndo();
         const gltf = await new Promise((resolve, reject) => {
             _gltfLoader.load(preset.url, resolve, undefined, reject);
         });
@@ -278,6 +317,7 @@ export class FurnitureEditor {
     removePreset(presetId) {
         const idx = this._presets.findIndex(p => p.id === presetId);
         if (idx === -1) return;
+        this._pushUndo();
         const entry = this._presets[idx];
         this.scene.remove(entry.threeObject);
         entry.threeObject.traverse(c => {
@@ -292,10 +332,19 @@ export class FurnitureEditor {
     isPresetLoaded(presetId) { return this._presets.some(p => p.id === presetId); }
     get loadedPresets() { return this._presets; }
 
-    async loadFromCache() {
-        if (this._cacheLoaded) return;
-        this._cacheLoaded = true;
+    /** Wait until initial cache load has finished (no-op if already loaded) */
+    async ready() {
+        if (this._cacheLoadPromise) await this._cacheLoadPromise;
+    }
 
+    async loadFromCache() {
+        if (this._cacheLoadPromise) return this._cacheLoadPromise;
+        this._cacheLoadPromise = this._doLoadFromCache();
+        await this._cacheLoadPromise;
+        this._cacheLoaded = true;
+    }
+
+    async _doLoadFromCache() {
         // Load presets from cache
         try {
             const presetRaw = sessionStorage.getItem(this._presetCacheKey);
@@ -323,7 +372,7 @@ export class FurnitureEditor {
 
         // Load individual items from cache
         let raw;
-        try { raw = sessionStorage.getItem(this._cacheKey); } catch (_) { return; }
+        try { raw = sessionStorage.getItem(this._cacheKey); } catch (_) { this._notifyChange(); return; }
         if (!raw) { this._notifyChange(); return; }
         let data;
         try { data = JSON.parse(raw); } catch (_) { this._notifyChange(); return; }
@@ -420,17 +469,16 @@ export class FurnitureEditor {
             this._pushUndo(); // snapshot before move/rotate/scale
         });
 
-        // Uniform scale
-        let _prevScale = 1;
+        // Uniform scale — uses instance-level _prevScale (reset on selectItem)
         this._transformControls.addEventListener('objectChange', () => {
             if (this._transformControls.mode === 'scale' && this._selected) {
                 const s = this._selected.threeObject.scale;
-                const diffs = [Math.abs(s.x - _prevScale), Math.abs(s.y - _prevScale), Math.abs(s.z - _prevScale)];
+                const diffs = [Math.abs(s.x - this._prevScale), Math.abs(s.y - this._prevScale), Math.abs(s.z - this._prevScale)];
                 const maxDiffIdx = diffs.indexOf(Math.max(...diffs));
                 const newVal = [s.x, s.y, s.z][maxDiffIdx];
                 const clamped = Math.max(0.05, newVal);
                 s.set(clamped, clamped, clamped);
-                _prevScale = clamped;
+                this._prevScale = clamped;
             }
         });
 
