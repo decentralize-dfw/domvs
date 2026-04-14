@@ -91,6 +91,10 @@
            =============================================================== */
         const SCENE_INDEX = parseInt(new URLSearchParams(location.search).get('scene') ?? '0');
 
+        // Clear furniture cache on normal refresh (not hard refresh)
+        // Users expect a fresh start each page load
+        try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
+
         let scene, renderer, composer, camera, pmremGenerator;
         let config = null;
         let sceneCfg = null;
@@ -833,44 +837,74 @@
             function _updateSelectionInfo() {
                 if (activeMode !== 'toggle-3') return;
                 const sel = furnitureEditor?.selected;
-                const count = furnitureEditor?.itemCount || 0;
-                if (!sel) {
-                    let html = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p>';
-                    if (count > 0) html += `<button id="furnClearAllBtn" class="vea-furniture-clear-btn">Tümünü Temizle (${count})</button>`;
-                    html += '</div>';
-                    rightHtmlPanel.innerHTML = html;
-                    document.getElementById('furnClearAllBtn')?.addEventListener('click', () => {
-                        if (furnitureEditor) {
-                            while (furnitureEditor.placedItems.length > 0) {
-                                furnitureEditor.removeItem(furnitureEditor.placedItems[0]);
-                            }
-                            _updateSelectionInfo();
-                        }
-                    });
-                    return;
-                }
-                const p = sel.position;
+                const items = furnitureEditor?.placedItems || [];
                 const m = _activeGizmoMode;
+
                 let html = '<div class="vea-furniture-info">';
-                html += `<h3>${sel.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</h3>`;
-                html += `<p>X: ${p.x.toFixed(2)} &nbsp; Y: ${p.y.toFixed(2)} &nbsp; Z: ${p.z.toFixed(2)}</p>`;
-                html += '<div class="vea-furniture-mode-bar">';
-                html += `<button class="vea-furniture-mode-btn${m === 'translate' ? ' active' : ''}" data-mode="translate">Taşı</button>`;
-                html += `<button class="vea-furniture-mode-btn${m === 'rotate' ? ' active' : ''}" data-mode="rotate">Döndür</button>`;
-                html += `<button class="vea-furniture-mode-btn${m === 'scale' ? ' active' : ''}" data-mode="scale">Boyut</button>`;
-                html += '</div>';
-                html += `<button id="furnDeleteBtn" class="vea-furniture-delete-btn">Sil</button>`;
+
+                // Selected item section
+                if (sel) {
+                    const p = sel.position;
+                    html += `<h3>${sel.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</h3>`;
+                    html += `<p>X: ${p.x.toFixed(2)} &nbsp; Z: ${p.z.toFixed(2)}</p>`;
+                    html += '<div class="vea-furniture-mode-bar">';
+                    html += `<button class="vea-furniture-mode-btn${m === 'translate' ? ' active' : ''}" data-mode="translate">Taşı</button>`;
+                    html += `<button class="vea-furniture-mode-btn${m === 'rotate' ? ' active' : ''}" data-mode="rotate">Döndür</button>`;
+                    html += `<button class="vea-furniture-mode-btn${m === 'scale' ? ' active' : ''}" data-mode="scale">Boyut</button>`;
+                    html += '</div>';
+                    html += `<button id="furnDeleteBtn" class="vea-furniture-delete-btn">Sil</button>`;
+                    html += '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0">';
+                }
+
+                // Placed items list — always visible
+                html += `<h3 style="font-size:12px;margin:0 0 6px;">Yerleştirilen (${items.length})</h3>`;
+                if (items.length > 0) {
+                    for (let idx = 0; idx < items.length; idx++) {
+                        const it = items[idx];
+                        const ip = it.position;
+                        const ir = it.rotation;
+                        const is_ = it.scale;
+                        const isSel = sel && sel === it;
+                        html += `<div class="vea-furniture-placed-item${isSel ? ' active' : ''}" data-idx="${idx}">`;
+                        html += `<div style="font-size:11px;color:#fff;">${it.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
+                        html += `<div style="font-size:9px;color:rgba(255,255,255,0.4);">`;
+                        html += `P: ${ip.x.toFixed(1)}, ${ip.z.toFixed(1)}`;
+                        html += ` · R: ${(ir.y * 180 / Math.PI).toFixed(0)}°`;
+                        html += ` · S: ${is_.x.toFixed(2)}`;
+                        html += `</div></div>`;
+                    }
+                    html += `<button id="furnClearAllBtn" class="vea-furniture-clear-btn">Sahneyi Temizle</button>`;
+                } else {
+                    html += '<p style="font-size:11px;color:rgba(255,255,255,0.35);">Henüz mobilya yok</p>';
+                }
+
                 html += '</div>';
                 rightHtmlPanel.innerHTML = html;
-                rightHtmlPanel.querySelectorAll('.vea-furniture-mode-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        _activeGizmoMode = btn.dataset.mode;
-                        if (furnitureEditor) furnitureEditor.setMode(_activeGizmoMode);
-                        _updateSelectionInfo();
+
+                // Wire up events
+                if (sel) {
+                    rightHtmlPanel.querySelectorAll('.vea-furniture-mode-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            _activeGizmoMode = btn.dataset.mode;
+                            if (furnitureEditor) furnitureEditor.setMode(_activeGizmoMode);
+                            _updateSelectionInfo();
+                        });
+                    });
+                    document.getElementById('furnDeleteBtn')?.addEventListener('click', () => {
+                        if (furnitureEditor) { furnitureEditor.deleteSelected(); _updateSelectionInfo(); }
+                    });
+                }
+                // Placed item click → select
+                rightHtmlPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const idx = parseInt(el.dataset.idx);
+                        const item = furnitureEditor?.placedItems[idx];
+                        if (item) { furnitureEditor.selectItem(item); _updateSelectionInfo(); }
                     });
                 });
-                document.getElementById('furnDeleteBtn')?.addEventListener('click', () => {
-                    if (furnitureEditor) { furnitureEditor.deleteSelected(); _updateSelectionInfo(); }
+                // Clear all
+                document.getElementById('furnClearAllBtn')?.addEventListener('click', () => {
+                    if (furnitureEditor) { furnitureEditor.clearAll(); _updateSelectionInfo(); }
                 });
             }
 
@@ -1255,10 +1289,16 @@
             }
 
             const colliderMeshes = [];
-            loadAllModels(colliderMeshes).then(() => {
+            loadAllModels(colliderMeshes).then(async () => {
                 showStaticPanels();
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, null);
                 hotspotMgr.loadHotspots();
+
+                // Load furniture placed in the furniture editor scene
+                const _walkFurnEditor = new FurnitureEditor(scene, camera, renderer, null, SCENE_INDEX);
+                _walkFurnEditor.cacheKey = 'vea-furniture-interior';
+                await _walkFurnEditor.loadFromCache().catch(() => {});
+
                 fadeOutLoading();
                 setupMobileJoystick();
             }).catch(e => {

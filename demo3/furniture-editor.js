@@ -147,6 +147,22 @@ export class FurnitureEditor {
         try { sessionStorage.setItem(this._cacheKey, JSON.stringify(data)); } catch (_) {}
     }
 
+    /** Clear all placed items and wipe cache */
+    clearAll() {
+        while (this._items.length > 0) {
+            const item = this._items[0];
+            this.scene.remove(item.threeObject);
+            item.threeObject.traverse(c => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+            });
+            this._items.shift();
+        }
+        this.deselectItem();
+        try { sessionStorage.removeItem(this._cacheKey); } catch (_) {}
+        this._notifyChange();
+    }
+
     async loadFromCache() {
         if (this._cacheLoaded) return;
         this._cacheLoaded = true;
@@ -246,11 +262,18 @@ export class FurnitureEditor {
         });
 
         // Uniform scale: when in scale mode, enforce XYZ uniform
+        // Track previous scale to detect which axis changed
+        let _prevScale = 1;
         this._transformControls.addEventListener('objectChange', () => {
             if (this._transformControls.mode === 'scale' && this._selected) {
                 const s = this._selected.threeObject.scale;
-                const max = Math.max(s.x, s.y, s.z);
-                s.set(max, max, max);
+                // Find which axis changed most from previous uniform value
+                const diffs = [Math.abs(s.x - _prevScale), Math.abs(s.y - _prevScale), Math.abs(s.z - _prevScale)];
+                const maxDiffIdx = diffs.indexOf(Math.max(...diffs));
+                const newVal = [s.x, s.y, s.z][maxDiffIdx];
+                const clamped = Math.max(0.05, newVal); // minimum 5%
+                s.set(clamped, clamped, clamped);
+                _prevScale = clamped;
             }
         });
 
