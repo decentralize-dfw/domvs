@@ -961,6 +961,10 @@ canvas.vea-hovering { cursor: pointer; }
     background: rgba(201, 169, 110, 0.12);
     border-color: rgba(201, 169, 110, 0.3);
 }
+.vea-furniture-placed-item.active {
+    background: rgba(201, 169, 110, 0.18);
+    border-color: rgba(201, 169, 110, 0.5);
+}
 
 /* --- Selection info panel (FURNITURE_EDIT right panel) --- */
 .vea-furniture-info {
