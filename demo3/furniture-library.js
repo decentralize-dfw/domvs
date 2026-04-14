@@ -1,5 +1,4 @@
-// Auto-generated from interior-furniture-library.html
-// 178 items, 7 categories
+// Furniture library — 178 items across 7 categories + presets
 
 export const FURNITURE_LIBRARY = {
 "des_sculpture": [

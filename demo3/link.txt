@@ -1,6 +1,6 @@
 # VEA Demo 3 — central config reference
 # -----------------------------------------------------------------
-# xlsx-loader.js reads the first non-empty, non-comment line below
+# xlsx-loader-4.js reads the first non-empty, non-comment line below
 # and treats it as the URL to the config xlsx. Update the active
 # line to switch the whole system to a different source.
 #
@@ -16,5 +16,4 @@
 https://docs.google.com/spreadsheets/d/1ZgfGdKYuYvWQYtS0ZVOqDe0hJ-dOHo1CJb1X39bnC0o/export?format=xlsx
 
 # --- [hidden] Local mergvs.com xlsx ---
-# https://mergvs.com/demo3/demo3-input_3.xlsx
-# https://mergvs.com/demo3/demo3-input_2.xlsx
+# https://mergvs.com/demo3/demo3-input_4.xlsx
