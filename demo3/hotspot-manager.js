@@ -338,6 +338,15 @@ export class HotspotManager {
             if (this.orbitControls) this.orbitControls.enabled = !e.value;
         });
 
+        // Capture-phase: disable OrbitControls before its handler fires
+        // when a gumball handle is being grabbed
+        this.renderer.domElement.addEventListener('pointerdown', () => {
+            if (!this.editMode) return;
+            if (this.transformControls.axis) {
+                if (this.orbitControls) this.orbitControls.enabled = false;
+            }
+        }, { capture: true });
+
         this.transformControls.addEventListener('change', () => {
             this._refreshList();
         });
@@ -809,6 +818,17 @@ export class CameraEditor {
             this._gizmoDragging = e.value;
             if (this.orbitControls) this.orbitControls.enabled = !e.value;
         });
+
+        // CRITICAL: Capture-phase pointerdown — disable OrbitControls
+        // BEFORE its handler fires when a gumball handle is targeted.
+        // Without this, OrbitControls grabs the drag first and the
+        // gumball becomes impossible to use.
+        this.renderer.domElement.addEventListener('pointerdown', () => {
+            if (!this.active) return;
+            if (this._transformControls.axis) {
+                if (this.orbitControls) this.orbitControls.enabled = false;
+            }
+        }, { capture: true });
         this._transformControls.addEventListener('change', () => this._syncFromHelpers());
         this._transformControls.addEventListener('mouseDown', () => { this._gizmoDragging = true; });
         this._transformControls.addEventListener('mouseUp', () => {
