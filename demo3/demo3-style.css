@@ -904,12 +904,20 @@ canvas.vea-hovering { cursor: pointer; }
 .vea-furniture-thumb:active {
     cursor: grabbing;
 }
-.vea-furniture-thumb img {
+.vea-furniture-thumb-img {
+    position: relative;
     width: 100%;
-    aspect-ratio: 1;
-    object-fit: contain;
+    padding-bottom: 100%; /* force 1:1 square */
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+.vea-furniture-thumb-img img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     pointer-events: none;
 }
 .vea-furniture-thumb-label {
@@ -969,19 +977,56 @@ canvas.vea-hovering { cursor: pointer; }
     color: rgba(255, 255, 255, 0.5);
     margin: 2px 0;
 }
-.vea-furniture-info button {
-    margin-top: 10px;
+
+/* --- Transform mode buttons (Taşı / Döndür / Boyut) --- */
+.vea-furniture-mode-bar {
+    display: flex;
+    gap: 4px;
+    margin: 10px 0 6px;
+}
+.vea-furniture-mode-btn {
+    flex: 1;
+    padding: 5px 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.6);
+    border-radius: 5px;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.vea-furniture-mode-btn:hover {
+    background: rgba(201, 169, 110, 0.14);
+    color: var(--gold);
+    border-color: rgba(201, 169, 110, 0.4);
+}
+.vea-furniture-mode-btn.active {
+    background: rgba(201, 169, 110, 0.22);
+    color: var(--gold);
+    border-color: rgba(201, 169, 110, 0.65);
+}
+
+/* --- Delete button --- */
+.vea-furniture-delete-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
     padding: 6px 14px;
-    background: rgba(220, 50, 50, 0.7);
+    background: rgba(220, 50, 50, 0.6);
     color: #fff;
-    border: none;
+    border: 1px solid rgba(220, 50, 50, 0.4);
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
     transition: background 0.15s ease;
 }
-.vea-furniture-info button:hover {
-    background: rgba(220, 50, 50, 0.9);
+.vea-furniture-delete-btn:hover {
+    background: rgba(220, 50, 50, 0.85);
 }
 
 /* --- Spawn loading overlay --- */

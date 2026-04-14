@@ -55,6 +55,8 @@ export class FurnitureEditor {
         root.userData._furnitureId = libraryItem.id;
         root.userData._furnitureName = libraryItem.name;
         root.userData._furnitureUrl = libraryItem.url;
+        // Tag ALL descendants so clipping engine can skip them
+        root.traverse(child => { child.userData._isFurniture = true; });
         this.scene.add(root);
 
         const placed = {
@@ -180,6 +182,7 @@ export class FurnitureEditor {
             root.userData._furnitureId = entry.id;
             root.userData._furnitureName = entry.name;
             root.userData._furnitureUrl = entry.url;
+            root.traverse(child => { child.userData._isFurniture = true; });
             this.scene.add(root);
 
             const placed = {
