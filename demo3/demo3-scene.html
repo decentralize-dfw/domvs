@@ -706,6 +706,29 @@
                 });
             }
 
+            function _updateFurnitureBadge() {
+                const count = furnitureEditor ? furnitureEditor.itemCount : 0;
+                toggleButtons.forEach(btn => {
+                    // Find furniture toggle buttons by action
+                    const cfg = sceneCfg.buttons.find(b => b.id === btn.dataset.id);
+                    if (!cfg) return;
+                    const action = (cfg.action || '').trim();
+                    if (action === 'FURNITURE_EDIT' || action === 'FURNITURE_VIEW') {
+                        let badge = btn.querySelector('.vea-furniture-badge');
+                        if (count > 0) {
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'vea-furniture-badge';
+                                btn.appendChild(badge);
+                            }
+                            badge.textContent = count;
+                        } else if (badge) {
+                            badge.remove();
+                        }
+                    }
+                });
+            }
+
             function _updateSelectionInfo() {
                 if (activeMode !== 'toggle-3') return;
                 const sel = furnitureEditor?.selected;
@@ -982,9 +1005,13 @@
 
                 // Initialize FurnitureEditor
                 furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
+                furnitureEditor.onChange = () => {
+                    _updateFurnitureBadge();
+                    if (activeMode === 'toggle-3') _updateSelectionInfo();
+                    if (activeMode === 'toggle-3-view') _renderPlacedItemsList();
+                };
                 furniturePanel = new FurniturePanel(leftHtmlPanel, (item) => {
                     if (!furnitureEditor) return;
-                    // Spawn at scene center on ground plane
                     const target = orbitControls.target;
                     furnitureEditor.spawnItem(item, { x: target.x, y: 0, z: target.z }).then(() => {
                         _updateSelectionInfo();

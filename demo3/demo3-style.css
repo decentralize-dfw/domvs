@@ -916,3 +916,20 @@ canvas.vea-hovering { cursor: pointer; }
     white-space: nowrap;
     max-width: 100%;
 }
+
+/* --- Furniture badge on toggle buttons --- */
+.vea-furniture-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin-left: 5px;
+    border-radius: 8px;
+    background: var(--gold);
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}

@@ -33,6 +33,10 @@ export class FurnitureEditor {
         this._selected = null;  // currently selected placed item
         this._gizmoDragging = false;
         this._active = false;
+        this._cacheLoaded = false;
+
+        /** External callback: called after spawn/delete/move completes. */
+        this.onChange = null;
 
         this._setupTransformControls();
     }
@@ -66,6 +70,7 @@ export class FurnitureEditor {
         this._items.push(placed);
         this.selectItem(placed);
         this.saveToCache();
+        this._notifyChange();
         return placed;
     }
 
@@ -98,6 +103,7 @@ export class FurnitureEditor {
         this._items = this._items.filter(i => i !== this._selected);
         this._selected = null;
         this.saveToCache();
+        this._notifyChange();
     }
 
     /** All placed items. */
@@ -154,6 +160,8 @@ export class FurnitureEditor {
     }
 
     async loadFromCache() {
+        if (this._cacheLoaded) return;
+        this._cacheLoaded = true;
         let raw;
         try { raw = sessionStorage.getItem(this._cacheKey); } catch (_) { return; }
         if (!raw) return;
@@ -187,6 +195,7 @@ export class FurnitureEditor {
         });
 
         await Promise.all(promises);
+        this._notifyChange();
     }
 
     /** Find a placed item by its threeObject (for raycasting). */
@@ -226,6 +235,24 @@ export class FurnitureEditor {
         this._selected = null;
     }
 
+    /** Remove a specific placed item (by reference). */
+    removeItem(placed) {
+        if (!placed) return;
+        if (this._selected === placed) this.deselectItem();
+        this.scene.remove(placed.threeObject);
+        placed.threeObject.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { const mats = Array.isArray(c.material) ? c.material : [c.material]; mats.forEach(m => m.dispose()); } });
+        this._items = this._items.filter(i => i !== placed);
+        this.saveToCache();
+        this._notifyChange();
+    }
+
+    /** Get placed item count. */
+    get itemCount() { return this._items.length; }
+
+    _notifyChange() {
+        if (this.onChange) this.onChange();
+    }
+
     // ---- INTERNAL ----
 
     _setupTransformControls() {
@@ -247,6 +274,7 @@ export class FurnitureEditor {
             setTimeout(() => {
                 this._gizmoDragging = false;
                 this.saveToCache();
+                this._notifyChange();
             }, 50);
         });
 
