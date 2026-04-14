@@ -1,5 +1,5 @@
 // furniture-editor.js — Furniture Editor Core
-// Spawn GLB items, gumball edit, sessionStorage cache
+// Spawn GLB items, gumball edit, sessionStorage cache, undo/redo
 
 import * as THREE from 'three';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
@@ -24,10 +24,16 @@ export class FurnitureEditor {
         this._items = [];
         this._selected = null;
         this._gizmoDragging = false;
-        this._recentlyDragged = false; // prevents click-deselect after drag
+        this._recentlyDragged = false;
         this._active = false;
         this._cacheLoaded = false;
-        this._presets = [];     // [{ id, threeObject }] — locked, no gumball
+        this._presets = [];
+
+        // Undo/redo
+        this._undoStack = [];  // past snapshots
+        this._redoStack = [];  // future snapshots
+        this._maxHistory = 50;
+        this._restoringSnapshot = false; // guard against recursive pushes
 
         this.onChange = null;
 
@@ -53,6 +59,7 @@ export class FurnitureEditor {
         const placed = this._makePlacedItem(libraryItem.id, libraryItem.url, libraryItem.name, root);
         this._items.push(placed);
         this.selectItem(placed);
+        this._pushUndo();
         this.saveToCache();
         this._notifyChange();
         return placed;
@@ -75,6 +82,7 @@ export class FurnitureEditor {
 
     deleteSelected() {
         if (!this._selected) return;
+        this._pushUndo();
         const obj = this._selected.threeObject;
         this._transformControls.detach();
         this._transformControls.visible = false;
@@ -92,6 +100,7 @@ export class FurnitureEditor {
 
     removeItem(placed) {
         if (!placed) return;
+        this._pushUndo();
         if (this._selected === placed) this.deselectItem();
         this.scene.remove(placed.threeObject);
         placed.threeObject.traverse(c => {
@@ -113,7 +122,6 @@ export class FurnitureEditor {
         this._transformControls.setMode(mode);
     }
 
-    /** Activate editor — orbit stays enabled, only disabled during gumball drag */
     activate() {
         this._active = true;
         this._transformControls.camera = this.camera;
@@ -134,6 +142,77 @@ export class FurnitureEditor {
 
     get active() { return this._active; }
 
+    // ---- UNDO / REDO ----
+
+    /** Take a snapshot of current state and push to undo stack */
+    _pushUndo() {
+        if (this._restoringSnapshot) return;
+        this._undoStack.push(this._takeSnapshot());
+        if (this._undoStack.length > this._maxHistory) this._undoStack.shift();
+        this._redoStack = []; // new action clears redo
+    }
+
+    /** Snapshot: array of { id, url, name, pos, rot, scale } */
+    _takeSnapshot() {
+        return this._items.map(i => ({
+            id: i.id, url: i.url, name: i.name,
+            pos: { x: i.threeObject.position.x, y: i.threeObject.position.y, z: i.threeObject.position.z },
+            rot: { x: i.threeObject.rotation.x, y: i.threeObject.rotation.y, z: i.threeObject.rotation.z },
+            scale: { x: i.threeObject.scale.x, y: i.threeObject.scale.y, z: i.threeObject.scale.z }
+        }));
+    }
+
+    /** Restore scene from a snapshot */
+    async _restoreSnapshot(snapshot) {
+        this._restoringSnapshot = true;
+        this.deselectItem();
+        // Remove all current items from scene
+        for (const item of this._items) {
+            this.scene.remove(item.threeObject);
+            item.threeObject.traverse(c => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+            });
+        }
+        this._items = [];
+        // Rebuild from snapshot
+        for (const entry of snapshot) {
+            const gltf = await new Promise((resolve, reject) => {
+                _gltfLoader.load(entry.url, resolve, undefined, reject);
+            });
+            const root = gltf.scene;
+            root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
+            root.rotation.set(entry.rot.x, entry.rot.y, entry.rot.z);
+            root.scale.set(entry.scale.x, entry.scale.y, entry.scale.z);
+            root.userData._furnitureId = entry.id;
+            root.userData._furnitureName = entry.name;
+            root.userData._furnitureUrl = entry.url;
+            root.traverse(child => { child.userData._isFurniture = true; });
+            this.scene.add(root);
+            this._items.push(this._makePlacedItem(entry.id, entry.url, entry.name, root));
+        }
+        this.saveToCache();
+        this._restoringSnapshot = false;
+        this._notifyChange();
+    }
+
+    async undo() {
+        if (this._undoStack.length === 0) return;
+        this._redoStack.push(this._takeSnapshot());
+        const snapshot = this._undoStack.pop();
+        await this._restoreSnapshot(snapshot);
+    }
+
+    async redo() {
+        if (this._redoStack.length === 0) return;
+        this._undoStack.push(this._takeSnapshot());
+        const snapshot = this._redoStack.pop();
+        await this._restoreSnapshot(snapshot);
+    }
+
+    get canUndo() { return this._undoStack.length > 0; }
+    get canRedo() { return this._redoStack.length > 0; }
+
     // ---- SESSION CACHE ----
 
     /** Cache key — shared across all scenes using same interior model */
@@ -148,8 +227,8 @@ export class FurnitureEditor {
         try { sessionStorage.setItem(this._cacheKey, JSON.stringify(data)); } catch (_) {}
     }
 
-    /** Clear all placed items and wipe cache */
     clearAll() {
+        this._pushUndo();
         while (this._items.length > 0) {
             const item = this._items[0];
             this.scene.remove(item.threeObject);
@@ -164,11 +243,9 @@ export class FurnitureEditor {
         this._notifyChange();
     }
 
-    // ---- PRESETS (locked GLBs, no gumball, add/remove only) ----
+    // ---- PRESETS ----
 
-    /** Load a preset GLB into the scene. Returns the preset entry. */
     async loadPreset(preset) {
-        // Remove existing preset with same id first
         this.removePreset(preset.id);
         const gltf = await new Promise((resolve, reject) => {
             _gltfLoader.load(preset.url, resolve, undefined, reject);
@@ -188,7 +265,6 @@ export class FurnitureEditor {
         return entry;
     }
 
-    /** Remove a preset by id */
     removePreset(presetId) {
         const idx = this._presets.findIndex(p => p.id === presetId);
         if (idx === -1) return;
@@ -202,12 +278,7 @@ export class FurnitureEditor {
         this._notifyChange();
     }
 
-    /** Check if a preset is currently loaded */
-    isPresetLoaded(presetId) {
-        return this._presets.some(p => p.id === presetId);
-    }
-
-    /** Get all loaded presets */
+    isPresetLoaded(presetId) { return this._presets.some(p => p.id === presetId); }
     get loadedPresets() { return this._presets; }
 
     async loadFromCache() {
@@ -254,7 +325,6 @@ export class FurnitureEditor {
         }
     }
 
-    /** Ensure gumball is never clipped — call after clipping materials are set */
     exemptGumballFromClipping() {
         this._transformControls.traverse(c => {
             if (c.material) {
@@ -299,34 +369,33 @@ export class FurnitureEditor {
 
         this._transformControls.addEventListener('dragging-changed', (e) => {
             this._gizmoDragging = e.value;
-            // Disable orbit ONLY while dragging gumball, re-enable on release
             if (this.orbitControls) this.orbitControls.enabled = !e.value;
             if (!e.value) {
-                // Mark recently dragged so click handler doesn't deselect
                 this._recentlyDragged = true;
                 setTimeout(() => { this._recentlyDragged = false; }, 150);
             }
         });
 
-        // Uniform scale: when in scale mode, enforce XYZ uniform
-        // Track previous scale to detect which axis changed
+        // Save undo snapshot when gumball drag STARTS
+        this._transformControls.addEventListener('mouseDown', () => {
+            this._gizmoDragging = true;
+            this._pushUndo(); // snapshot before move/rotate/scale
+        });
+
+        // Uniform scale
         let _prevScale = 1;
         this._transformControls.addEventListener('objectChange', () => {
             if (this._transformControls.mode === 'scale' && this._selected) {
                 const s = this._selected.threeObject.scale;
-                // Find which axis changed most from previous uniform value
                 const diffs = [Math.abs(s.x - _prevScale), Math.abs(s.y - _prevScale), Math.abs(s.z - _prevScale)];
                 const maxDiffIdx = diffs.indexOf(Math.max(...diffs));
                 const newVal = [s.x, s.y, s.z][maxDiffIdx];
-                const clamped = Math.max(0.05, newVal); // minimum 5%
+                const clamped = Math.max(0.05, newVal);
                 s.set(clamped, clamped, clamped);
                 _prevScale = clamped;
             }
         });
 
-        this._transformControls.addEventListener('mouseDown', () => {
-            this._gizmoDragging = true;
-        });
         this._transformControls.addEventListener('mouseUp', () => {
             setTimeout(() => {
                 this._gizmoDragging = false;

@@ -1142,6 +1142,18 @@
             // ---- Furniture keyboard shortcuts ----
             window.addEventListener('keydown', (e) => {
                 if (activeMode !== 'toggle-3' || !furnitureEditor || !furnitureEditor.active) return;
+                // Undo: Ctrl+Z
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                    e.preventDefault();
+                    furnitureEditor.undo().then(() => _updateSelectionInfo());
+                    return;
+                }
+                // Redo: Ctrl+Y or Ctrl+Shift+Z
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey) || (e.key === 'Z'))) {
+                    e.preventDefault();
+                    furnitureEditor.redo().then(() => _updateSelectionInfo());
+                    return;
+                }
                 if (e.key === 'r' || e.key === 'R') { _activeGizmoMode = 'rotate'; furnitureEditor.setMode('rotate'); _updateSelectionInfo(); }
                 if (e.key === 't' || e.key === 'T') { _activeGizmoMode = 'translate'; furnitureEditor.setMode('translate'); _updateSelectionInfo(); }
                 if (e.key === 's' || e.key === 'S') { _activeGizmoMode = 'scale'; furnitureEditor.setMode('scale'); _updateSelectionInfo(); }
