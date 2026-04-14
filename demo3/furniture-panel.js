@@ -124,14 +124,16 @@ export class FurniturePanel {
         card.className = 'vea-furniture-thumb';
         card.draggable = true;
 
-        // Thumbnail image (lazy-load)
+        // Thumbnail image wrapper (forced square)
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'vea-furniture-thumb-img';
         const img = document.createElement('img');
         img.dataset.src = item.thumbnailUrl;
         img.alt = item.name;
         img.loading = 'lazy';
-        // Placeholder: transparent 1x1
         img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        card.appendChild(img);
+        imgWrap.appendChild(img);
+        card.appendChild(imgWrap);
 
         // Label
         const label = document.createElement('span');

@@ -509,10 +509,7 @@
                 sceneBBox = new THREE.Box3();
                 scene.traverse(c => {
                     if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
-                    // Skip furniture items — they shouldn't affect clip plane
-                    if (c.userData._furnitureId) return;
-                    let p = c.parent;
-                    while (p) { if (p.userData?._furnitureId) return; p = p.parent; }
+                    if (c.userData._isFurniture || c.userData._isDragGhost) return;
                     if (!c.geometry) return;
                     if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
                     if (!c.geometry.boundingBox) return;
@@ -565,10 +562,7 @@
                 clippedMeshes = [];
                 scene.traverse(c => {
                     if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
-                    // Skip furniture items and their children
-                    if (c.userData._furnitureId) return;
-                    let p = c.parent;
-                    while (p) { if (p.userData?._furnitureId) return; p = p.parent; }
+                    if (c.userData._isFurniture || c.userData._isDragGhost) return;
                     const orig = c.material;
                     const clone = orig.clone();
                     clone.clippingPlanes = [clippingPlane];
@@ -744,6 +738,8 @@
                 });
             }
 
+            let _activeGizmoMode = 'translate';
+
             function _updateSelectionInfo() {
                 if (activeMode !== 'toggle-3') return;
                 const sel = furnitureEditor?.selected;
@@ -752,13 +748,25 @@
                     return;
                 }
                 const p = sel.position;
+                const m = _activeGizmoMode;
                 let html = '<div class="vea-furniture-info">';
                 html += `<h3>${sel.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</h3>`;
                 html += `<p>X: ${p.x.toFixed(2)} &nbsp; Y: ${p.y.toFixed(2)} &nbsp; Z: ${p.z.toFixed(2)}</p>`;
-                html += `<button id="furnDeleteBtn">Sil</button>`;
-                html += `<p style="margin-top:10px;font-size:10px;color:rgba(255,255,255,0.35);">R: Döndür &nbsp; T: Taşı &nbsp; Del: Sil</p>`;
+                html += '<div class="vea-furniture-mode-bar">';
+                html += `<button class="vea-furniture-mode-btn${m === 'translate' ? ' active' : ''}" data-mode="translate">Taşı</button>`;
+                html += `<button class="vea-furniture-mode-btn${m === 'rotate' ? ' active' : ''}" data-mode="rotate">Döndür</button>`;
+                html += `<button class="vea-furniture-mode-btn${m === 'scale' ? ' active' : ''}" data-mode="scale">Boyut</button>`;
+                html += '</div>';
+                html += `<button id="furnDeleteBtn" class="vea-furniture-delete-btn">Sil</button>`;
                 html += '</div>';
                 rightHtmlPanel.innerHTML = html;
+                rightHtmlPanel.querySelectorAll('.vea-furniture-mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        _activeGizmoMode = btn.dataset.mode;
+                        if (furnitureEditor) furnitureEditor.setMode(_activeGizmoMode);
+                        _updateSelectionInfo();
+                    });
+                });
                 document.getElementById('furnDeleteBtn')?.addEventListener('click', () => {
                     if (furnitureEditor) { furnitureEditor.deleteSelected(); _updateSelectionInfo(); }
                 });
@@ -976,8 +984,9 @@
             // ---- Furniture keyboard shortcuts ----
             window.addEventListener('keydown', (e) => {
                 if (activeMode !== 'toggle-3' || !furnitureEditor || !furnitureEditor.active) return;
-                if (e.key === 'r' || e.key === 'R') { furnitureEditor.setMode('rotate'); }
-                if (e.key === 't' || e.key === 'T') { furnitureEditor.setMode('translate'); }
+                if (e.key === 'r' || e.key === 'R') { _activeGizmoMode = 'rotate'; furnitureEditor.setMode('rotate'); _updateSelectionInfo(); }
+                if (e.key === 't' || e.key === 'T') { _activeGizmoMode = 'translate'; furnitureEditor.setMode('translate'); _updateSelectionInfo(); }
+                if (e.key === 's' || e.key === 'S') { _activeGizmoMode = 'scale'; furnitureEditor.setMode('scale'); _updateSelectionInfo(); }
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     furnitureEditor.deleteSelected();
                     _updateSelectionInfo();
