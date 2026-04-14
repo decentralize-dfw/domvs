@@ -905,16 +905,16 @@ canvas.vea-hovering { cursor: pointer; }
     cursor: grabbing;
 }
 .vea-furniture-thumb-img {
-    position: relative;
     width: 100%;
-    padding-bottom: 100%; /* force 1:1 square */
+    aspect-ratio: 1 / 1;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.03);
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .vea-furniture-thumb-img img {
-    position: absolute;
-    top: 0; left: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -1085,6 +1085,27 @@ canvas.vea-hovering { cursor: pointer; }
     font-weight: 700;
     min-width: 32px;
     text-align: right;
+}
+
+/* --- Furniture info popup (room camera mode) --- */
+.vea-furniture-popup {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(201, 169, 110, 0.4);
+    font-size: 13px;
+    z-index: 30;
+    pointer-events: auto;
+    cursor: pointer;
+    transform: translateX(-50%);
+    animation: vea-popup-in 0.2s ease;
+}
+@keyframes vea-popup-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 /* --- Spawn loading overlay --- */
