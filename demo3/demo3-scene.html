@@ -91,9 +91,17 @@
            =============================================================== */
         const SCENE_INDEX = parseInt(new URLSearchParams(location.search).get('scene') ?? '0');
 
-        // Clear furniture cache on normal refresh (not hard refresh)
-        // Users expect a fresh start each page load
-        try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
+        // Furniture cache lifecycle:
+        // - Survives scene-to-scene navigation (same tab, ?scene=N changes)
+        // - Cleared when tab is closed (sessionStorage behavior)
+        // - Cleared on full page refresh (F5 / Ctrl+R)
+        // Detection: performance.navigation.type === 1 means reload
+        const _isReload = performance.navigation
+            ? performance.navigation.type === 1
+            : (performance.getEntriesByType('navigation')[0]?.type === 'reload');
+        if (_isReload) {
+            try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
+        }
 
         let scene, renderer, composer, camera, pmremGenerator;
         let config = null;
