@@ -380,9 +380,17 @@ export class FurnitureEditor {
     }
 
     dispose() {
+        // Remove TransformControls event listeners
+        if (this._tcHandlers) {
+            for (const [evt, fn] of Object.entries(this._tcHandlers)) {
+                this._transformControls.removeEventListener(evt, fn);
+            }
+            this._tcHandlers = null;
+        }
         this._transformControls.detach();
         this._transformControls.dispose();
         this.scene.remove(this._transformControls);
+
         for (const item of this._items) {
             this.scene.remove(item.threeObject);
             disposeObject(item.threeObject);
@@ -394,6 +402,8 @@ export class FurnitureEditor {
         this._items = [];
         this._presets = [];
         this._selected = null;
+        this._undoStack = [];
+        this._redoStack = [];
     }
 
     // ---- INTERNAL ----
@@ -456,41 +466,42 @@ export class FurnitureEditor {
         this._transformControls.setMode('translate');
         this._transformControls.size = C.gumballSize;
 
-        this._transformControls.addEventListener('dragging-changed', (e) => {
-            this._gizmoDragging = e.value;
-            if (this.orbitControls) this.orbitControls.enabled = !e.value;
-            if (!e.value) {
-                this._recentlyDragged = true;
-                setTimeout(() => { this._recentlyDragged = false; }, C.recentlyDraggedMs);
+        // Store bound handlers so dispose() can remove them cleanly
+        this._tcHandlers = {
+            'dragging-changed': (e) => {
+                this._gizmoDragging = e.value;
+                if (this.orbitControls) this.orbitControls.enabled = !e.value;
+                if (!e.value) {
+                    this._recentlyDragged = true;
+                    setTimeout(() => { this._recentlyDragged = false; }, C.recentlyDraggedMs);
+                }
+            },
+            'mouseDown': () => {
+                this._gizmoDragging = true;
+                this._pushUndo();
+            },
+            'objectChange': () => {
+                if (this._transformControls.mode === 'scale' && this._selected) {
+                    const s = this._selected.threeObject.scale;
+                    const diffs = [Math.abs(s.x - this._prevScale), Math.abs(s.y - this._prevScale), Math.abs(s.z - this._prevScale)];
+                    const maxDiffIdx = diffs.indexOf(Math.max(...diffs));
+                    const newVal = [s.x, s.y, s.z][maxDiffIdx];
+                    const clamped = Math.max(C.scaleMin, newVal);
+                    s.set(clamped, clamped, clamped);
+                    this._prevScale = clamped;
+                }
+            },
+            'mouseUp': () => {
+                setTimeout(() => {
+                    this._gizmoDragging = false;
+                    this.saveToCache();
+                    this._notifyChange();
+                }, C.saveToCacheDebounceMs);
             }
-        });
-
-        // Save undo snapshot when gumball drag STARTS
-        this._transformControls.addEventListener('mouseDown', () => {
-            this._gizmoDragging = true;
-            this._pushUndo();
-        });
-
-        // Uniform scale — uses instance-level _prevScale (reset on selectItem)
-        this._transformControls.addEventListener('objectChange', () => {
-            if (this._transformControls.mode === 'scale' && this._selected) {
-                const s = this._selected.threeObject.scale;
-                const diffs = [Math.abs(s.x - this._prevScale), Math.abs(s.y - this._prevScale), Math.abs(s.z - this._prevScale)];
-                const maxDiffIdx = diffs.indexOf(Math.max(...diffs));
-                const newVal = [s.x, s.y, s.z][maxDiffIdx];
-                const clamped = Math.max(C.scaleMin, newVal);
-                s.set(clamped, clamped, clamped);
-                this._prevScale = clamped;
-            }
-        });
-
-        this._transformControls.addEventListener('mouseUp', () => {
-            setTimeout(() => {
-                this._gizmoDragging = false;
-                this.saveToCache();
-                this._notifyChange();
-            }, C.saveToCacheDebounceMs);
-        });
+        };
+        for (const [evt, fn] of Object.entries(this._tcHandlers)) {
+            this._transformControls.addEventListener(evt, fn);
+        }
 
         this.scene.add(this._transformControls);
     }

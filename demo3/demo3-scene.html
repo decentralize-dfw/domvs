@@ -760,6 +760,12 @@
                 });
                 furnIntegration.init();
 
+                // Clean up resources on page unload (event listeners, GL objects, observers)
+                window.addEventListener('beforeunload', () => {
+                    try { furnIntegration?.dispose(); } catch (_) {}
+                    try { clipMgr?.dispose(); } catch (_) {}
+                });
+
                 // Auto-start first button's mode
                 if (sceneCfg.buttons.length > 0) {
                     const firstAction = (sceneCfg.buttons[0].action || '').trim();

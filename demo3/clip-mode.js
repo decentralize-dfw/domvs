@@ -196,16 +196,16 @@ export class ClipModeManager {
     showSlider() {
         if (this._sliderEl) { this._sliderEl.style.display = 'flex'; return; }
         this._sliderEl = document.createElement('div');
-        this._sliderEl.className = 'vea-clip-slider-wrap';
+        this._sliderEl.className = 'vea-furniture-clip-slider-wrap';
         const pct = Math.round(this._clipPercent * 100);
         this._sliderEl.innerHTML = `
-            <label class="vea-clip-slider-label">Dikey Kesit Yüksekliği</label>
-            <input type="range" class="vea-clip-slider" min="${C.clipPercentMin}" max="${C.clipPercentMax}" value="${pct}" step="1">
-            <span class="vea-clip-slider-value">${pct}%</span>
+            <label class="vea-furniture-clip-slider-label">Dikey Kesit Yüksekliği</label>
+            <input type="range" class="vea-furniture-clip-slider" min="${C.clipPercentMin}" max="${C.clipPercentMax}" value="${pct}" step="1">
+            <span class="vea-furniture-clip-slider-value">${pct}%</span>
         `;
         document.body.appendChild(this._sliderEl);
-        const slider = this._sliderEl.querySelector('.vea-clip-slider');
-        const valLabel = this._sliderEl.querySelector('.vea-clip-slider-value');
+        const slider = this._sliderEl.querySelector('.vea-furniture-clip-slider');
+        const valLabel = this._sliderEl.querySelector('.vea-furniture-clip-slider-value');
         slider.addEventListener('input', () => {
             this._clipPercent = parseInt(slider.value) / 100;
             valLabel.textContent = slider.value + '%';
@@ -220,8 +220,8 @@ export class ClipModeManager {
     _updateSliderLabel() {
         if (!this._sliderEl) return;
         const pct = Math.round(this._clipPercent * 100);
-        const slider = this._sliderEl.querySelector('.vea-clip-slider');
-        const valLabel = this._sliderEl.querySelector('.vea-clip-slider-value');
+        const slider = this._sliderEl.querySelector('.vea-furniture-clip-slider');
+        const valLabel = this._sliderEl.querySelector('.vea-furniture-clip-slider-value');
         if (slider) slider.value = pct;
         if (valLabel) valLabel.textContent = pct + '%';
     }

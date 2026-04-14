@@ -75,6 +75,9 @@ export class FurniturePanel {
     show() {
         this.container.style.display = 'block';
         this.container.classList.add('vea-furniture-wide');
+        // Grid may have started at 0x0 while panel was hidden — force manual square pass
+        // (ResizeObserver doesn't fire retroactively for display:none → block)
+        requestAnimationFrame(() => this._enforceSquare());
     }
 
     hide() {
@@ -110,16 +113,16 @@ export class FurniturePanel {
         for (const preset of presets) {
             const isLoaded = this._editor?.isPresetLoaded(preset.id);
             const card = document.createElement('div');
-            card.className = 'vea-preset-card' + (isLoaded ? ' loaded' : '');
+            card.className = 'vea-furniture-preset-card' + (isLoaded ? ' loaded' : '');
 
             card.innerHTML = `
-                <div class="vea-preset-name">${preset.name}</div>
-                <div class="vea-preset-tags">${preset.tags.map(t => `<span class="vea-preset-tag">${t}</span>`).join('')}</div>
-                <div class="vea-preset-desc">${preset.description || ''}</div>
-                <button class="vea-preset-btn ${isLoaded ? 'remove' : 'add'}">${isLoaded ? 'Kaldır' : 'Yükle'}</button>
+                <div class="vea-furniture-preset-name">${preset.name}</div>
+                <div class="vea-furniture-preset-tags">${preset.tags.map(t => `<span class="vea-furniture-preset-tag">${t}</span>`).join('')}</div>
+                <div class="vea-furniture-preset-desc">${preset.description || ''}</div>
+                <button class="vea-furniture-preset-btn ${isLoaded ? 'remove' : 'add'}">${isLoaded ? 'Kaldır' : 'Yükle'}</button>
             `;
 
-            card.querySelector('.vea-preset-btn').addEventListener('click', () => {
+            card.querySelector('.vea-furniture-preset-btn').addEventListener('click', () => {
                 this.onPresetToggle(preset, !isLoaded);
             });
 

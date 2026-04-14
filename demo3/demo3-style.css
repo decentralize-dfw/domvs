@@ -871,7 +871,7 @@ canvas.vea-hovering { cursor: pointer; }
 }
 
 /* --- Preset cards --- */
-.vea-preset-card {
+.vea-furniture-preset-card {
     padding: 10px;
     margin-bottom: 6px;
     border-radius: 8px;
@@ -879,23 +879,23 @@ canvas.vea-hovering { cursor: pointer; }
     background: rgba(255, 255, 255, 0.03);
     transition: border-color 0.15s ease;
 }
-.vea-preset-card.loaded {
+.vea-furniture-preset-card.loaded {
     border-color: rgba(201, 169, 110, 0.4);
     background: rgba(201, 169, 110, 0.06);
 }
-.vea-preset-name {
+.vea-furniture-preset-name {
     font-size: 13px;
     font-weight: 600;
     color: #fff;
     margin-bottom: 4px;
 }
-.vea-preset-tags {
+.vea-furniture-preset-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 3px;
     margin-bottom: 4px;
 }
-.vea-preset-tag {
+.vea-furniture-preset-tag {
     font-size: 8px;
     padding: 1px 5px;
     border-radius: 3px;
@@ -903,13 +903,13 @@ canvas.vea-hovering { cursor: pointer; }
     color: rgba(255, 255, 255, 0.5);
     text-transform: lowercase;
 }
-.vea-preset-desc {
+.vea-furniture-preset-desc {
     font-size: 10px;
     color: rgba(255, 255, 255, 0.4);
     margin-bottom: 6px;
     line-height: 1.3;
 }
-.vea-preset-btn {
+.vea-furniture-preset-btn {
     width: 100%;
     padding: 5px 10px;
     border: 1px solid rgba(201, 169, 110, 0.3);
@@ -919,19 +919,19 @@ canvas.vea-hovering { cursor: pointer; }
     cursor: pointer;
     transition: all 0.15s ease;
 }
-.vea-preset-btn.add {
+.vea-furniture-preset-btn.add {
     background: rgba(201, 169, 110, 0.15);
     color: var(--gold);
 }
-.vea-preset-btn.add:hover {
+.vea-furniture-preset-btn.add:hover {
     background: rgba(201, 169, 110, 0.3);
 }
-.vea-preset-btn.remove {
+.vea-furniture-preset-btn.remove {
     background: rgba(220, 50, 50, 0.4);
     color: #fff;
     border-color: rgba(220, 50, 50, 0.3);
 }
-.vea-preset-btn.remove:hover {
+.vea-furniture-preset-btn.remove:hover {
     background: rgba(220, 50, 50, 0.6);
 }
 
@@ -1167,7 +1167,7 @@ canvas.vea-hovering { cursor: pointer; }
 }
 
 /* --- Clip height slider --- */
-.vea-clip-slider-wrap {
+.vea-furniture-clip-slider-wrap {
     position: fixed;
     bottom: 130px;
     left: 50%;
@@ -1183,13 +1183,13 @@ canvas.vea-hovering { cursor: pointer; }
     z-index: 20;
     user-select: none;
 }
-.vea-clip-slider-label {
+.vea-furniture-clip-slider-label {
     color: rgba(255, 255, 255, 0.6);
     font-size: 11px;
     font-family: 'Raleway', Helvetica, Arial, sans-serif;
     white-space: nowrap;
 }
-.vea-clip-slider {
+.vea-furniture-clip-slider {
     width: 160px;
     height: 4px;
     -webkit-appearance: none;
@@ -1199,7 +1199,7 @@ canvas.vea-hovering { cursor: pointer; }
     outline: none;
     cursor: pointer;
 }
-.vea-clip-slider::-webkit-slider-thumb {
+.vea-furniture-clip-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 14px;
     height: 14px;
@@ -1208,7 +1208,7 @@ canvas.vea-hovering { cursor: pointer; }
     border: 2px solid rgba(0, 0, 0, 0.5);
     cursor: grab;
 }
-.vea-clip-slider::-moz-range-thumb {
+.vea-furniture-clip-slider::-moz-range-thumb {
     width: 14px;
     height: 14px;
     border-radius: 50%;
@@ -1216,7 +1216,7 @@ canvas.vea-hovering { cursor: pointer; }
     border: 2px solid rgba(0, 0, 0, 0.5);
     cursor: grab;
 }
-.vea-clip-slider-value {
+.vea-furniture-clip-slider-value {
     color: var(--gold);
     font-size: 12px;
     font-weight: 700;
