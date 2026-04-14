@@ -260,7 +260,7 @@ export class FurnitureEditor {
         this._transformControls.visible = false;
         this._transformControls.enabled = false;
         this._transformControls.setMode('translate');
-        this._transformControls.size = 3;
+        this._transformControls.size = 1.5;
 
         this._transformControls.addEventListener('dragging-changed', (e) => {
             this._gizmoDragging = e.value;

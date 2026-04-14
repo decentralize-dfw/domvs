@@ -81,11 +81,13 @@ export class FurniturePanel {
     /** Show the panel. */
     show() {
         this.container.style.display = 'block';
+        this.container.classList.add('vea-furniture-wide');
     }
 
     /** Hide the panel. */
     hide() {
         this.container.style.display = 'none';
+        this.container.classList.remove('vea-furniture-wide');
     }
 
     /** Whether the panel is currently visible. */

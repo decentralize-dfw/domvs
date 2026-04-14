@@ -819,6 +819,11 @@ canvas.vea-hovering { cursor: pointer; }
    FURNITURE PANEL (Prompt 3)
    ========================================================= */
 
+/* Wider panel when furniture grid is active */
+#leftHtmlPanel.vea-furniture-wide {
+    width: 280px;
+}
+
 .vea-furniture-panel {
     display: flex;
     flex-direction: column;
@@ -888,6 +893,8 @@ canvas.vea-hovering { cursor: pointer; }
     padding: 4px;
     transition: background 0.15s ease, box-shadow 0.15s ease;
     border: 1px solid transparent;
+    min-width: 0;
+    overflow: hidden;
 }
 .vea-furniture-thumb:hover {
     background: rgba(201, 169, 110, 0.12);

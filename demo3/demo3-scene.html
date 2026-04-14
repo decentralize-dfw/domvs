@@ -509,6 +509,10 @@
                 sceneBBox = new THREE.Box3();
                 scene.traverse(c => {
                     if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    // Skip furniture items — they shouldn't affect clip plane
+                    if (c.userData._furnitureId) return;
+                    let p = c.parent;
+                    while (p) { if (p.userData?._furnitureId) return; p = p.parent; }
                     if (!c.geometry) return;
                     if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
                     if (!c.geometry.boundingBox) return;
@@ -561,7 +565,10 @@
                 clippedMeshes = [];
                 scene.traverse(c => {
                     if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
-                    if (c.userData._furnitureId) return; // don't clip furniture
+                    // Skip furniture items and their children
+                    if (c.userData._furnitureId) return;
+                    let p = c.parent;
+                    while (p) { if (p.userData?._furnitureId) return; p = p.parent; }
                     const orig = c.material;
                     const clone = orig.clone();
                     clone.clippingPlanes = [clippingPlane];
