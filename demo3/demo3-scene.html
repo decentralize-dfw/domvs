@@ -452,6 +452,8 @@
             let clippingPlane = null;
             let clippedMeshes = [];
             let sceneBBox = null;
+            let _cachedBBox = null;   // computed ONCE after model load
+            let _clipPercent = 0.40;  // default 40%, overridable from Excel / slider
             let camEditor = null;
             let furnitureEditor = null;
             let furniturePanel = null;
@@ -505,8 +507,9 @@
             }
 
             // ---- Clip mode ----
-            function computeSceneBBox() {
-                sceneBBox = new THREE.Box3();
+            // Compute scene bbox ONCE — called after models load, result cached
+            function _computeAndCacheBBox() {
+                _cachedBBox = new THREE.Box3();
                 scene.traverse(c => {
                     if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
                     if (c.userData._isFurniture || c.userData._isDragGhost) return;
@@ -518,15 +521,20 @@
                     if (size.x > 500 || size.y > 500 || size.z > 500) return;
                     const worldBB = c.geometry.boundingBox.clone();
                     worldBB.applyMatrix4(c.matrixWorld);
-                    sceneBBox.union(worldBB);
+                    _cachedBBox.union(worldBB);
                 });
-                if (sceneBBox.isEmpty()) sceneBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
+                if (_cachedBBox.isEmpty()) _cachedBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
+                sceneBBox = _cachedBBox.clone();
+            }
+
+            function _useCachedBBox() {
+                sceneBBox = _cachedBBox ? _cachedBBox.clone() : new THREE.Box3(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
             }
 
             // ---- Plan view helpers (shared by clip mode + furniture modes) ----
             function _switchToPlanView(buttonIndex) {
                 toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === buttonIndex));
-                computeSceneBBox();
+                _useCachedBBox();
 
                 const center = new THREE.Vector3();
                 sceneBBox.getCenter(center);
@@ -557,7 +565,7 @@
 
                 const maxY = sceneBBox.max.y;
                 const height = maxY - sceneBBox.min.y;
-                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), maxY - 0.5 * height);
+                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), maxY - _clipPercent * height);
 
                 clippedMeshes = [];
                 scene.traverse(c => {
@@ -581,9 +589,44 @@
                 if (furnitureEditor) furnitureEditor.camera = camera;
                 for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
                 _setHoveredDot(null);
+                _showClipSlider();
+            }
+
+            // ---- Clip height slider ----
+            let _clipSliderEl = null;
+
+            function _showClipSlider() {
+                if (_clipSliderEl) { _clipSliderEl.style.display = 'flex'; return; }
+                _clipSliderEl = document.createElement('div');
+                _clipSliderEl.className = 'vea-clip-slider-wrap';
+                _clipSliderEl.innerHTML = `
+                    <label class="vea-clip-slider-label">Dikey Kesit Yüksekliği</label>
+                    <input type="range" class="vea-clip-slider" min="10" max="90" value="${Math.round(_clipPercent * 100)}" step="1">
+                    <span class="vea-clip-slider-value">${Math.round(_clipPercent * 100)}%</span>
+                `;
+                document.body.appendChild(_clipSliderEl);
+                const slider = _clipSliderEl.querySelector('.vea-clip-slider');
+                const valLabel = _clipSliderEl.querySelector('.vea-clip-slider-value');
+                slider.addEventListener('input', () => {
+                    _clipPercent = parseInt(slider.value) / 100;
+                    valLabel.textContent = slider.value + '%';
+                    _updateClipPlane();
+                });
+            }
+
+            function _hideClipSlider() {
+                if (_clipSliderEl) _clipSliderEl.style.display = 'none';
+            }
+
+            function _updateClipPlane() {
+                if (!clippingPlane || !sceneBBox) return;
+                const maxY = sceneBBox.max.y;
+                const height = maxY - sceneBBox.min.y;
+                clippingPlane.constant = maxY - _clipPercent * height;
             }
 
             function _switchToPerspView() {
+                _hideClipSlider();
                 for (const entry of clippedMeshes) {
                     const cloned = entry.mesh.material;
                     entry.mesh.material = entry.origMaterial;
@@ -1028,6 +1071,17 @@
                 hotspotMgr.loadHotspots();
                 createNavDots();
                 camEditor.setNavDots(navDots);
+
+                // Compute scene bounding box ONCE — frozen for all plan view modes
+                _computeAndCacheBBox();
+
+                // Parse clip percent from CLIP_MODE action (e.g. "CLIP_MODE·40")
+                const clipBtn = sceneCfg.buttons.find(b => (b.action || '').startsWith('CLIP_MODE'));
+                if (clipBtn) {
+                    const parts = clipBtn.action.split('·');
+                    if (parts[1]) _clipPercent = parseFloat(parts[1]) / 100;
+                }
+                if (isNaN(_clipPercent) || _clipPercent <= 0 || _clipPercent > 1) _clipPercent = 0.40;
 
                 // Initialize FurnitureEditor
                 furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
