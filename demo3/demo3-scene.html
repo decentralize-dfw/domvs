@@ -92,15 +92,15 @@
         const SCENE_INDEX = parseInt(new URLSearchParams(location.search).get('scene') ?? '0');
 
         // Furniture cache lifecycle:
-        // - Survives scene-to-scene navigation (same tab, ?scene=N changes)
-        // - Cleared when tab is closed (sessionStorage behavior)
-        // - Cleared on full page refresh (F5 / Ctrl+R)
-        // Detection: performance.navigation.type === 1 means reload
-        const _isReload = performance.navigation
-            ? performance.navigation.type === 1
-            : (performance.getEntriesByType('navigation')[0]?.type === 'reload');
-        if (_isReload) {
-            try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
+        // - Survives: scene navigation (?scene=N), back/forward buttons
+        // - Cleared: full page refresh (F5), tab close (sessionStorage)
+        // Only type === 'reload' triggers clear; 'navigate' and 'back_forward' keep cache
+        {
+            const navEntry = performance.getEntriesByType?.('navigation')?.[0];
+            const navType = navEntry ? navEntry.type : (performance.navigation?.type === 1 ? 'reload' : 'navigate');
+            if (navType === 'reload') {
+                try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
+            }
         }
 
         let scene, renderer, composer, camera, pmremGenerator;
