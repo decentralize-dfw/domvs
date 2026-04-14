@@ -219,12 +219,20 @@ export class FurnitureEditor {
     get _cacheKey() { return this._customCacheKey || `vea-furniture-${this.sceneIndex}`; }
     set cacheKey(key) { this._customCacheKey = key; }
 
+    get _presetCacheKey() { return this._cacheKey + '-presets'; }
+
     saveToCache() {
         const data = this._items.map(i => ({
             id: i.id, url: i.url, name: i.name,
             pos: i.position, rot: i.rotation, scale: i.scale
         }));
         try { sessionStorage.setItem(this._cacheKey, JSON.stringify(data)); } catch (_) {}
+        this._savePresetCache();
+    }
+
+    _savePresetCache() {
+        const data = this._presets.map(p => ({ id: p.id, name: p.name, url: p.threeObject.userData._presetUrl }));
+        try { sessionStorage.setItem(this._presetCacheKey, JSON.stringify(data)); } catch (_) {}
     }
 
     clearAll() {
@@ -246,7 +254,7 @@ export class FurnitureEditor {
     // ---- PRESETS ----
 
     async loadPreset(preset) {
-        this.removePreset(preset.id);
+        if (this.isPresetLoaded(preset.id)) return this._presets.find(p => p.id === preset.id);
         const gltf = await new Promise((resolve, reject) => {
             _gltfLoader.load(preset.url, resolve, undefined, reject);
         });
@@ -254,6 +262,7 @@ export class FurnitureEditor {
         root.position.set(0, 0, 0);
         root.userData._isPreset = true;
         root.userData._presetId = preset.id;
+        root.userData._presetUrl = preset.url;
         root.traverse(child => {
             child.userData._isFurniture = true;
             child.userData._isPreset = true;
@@ -261,6 +270,7 @@ export class FurnitureEditor {
         this.scene.add(root);
         const entry = { id: preset.id, name: preset.name, threeObject: root };
         this._presets.push(entry);
+        this._savePresetCache();
         this._notifyChange();
         return entry;
     }
@@ -275,6 +285,7 @@ export class FurnitureEditor {
             if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
         });
         this._presets.splice(idx, 1);
+        this._savePresetCache();
         this._notifyChange();
     }
 
@@ -284,12 +295,39 @@ export class FurnitureEditor {
     async loadFromCache() {
         if (this._cacheLoaded) return;
         this._cacheLoaded = true;
+
+        // Load presets from cache
+        try {
+            const presetRaw = sessionStorage.getItem(this._presetCacheKey);
+            if (presetRaw) {
+                const presetData = JSON.parse(presetRaw);
+                if (Array.isArray(presetData)) {
+                    for (const p of presetData) {
+                        if (!this.isPresetLoaded(p.id)) {
+                            const gltf = await new Promise((resolve, reject) => {
+                                _gltfLoader.load(p.url, resolve, undefined, reject);
+                            });
+                            const root = gltf.scene;
+                            root.position.set(0, 0, 0);
+                            root.userData._isPreset = true;
+                            root.userData._presetId = p.id;
+                            root.userData._presetUrl = p.url;
+                            root.traverse(child => { child.userData._isFurniture = true; child.userData._isPreset = true; });
+                            this.scene.add(root);
+                            this._presets.push({ id: p.id, name: p.name, threeObject: root });
+                        }
+                    }
+                }
+            }
+        } catch (_) {}
+
+        // Load individual items from cache
         let raw;
         try { raw = sessionStorage.getItem(this._cacheKey); } catch (_) { return; }
-        if (!raw) return;
+        if (!raw) { this._notifyChange(); return; }
         let data;
-        try { data = JSON.parse(raw); } catch (_) { return; }
-        if (!Array.isArray(data) || data.length === 0) return;
+        try { data = JSON.parse(raw); } catch (_) { this._notifyChange(); return; }
+        if (!Array.isArray(data) || data.length === 0) { this._notifyChange(); return; }
 
         await Promise.all(data.map(async (entry) => {
             const gltf = await new Promise((resolve, reject) => {

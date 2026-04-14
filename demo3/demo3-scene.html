@@ -100,6 +100,7 @@
             const navType = navEntry ? navEntry.type : (performance.navigation?.type === 1 ? 'reload' : 'navigate');
             if (navType === 'reload') {
                 try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
+                try { sessionStorage.removeItem('vea-furniture-interior-presets'); } catch (_) {}
             }
         }
 
@@ -886,6 +887,19 @@
                     html += '<p style="font-size:11px;color:rgba(255,255,255,0.35);">Henüz mobilya yok</p>';
                 }
 
+                // Loaded presets section
+                const presets = furnitureEditor?.loadedPresets || [];
+                if (presets.length > 0) {
+                    html += '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0">';
+                    html += `<h3 style="font-size:12px;margin:0 0 6px;">Yüklü Preset'ler</h3>`;
+                    presets.forEach((p, pi) => {
+                        html += `<div class="vea-furniture-placed-item" style="display:flex;justify-content:space-between;align-items:center;">`;
+                        html += `<span style="font-size:11px;color:#fff;">${p.name}</span>`;
+                        html += `<button class="vea-preset-remove-btn" data-pidx="${pi}" style="padding:2px 8px;font-size:9px;background:rgba(220,50,50,0.5);color:#fff;border:none;border-radius:4px;cursor:pointer;">Kaldır</button>`;
+                        html += '</div>';
+                    });
+                }
+
                 html += '</div>';
                 rightHtmlPanel.innerHTML = html;
 
@@ -913,6 +927,15 @@
                 // Clear all
                 document.getElementById('furnClearAllBtn')?.addEventListener('click', () => {
                     if (furnitureEditor) { furnitureEditor.clearAll(); _updateSelectionInfo(); }
+                });
+                // Preset remove buttons
+                rightHtmlPanel.querySelectorAll('.vea-preset-remove-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const pidx = parseInt(btn.dataset.pidx);
+                        const p = furnitureEditor?.loadedPresets[pidx];
+                        if (p) { furnitureEditor.removePreset(p.id); furniturePanel?.refresh(); _updateSelectionInfo(); }
+                    });
                 });
             }
 
@@ -1335,11 +1358,12 @@
                 _walkFurnEditor.cacheKey = 'vea-furniture-interior';
                 await _walkFurnEditor.loadFromCache().catch(() => {});
 
-                // Add furniture bounding boxes as colliders
+                // Add furniture + preset bounding boxes as colliders
                 for (const item of _walkFurnEditor.placedItems) {
-                    item.threeObject.traverse(c => {
-                        if (c.isMesh) colliderMeshes.push(c);
-                    });
+                    item.threeObject.traverse(c => { if (c.isMesh) colliderMeshes.push(c); });
+                }
+                for (const p of _walkFurnEditor.loadedPresets) {
+                    p.threeObject.traverse(c => { if (c.isMesh) colliderMeshes.push(c); });
                 }
 
                 fadeOutLoading();
