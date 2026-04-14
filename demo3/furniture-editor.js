@@ -67,6 +67,7 @@ export class FurnitureEditor {
         this._restoringSnapshot = false;
 
         this.onChange = null;
+        this.onError = null;  // ({ type, message }) => void — quota/storage/load errors
 
         this._setupTransformControls();
     }
@@ -76,7 +77,13 @@ export class FurnitureEditor {
     async spawnItem(libraryItem, position) {
         await this.ready();
         const pos = position || { x: 0, y: 0, z: 0 };
-        const root = await loadGLB(libraryItem.url);
+        let root;
+        try {
+            root = await loadGLB(libraryItem.url);
+        } catch (e) {
+            if (this.onError) this.onError({ type: 'load', message: 'Mobilya yüklenemedi: ' + libraryItem.name, error: e });
+            throw e;
+        }
         root.position.set(pos.x, 0, pos.z);
         tagAsFurniture(root, {
             _furnitureId: libraryItem.id,
@@ -250,13 +257,26 @@ export class FurnitureEditor {
             id: i.id, url: i.url, name: i.name,
             pos: i.position, rot: i.rotation, scale: i.scale
         }));
-        try { sessionStorage.setItem(this._cacheKey, JSON.stringify(data)); } catch (_) {}
+        this._safeSetItem(this._cacheKey, JSON.stringify(data));
         this._savePresetCache();
     }
 
     _savePresetCache() {
         const data = this._presets.map(p => ({ id: p.id, name: p.name, url: p.threeObject.userData._presetUrl }));
-        try { sessionStorage.setItem(this._presetCacheKey, JSON.stringify(data)); } catch (_) {}
+        this._safeSetItem(this._presetCacheKey, JSON.stringify(data));
+    }
+
+    /** sessionStorage.setItem with quota-exceeded detection → onError callback */
+    _safeSetItem(key, value) {
+        try {
+            sessionStorage.setItem(key, value);
+        } catch (e) {
+            if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
+                if (this.onError) this.onError({ type: 'quota', message: 'Cache dolu — yerleştirilmiş mobilyalar geçici olarak kaydedilemiyor.' });
+            } else {
+                if (this.onError) this.onError({ type: 'storage', message: 'Cache kaydedilemedi: ' + (e?.message || e) });
+            }
+        }
     }
 
     /** Wait until initial cache load has finished (no-op if not loading) */
@@ -305,7 +325,13 @@ export class FurnitureEditor {
         await this.ready();
         if (this.isPresetLoaded(preset.id)) return this._presets.find(p => p.id === preset.id);
         this._pushUndo();
-        const entry = await this._loadPresetFromEntry(preset);
+        let entry;
+        try {
+            entry = await this._loadPresetFromEntry(preset);
+        } catch (e) {
+            if (this.onError) this.onError({ type: 'load', message: 'Preset yüklenemedi: ' + preset.name, error: e });
+            throw e;
+        }
         this._savePresetCache();
         this._notifyChange();
         return entry;

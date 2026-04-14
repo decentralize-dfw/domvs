@@ -6,6 +6,7 @@ import { FurnitureEditor } from './furniture-editor.js';
 import { FurniturePanel } from './furniture-panel.js';
 import { getAllItems } from './furniture-library.js';
 import { FURNITURE_CONFIG as C } from './furniture-config.js';
+import { el, clear, cleanName, toast } from './furniture-ui-helpers.js';
 
 export class FurnitureSceneIntegration {
     /**
@@ -71,6 +72,10 @@ export class FurnitureSceneIntegration {
             if (this._activeMode === 'toggle-3') this._updateSelectionInfo();
             if (this._activeMode === 'toggle-3-view') this._renderPlacedItemsList();
         };
+        this.editor.onError = (err) => {
+            const type = err.type === 'quota' ? 'warn' : 'error';
+            toast(err.message, type, 5000);
+        };
 
         this.panel = new FurniturePanel(
             this.leftPanel,
@@ -104,7 +109,11 @@ export class FurnitureSceneIntegration {
             this.panel.show();
         }
 
-        this.rightPanel.innerHTML = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p></div>';
+        clear(this.rightPanel);
+        this.rightPanel.appendChild(el('div', {
+            class: 'vea-furniture-info',
+            children: [el('p', { text: 'Bir mobilya seçin' })]
+        }));
         this.rightPanel.style.display = 'block';
 
         const hm = this._getHotspotMgr();
@@ -349,19 +358,26 @@ export class FurnitureSceneIntegration {
 
     _showFurniturePopup(placed, worldPoint) {
         this._closeFurniturePopup();
-        const name = placed.name.replace(/\.glb$/i, '').replace(/_/g, ' ');
-        this._furnPopupEl = document.createElement('div');
-        this._furnPopupEl.className = 'vea-furniture-popup';
-        this._furnPopupEl.innerHTML = `<strong>${name}</strong><br><span style="font-size:11px;opacity:0.6">${placed.id}</span>`;
+        const close = () => this._closeFurniturePopup();
+        this._furnPopupEl = el('div', {
+            class: 'vea-furniture-popup',
+            on: { click: close },
+            children: [
+                el('strong', { text: cleanName(placed.name) }),
+                document.createElement('br'),
+                el('span', {
+                    text: placed.id,
+                    style: { fontSize: '11px', opacity: '0.6' }
+                })
+            ]
+        });
         document.body.appendChild(this._furnPopupEl);
         const v = worldPoint.clone().project(this._getCamera());
         const x = (v.x * 0.5 + 0.5) * window.innerWidth;
         const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
         this._furnPopupEl.style.left = x + 'px';
         this._furnPopupEl.style.top = (y - 60) + 'px';
-        const close = () => this._closeFurniturePopup();
         setTimeout(close, C.popupAutoCloseMs);
-        this._furnPopupEl.addEventListener('click', close);
     }
 
     _closeFurniturePopup() {
@@ -398,115 +414,159 @@ export class FurnitureSceneIntegration {
         if (this._activeMode !== 'toggle-3') return;
         const sel = this.editor?.selected;
         const items = this.editor?.placedItems || [];
+        const presets = this.editor?.loadedPresets || [];
         const m = this._activeGizmoMode;
 
-        let html = '<div class="vea-furniture-info">';
+        clear(this.rightPanel);
+        const root = el('div', { class: 'vea-furniture-info' });
 
+        // --- Selected item block ---
         if (sel) {
             const p = sel.position;
-            html += `<h3>${sel.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</h3>`;
-            html += `<p>X: ${p.x.toFixed(2)} &nbsp; Z: ${p.z.toFixed(2)}</p>`;
-            html += '<div class="vea-furniture-mode-bar">';
-            html += `<button class="vea-furniture-mode-btn${m === 'translate' ? ' active' : ''}" data-mode="translate">Taşı</button>`;
-            html += `<button class="vea-furniture-mode-btn${m === 'rotate' ? ' active' : ''}" data-mode="rotate">Döndür</button>`;
-            html += `<button class="vea-furniture-mode-btn${m === 'scale' ? ' active' : ''}" data-mode="scale">Boyut</button>`;
-            html += '</div>';
-            html += `<button id="furnDeleteBtn" class="vea-furniture-delete-btn">Sil</button>`;
-            html += '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0">';
+            root.appendChild(el('h3', { text: cleanName(sel.name) }));
+            root.appendChild(el('p', { text: `X: ${p.x.toFixed(2)}   Z: ${p.z.toFixed(2)}` }));
+
+            const modeBar = el('div', { class: 'vea-furniture-mode-bar' });
+            for (const [mode, label] of [['translate', 'Taşı'], ['rotate', 'Döndür'], ['scale', 'Boyut']]) {
+                modeBar.appendChild(el('button', {
+                    class: `vea-furniture-mode-btn${m === mode ? ' active' : ''}`,
+                    text: label,
+                    data: { mode },
+                    on: { click: () => this._setGizmoMode(mode) }
+                }));
+            }
+            root.appendChild(modeBar);
+
+            root.appendChild(el('button', {
+                class: 'vea-furniture-delete-btn',
+                text: 'Sil',
+                on: { click: () => { this.editor.deleteSelected(); this._updateSelectionInfo(); } }
+            }));
+            root.appendChild(this._hr());
         }
 
-        html += `<h3 style="font-size:12px;margin:0 0 6px;">Yerleştirilen (${items.length})</h3>`;
+        // --- Placed items list ---
+        root.appendChild(el('h3', {
+            text: `Yerleştirilen (${items.length})`,
+            style: { fontSize: '12px', margin: '0 0 6px' }
+        }));
         if (items.length > 0) {
             for (let idx = 0; idx < items.length; idx++) {
                 const it = items[idx];
                 const ip = it.position, ir = it.rotation, is_ = it.scale;
                 const isSel = sel && sel === it;
-                html += `<div class="vea-furniture-placed-item${isSel ? ' active' : ''}" data-idx="${idx}">`;
-                html += `<div style="font-size:11px;color:#fff;">${it.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
-                html += `<div style="font-size:9px;color:rgba(255,255,255,0.4);">`;
-                html += `P: ${ip.x.toFixed(1)}, ${ip.z.toFixed(1)}`;
-                html += ` · R: ${(ir.y * 180 / Math.PI).toFixed(0)}°`;
-                html += ` · S: ${is_.x.toFixed(2)}`;
-                html += `</div></div>`;
+                const card = el('div', {
+                    class: `vea-furniture-placed-item${isSel ? ' active' : ''}`,
+                    data: { idx: String(idx) },
+                    on: {
+                        click: () => {
+                            const item = this.editor?.placedItems[idx];
+                            if (item) { this.editor.selectItem(item); this._updateSelectionInfo(); }
+                        }
+                    },
+                    children: [
+                        el('div', { text: cleanName(it.name), style: { fontSize: '11px', color: '#fff' } }),
+                        el('div', {
+                            text: `P: ${ip.x.toFixed(1)}, ${ip.z.toFixed(1)} · R: ${(ir.y * 180 / Math.PI).toFixed(0)}° · S: ${is_.x.toFixed(2)}`,
+                            style: { fontSize: '9px', color: 'rgba(255,255,255,0.4)' }
+                        })
+                    ]
+                });
+                root.appendChild(card);
             }
-            html += `<button id="furnClearAllBtn" class="vea-furniture-clear-btn">Sahneyi Temizle</button>`;
+            root.appendChild(el('button', {
+                class: 'vea-furniture-clear-btn',
+                text: 'Sahneyi Temizle',
+                on: { click: () => { this.editor.clearAll(); this._updateSelectionInfo(); } }
+            }));
         } else {
-            html += '<p style="font-size:11px;color:rgba(255,255,255,0.35);">Henüz mobilya yok</p>';
+            root.appendChild(el('p', {
+                text: 'Henüz mobilya yok',
+                style: { fontSize: '11px', color: 'rgba(255,255,255,0.35)' }
+            }));
         }
 
-        const presets = this.editor?.loadedPresets || [];
+        // --- Loaded presets section ---
         if (presets.length > 0) {
-            html += '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0">';
-            html += `<h3 style="font-size:12px;margin:0 0 6px;">Yüklü Preset'ler</h3>`;
-            presets.forEach((p, pi) => {
-                html += `<div class="vea-furniture-placed-item" style="display:flex;justify-content:space-between;align-items:center;">`;
-                html += `<span style="font-size:11px;color:#fff;">${p.name}</span>`;
-                html += `<button class="vea-preset-remove-btn" data-pidx="${pi}" style="padding:2px 8px;font-size:9px;background:rgba(220,50,50,0.5);color:#fff;border:none;border-radius:4px;cursor:pointer;">Kaldır</button>`;
-                html += '</div>';
+            root.appendChild(this._hr());
+            root.appendChild(el('h3', {
+                text: "Yüklü Preset'ler",
+                style: { fontSize: '12px', margin: '0 0 6px' }
+            }));
+            presets.forEach((preset) => {
+                const row = el('div', {
+                    class: 'vea-furniture-placed-item',
+                    style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+                    children: [
+                        el('span', { text: preset.name, style: { fontSize: '11px', color: '#fff' } }),
+                        el('button', {
+                            class: 'vea-furniture-preset-remove-btn',
+                            text: 'Kaldır',
+                            on: {
+                                click: (e) => {
+                                    e.stopPropagation();
+                                    this.editor.removePreset(preset.id);
+                                    this.panel?.refresh();
+                                    this._updateSelectionInfo();
+                                }
+                            }
+                        })
+                    ]
+                });
+                root.appendChild(row);
             });
         }
 
-        html += '</div>';
-        this.rightPanel.innerHTML = html;
+        this.rightPanel.appendChild(root);
+    }
 
-        // Wire up events
-        if (sel) {
-            this.rightPanel.querySelectorAll('.vea-furniture-mode-btn').forEach(btn => {
-                btn.addEventListener('click', () => this._setGizmoMode(btn.dataset.mode));
-            });
-            document.getElementById('furnDeleteBtn')?.addEventListener('click', () => {
-                this.editor.deleteSelected();
-                this._updateSelectionInfo();
-            });
-        }
-        this.rightPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
-            el.addEventListener('click', () => {
-                const idx = parseInt(el.dataset.idx);
-                const item = this.editor?.placedItems[idx];
-                if (item) { this.editor.selectItem(item); this._updateSelectionInfo(); }
-            });
-        });
-        document.getElementById('furnClearAllBtn')?.addEventListener('click', () => {
-            this.editor.clearAll();
-            this._updateSelectionInfo();
-        });
-        this.rightPanel.querySelectorAll('.vea-preset-remove-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const pidx = parseInt(btn.dataset.pidx);
-                const p = this.editor?.loadedPresets[pidx];
-                if (p) { this.editor.removePreset(p.id); this.panel?.refresh(); this._updateSelectionInfo(); }
-            });
+    _hr() {
+        return el('hr', {
+            style: { border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '10px 0' }
         });
     }
 
     // ---- INTERNAL: left-panel placed items list (toggle-3-view mode) ----
 
     _renderPlacedItemsList() {
-        if (!this.editor) { this.leftPanel.innerHTML = ''; return; }
+        clear(this.leftPanel);
+        if (!this.editor) return;
         const items = this.editor.placedItems;
         if (items.length === 0) {
-            this.leftPanel.innerHTML = '<p class="vea-furniture-info" style="color:rgba(255,255,255,0.5);">Henüz mobilya yerleştirilmedi</p>';
+            this.leftPanel.appendChild(el('p', {
+                class: 'vea-furniture-info',
+                text: 'Henüz mobilya yerleştirilmedi',
+                style: { color: 'rgba(255,255,255,0.5)' }
+            }));
             return;
         }
-        let html = `<h3 style="margin:0 0 8px;font-size:14px;color:#fff;">Yerleştirilen (${items.length})</h3>`;
+        this.leftPanel.appendChild(el('h3', {
+            text: `Yerleştirilen (${items.length})`,
+            style: { margin: '0 0 8px', fontSize: '14px', color: '#fff' }
+        }));
         items.forEach((item, idx) => {
             const p = item.position;
-            html += `<div class="vea-furniture-placed-item" data-idx="${idx}">`;
-            html += `<div style="font-size:12px;color:#fff;">${item.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
-            html += `<div style="font-size:10px;color:rgba(255,255,255,0.4);">X: ${p.x.toFixed(1)} &nbsp; Z: ${p.z.toFixed(1)}</div>`;
-            html += '</div>';
-        });
-        this.leftPanel.innerHTML = html;
-        this.leftPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
-            el.addEventListener('click', () => {
-                const idx = parseInt(el.dataset.idx);
-                const item = this.editor.placedItems[idx];
-                if (item) {
-                    this.orbitControls.target.copy(item.threeObject.position);
-                    this.orbitControls.update();
-                }
+            const card = el('div', {
+                class: 'vea-furniture-placed-item',
+                data: { idx: String(idx) },
+                on: { click: () => this._focusOnItem(idx) },
+                children: [
+                    el('div', { text: cleanName(item.name), style: { fontSize: '12px', color: '#fff' } }),
+                    el('div', {
+                        text: `X: ${p.x.toFixed(1)}  Z: ${p.z.toFixed(1)}`,
+                        style: { fontSize: '10px', color: 'rgba(255,255,255,0.4)' }
+                    })
+                ]
             });
+            this.leftPanel.appendChild(card);
         });
+    }
+
+    _focusOnItem(idx) {
+        const item = this.editor?.placedItems[idx];
+        if (item) {
+            this.orbitControls.target.copy(item.threeObject.position);
+            this.orbitControls.update();
+        }
     }
 }

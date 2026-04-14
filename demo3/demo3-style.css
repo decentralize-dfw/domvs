@@ -1135,6 +1135,19 @@ canvas.vea-hovering { cursor: pointer; }
 .vea-furniture-delete-btn:hover {
     background: rgba(220, 50, 50, 0.85);
 }
+.vea-furniture-preset-remove-btn {
+    padding: 2px 8px;
+    font-size: 9px;
+    background: rgba(220, 50, 50, 0.5);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.vea-furniture-preset-remove-btn:hover {
+    background: rgba(220, 50, 50, 0.8);
+}
 .vea-furniture-clear-btn {
     display: block;
     width: 100%;
@@ -1261,4 +1274,48 @@ canvas.vea-hovering { cursor: pointer; }
 }
 @keyframes vea-furn-spin {
     to { transform: rotate(360deg); }
+}
+
+/* =========================================================
+   TOAST NOTIFICATIONS
+   ========================================================= */
+.vea-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+    max-width: 360px;
+}
+.vea-toast {
+    pointer-events: auto;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    animation: vea-toast-in 0.2s ease;
+}
+.vea-toast-info {
+    border-left: 3px solid var(--gold);
+}
+.vea-toast-warn {
+    border-left: 3px solid #f5a623;
+    background: rgba(60, 40, 10, 0.9);
+}
+.vea-toast-error {
+    border-left: 3px solid #e74c3c;
+    background: rgba(60, 15, 15, 0.9);
+}
+@keyframes vea-toast-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
 }
