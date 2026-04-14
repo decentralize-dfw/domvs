@@ -13,6 +13,34 @@ _dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.
 _gltfLoader.setDRACOLoader(_dracoLoader);
 _gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
+// ---- Module-level helpers (no `this` needed) ----
+
+/** Dispose geometry + materials of a 3D object (deep traverse) */
+function disposeObject(obj) {
+    obj.traverse(c => {
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) {
+            (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
+        }
+    });
+}
+
+/** Tag root's userData + all descendants as furniture (clipping-exempt) */
+function tagAsFurniture(root, extraUserData = {}, isPreset = false) {
+    Object.assign(root.userData, extraUserData);
+    root.traverse(child => {
+        child.userData._isFurniture = true;
+        if (isPreset) child.userData._isPreset = true;
+    });
+}
+
+/** Load GLB → returns Promise<THREE.Group> */
+function loadGLB(url) {
+    return new Promise((resolve, reject) => {
+        _gltfLoader.load(url, gltf => resolve(gltf.scene), undefined, reject);
+    });
+}
+
 export class FurnitureEditor {
     constructor(threeScene, camera, renderer, orbitControls, sceneIndex = 0) {
         this.scene = threeScene;
@@ -23,19 +51,19 @@ export class FurnitureEditor {
 
         this._items = [];
         this._selected = null;
-        this._prevScale = 1;  // tracks previous uniform scale for scale mode
+        this._prevScale = 1;
         this._gizmoDragging = false;
         this._recentlyDragged = false;
         this._active = false;
         this._cacheLoaded = false;
-        this._cacheLoadPromise = null;  // resolves when loadFromCache finishes
+        this._cacheLoadPromise = null;
         this._presets = [];
 
         // Undo/redo
-        this._undoStack = [];  // past snapshots
-        this._redoStack = [];  // future snapshots
+        this._undoStack = [];
+        this._redoStack = [];
         this._maxHistory = 50;
-        this._restoringSnapshot = false; // guard against recursive pushes
+        this._restoringSnapshot = false;
 
         this.onChange = null;
 
@@ -45,19 +73,15 @@ export class FurnitureEditor {
     // ---- PUBLIC API ----
 
     async spawnItem(libraryItem, position) {
-        // Ensure cache load finished before mutating state (prevents race)
         await this.ready();
         const pos = position || { x: 0, y: 0, z: 0 };
-        const gltf = await new Promise((resolve, reject) => {
-            _gltfLoader.load(libraryItem.url, resolve, undefined, reject);
-        });
-
-        const root = gltf.scene;
+        const root = await loadGLB(libraryItem.url);
         root.position.set(pos.x, 0, pos.z);
-        root.userData._furnitureId = libraryItem.id;
-        root.userData._furnitureName = libraryItem.name;
-        root.userData._furnitureUrl = libraryItem.url;
-        root.traverse(child => { child.userData._isFurniture = true; });
+        tagAsFurniture(root, {
+            _furnitureId: libraryItem.id,
+            _furnitureName: libraryItem.name,
+            _furnitureUrl: libraryItem.url
+        });
         this.scene.add(root);
 
         const placed = this._makePlacedItem(libraryItem.id, libraryItem.url, libraryItem.name, root);
@@ -72,7 +96,7 @@ export class FurnitureEditor {
     selectItem(placed) {
         if (!placed) { this.deselectItem(); return; }
         this._selected = placed;
-        // Reset uniform scale tracker to the newly selected item's current scale
+        // Reset uniform scale tracker to the newly selected item's scale
         this._prevScale = placed.threeObject.scale.x;
         this._transformControls.attach(placed.threeObject);
         this._transformControls.visible = true;
@@ -89,16 +113,7 @@ export class FurnitureEditor {
     deleteSelected() {
         if (!this._selected) return;
         this._pushUndo();
-        const obj = this._selected.threeObject;
-        this._transformControls.detach();
-        this._transformControls.visible = false;
-        this._transformControls.enabled = false;
-        this.scene.remove(obj);
-        obj.traverse(c => {
-            if (c.geometry) c.geometry.dispose();
-            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
-        });
-        this._items = this._items.filter(i => i !== this._selected);
+        this._removeItemObject(this._selected);
         this._selected = null;
         this.saveToCache();
         this._notifyChange();
@@ -108,12 +123,7 @@ export class FurnitureEditor {
         if (!placed) return;
         this._pushUndo();
         if (this._selected === placed) this.deselectItem();
-        this.scene.remove(placed.threeObject);
-        placed.threeObject.traverse(c => {
-            if (c.geometry) c.geometry.dispose();
-            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
-        });
-        this._items = this._items.filter(i => i !== placed);
+        this._removeItemObject(placed);
         this.saveToCache();
         this._notifyChange();
     }
@@ -123,6 +133,7 @@ export class FurnitureEditor {
     get isDragging() { return this._gizmoDragging; }
     get wasRecentlyDragging() { return this._recentlyDragged; }
     get itemCount() { return this._items.length; }
+    get active() { return this._active; }
 
     setMode(mode) {
         this._transformControls.setMode(mode);
@@ -146,19 +157,25 @@ export class FurnitureEditor {
         if (this.orbitControls) this.orbitControls.enabled = true;
     }
 
-    get active() { return this._active; }
+    clearAll() {
+        this._pushUndo();
+        while (this._items.length > 0) {
+            this._removeItemObject(this._items[0]);
+        }
+        this.deselectItem();
+        try { sessionStorage.removeItem(this._cacheKey); } catch (_) {}
+        this._notifyChange();
+    }
 
     // ---- UNDO / REDO ----
 
-    /** Take a snapshot of current state and push to undo stack */
     _pushUndo() {
         if (this._restoringSnapshot) return;
         this._undoStack.push(this._takeSnapshot());
         if (this._undoStack.length > this._maxHistory) this._undoStack.shift();
-        this._redoStack = []; // new action clears redo
+        this._redoStack = [];
     }
 
-    /** Snapshot: { items: [...], presets: [...] } */
     _takeSnapshot() {
         return {
             items: this._items.map(i => ({
@@ -173,60 +190,30 @@ export class FurnitureEditor {
         };
     }
 
-    /** Restore scene from a snapshot */
     async _restoreSnapshot(snapshot) {
         this._restoringSnapshot = true;
         this.deselectItem();
-        // Remove all current items
+
+        // Clear current scene state
         for (const item of this._items) {
             this.scene.remove(item.threeObject);
-            item.threeObject.traverse(c => {
-                if (c.geometry) c.geometry.dispose();
-                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
-            });
+            disposeObject(item.threeObject);
         }
         this._items = [];
-        // Remove all current presets
         for (const p of this._presets) {
             this.scene.remove(p.threeObject);
-            p.threeObject.traverse(c => {
-                if (c.geometry) c.geometry.dispose();
-                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
-            });
+            disposeObject(p.threeObject);
         }
         this._presets = [];
-        // Rebuild items from snapshot
-        const items = snapshot.items || [];
-        const presets = snapshot.presets || [];
-        for (const entry of items) {
-            const gltf = await new Promise((resolve, reject) => {
-                _gltfLoader.load(entry.url, resolve, undefined, reject);
-            });
-            const root = gltf.scene;
-            root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
-            root.rotation.set(entry.rot.x, entry.rot.y, entry.rot.z);
-            root.scale.set(entry.scale.x, entry.scale.y, entry.scale.z);
-            root.userData._furnitureId = entry.id;
-            root.userData._furnitureName = entry.name;
-            root.userData._furnitureUrl = entry.url;
-            root.traverse(child => { child.userData._isFurniture = true; });
-            this.scene.add(root);
-            this._items.push(this._makePlacedItem(entry.id, entry.url, entry.name, root));
+
+        // Rebuild from snapshot
+        for (const entry of snapshot.items || []) {
+            await this._spawnItemFromEntry(entry);
         }
-        // Rebuild presets from snapshot
-        for (const entry of presets) {
-            const gltf = await new Promise((resolve, reject) => {
-                _gltfLoader.load(entry.url, resolve, undefined, reject);
-            });
-            const root = gltf.scene;
-            root.position.set(0, 0, 0);
-            root.userData._isPreset = true;
-            root.userData._presetId = entry.id;
-            root.userData._presetUrl = entry.url;
-            root.traverse(child => { child.userData._isFurniture = true; child.userData._isPreset = true; });
-            this.scene.add(root);
-            this._presets.push({ id: entry.id, name: entry.name, threeObject: root });
+        for (const entry of snapshot.presets || []) {
+            await this._loadPresetFromEntry(entry);
         }
+
         this.saveToCache();
         this._savePresetCache();
         this._restoringSnapshot = false;
@@ -255,7 +242,6 @@ export class FurnitureEditor {
     /** Cache key — shared across all scenes using same interior model */
     get _cacheKey() { return this._customCacheKey || `vea-furniture-${this.sceneIndex}`; }
     set cacheKey(key) { this._customCacheKey = key; }
-
     get _presetCacheKey() { return this._cacheKey + '-presets'; }
 
     saveToCache() {
@@ -272,67 +258,7 @@ export class FurnitureEditor {
         try { sessionStorage.setItem(this._presetCacheKey, JSON.stringify(data)); } catch (_) {}
     }
 
-    clearAll() {
-        this._pushUndo();
-        while (this._items.length > 0) {
-            const item = this._items[0];
-            this.scene.remove(item.threeObject);
-            item.threeObject.traverse(c => {
-                if (c.geometry) c.geometry.dispose();
-                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
-            });
-            this._items.shift();
-        }
-        this.deselectItem();
-        try { sessionStorage.removeItem(this._cacheKey); } catch (_) {}
-        this._notifyChange();
-    }
-
-    // ---- PRESETS ----
-
-    async loadPreset(preset) {
-        await this.ready();
-        if (this.isPresetLoaded(preset.id)) return this._presets.find(p => p.id === preset.id);
-        this._pushUndo();
-        const gltf = await new Promise((resolve, reject) => {
-            _gltfLoader.load(preset.url, resolve, undefined, reject);
-        });
-        const root = gltf.scene;
-        root.position.set(0, 0, 0);
-        root.userData._isPreset = true;
-        root.userData._presetId = preset.id;
-        root.userData._presetUrl = preset.url;
-        root.traverse(child => {
-            child.userData._isFurniture = true;
-            child.userData._isPreset = true;
-        });
-        this.scene.add(root);
-        const entry = { id: preset.id, name: preset.name, threeObject: root };
-        this._presets.push(entry);
-        this._savePresetCache();
-        this._notifyChange();
-        return entry;
-    }
-
-    removePreset(presetId) {
-        const idx = this._presets.findIndex(p => p.id === presetId);
-        if (idx === -1) return;
-        this._pushUndo();
-        const entry = this._presets[idx];
-        this.scene.remove(entry.threeObject);
-        entry.threeObject.traverse(c => {
-            if (c.geometry) c.geometry.dispose();
-            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
-        });
-        this._presets.splice(idx, 1);
-        this._savePresetCache();
-        this._notifyChange();
-    }
-
-    isPresetLoaded(presetId) { return this._presets.some(p => p.id === presetId); }
-    get loadedPresets() { return this._presets; }
-
-    /** Wait until initial cache load has finished (no-op if already loaded) */
+    /** Wait until initial cache load has finished (no-op if not loading) */
     async ready() {
         if (this._cacheLoadPromise) await this._cacheLoadPromise;
     }
@@ -345,7 +271,7 @@ export class FurnitureEditor {
     }
 
     async _doLoadFromCache() {
-        // Load presets from cache
+        // Load presets first
         try {
             const presetRaw = sessionStorage.getItem(this._presetCacheKey);
             if (presetRaw) {
@@ -353,24 +279,14 @@ export class FurnitureEditor {
                 if (Array.isArray(presetData)) {
                     for (const p of presetData) {
                         if (!this.isPresetLoaded(p.id)) {
-                            const gltf = await new Promise((resolve, reject) => {
-                                _gltfLoader.load(p.url, resolve, undefined, reject);
-                            });
-                            const root = gltf.scene;
-                            root.position.set(0, 0, 0);
-                            root.userData._isPreset = true;
-                            root.userData._presetId = p.id;
-                            root.userData._presetUrl = p.url;
-                            root.traverse(child => { child.userData._isFurniture = true; child.userData._isPreset = true; });
-                            this.scene.add(root);
-                            this._presets.push({ id: p.id, name: p.name, threeObject: root });
+                            await this._loadPresetFromEntry(p);
                         }
                     }
                 }
             }
         } catch (_) {}
 
-        // Load individual items from cache
+        // Load individual items
         let raw;
         try { raw = sessionStorage.getItem(this._cacheKey); } catch (_) { this._notifyChange(); return; }
         if (!raw) { this._notifyChange(); return; }
@@ -378,23 +294,38 @@ export class FurnitureEditor {
         try { data = JSON.parse(raw); } catch (_) { this._notifyChange(); return; }
         if (!Array.isArray(data) || data.length === 0) { this._notifyChange(); return; }
 
-        await Promise.all(data.map(async (entry) => {
-            const gltf = await new Promise((resolve, reject) => {
-                _gltfLoader.load(entry.url, resolve, undefined, reject);
-            });
-            const root = gltf.scene;
-            root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
-            root.rotation.set(entry.rot.x, entry.rot.y, entry.rot.z);
-            root.scale.set(entry.scale.x, entry.scale.y, entry.scale.z);
-            root.userData._furnitureId = entry.id;
-            root.userData._furnitureName = entry.name;
-            root.userData._furnitureUrl = entry.url;
-            root.traverse(child => { child.userData._isFurniture = true; });
-            this.scene.add(root);
-            this._items.push(this._makePlacedItem(entry.id, entry.url, entry.name, root));
-        }));
+        await Promise.all(data.map(e => this._spawnItemFromEntry(e)));
         this._notifyChange();
     }
+
+    // ---- PRESETS ----
+
+    async loadPreset(preset) {
+        await this.ready();
+        if (this.isPresetLoaded(preset.id)) return this._presets.find(p => p.id === preset.id);
+        this._pushUndo();
+        const entry = await this._loadPresetFromEntry(preset);
+        this._savePresetCache();
+        this._notifyChange();
+        return entry;
+    }
+
+    removePreset(presetId) {
+        const idx = this._presets.findIndex(p => p.id === presetId);
+        if (idx === -1) return;
+        this._pushUndo();
+        const entry = this._presets[idx];
+        this.scene.remove(entry.threeObject);
+        disposeObject(entry.threeObject);
+        this._presets.splice(idx, 1);
+        this._savePresetCache();
+        this._notifyChange();
+    }
+
+    isPresetLoaded(presetId) { return this._presets.some(p => p.id === presetId); }
+    get loadedPresets() { return this._presets; }
+
+    // ---- OTHER ----
 
     findByObject(obj) {
         let target = obj;
@@ -427,12 +358,14 @@ export class FurnitureEditor {
         this.scene.remove(this._transformControls);
         for (const item of this._items) {
             this.scene.remove(item.threeObject);
-            item.threeObject.traverse(c => {
-                if (c.geometry) c.geometry.dispose();
-                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
-            });
+            disposeObject(item.threeObject);
+        }
+        for (const p of this._presets) {
+            this.scene.remove(p.threeObject);
+            disposeObject(p.threeObject);
         }
         this._items = [];
+        this._presets = [];
         this._selected = null;
     }
 
@@ -445,6 +378,48 @@ export class FurnitureEditor {
             get rotation() { return { x: root.rotation.x, y: root.rotation.y, z: root.rotation.z }; },
             get scale() { return { x: root.scale.x, y: root.scale.y, z: root.scale.z }; }
         };
+    }
+
+    /** Remove a placed item from scene + items array (shared by delete/clear) */
+    _removeItemObject(placed) {
+        this.scene.remove(placed.threeObject);
+        disposeObject(placed.threeObject);
+        this._items = this._items.filter(i => i !== placed);
+        if (this._selected === placed) {
+            this._transformControls.detach();
+            this._transformControls.visible = false;
+            this._transformControls.enabled = false;
+        }
+    }
+
+    /** Spawn an item from a cached/snapshot entry (no undo push, no cache save) */
+    async _spawnItemFromEntry(entry) {
+        const root = await loadGLB(entry.url);
+        root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
+        root.rotation.set(entry.rot.x, entry.rot.y, entry.rot.z);
+        root.scale.set(entry.scale.x, entry.scale.y, entry.scale.z);
+        tagAsFurniture(root, {
+            _furnitureId: entry.id,
+            _furnitureName: entry.name,
+            _furnitureUrl: entry.url
+        });
+        this.scene.add(root);
+        this._items.push(this._makePlacedItem(entry.id, entry.url, entry.name, root));
+    }
+
+    /** Load a preset from entry (no undo push, no cache save) — returns entry */
+    async _loadPresetFromEntry(preset) {
+        const root = await loadGLB(preset.url);
+        root.position.set(0, 0, 0);
+        tagAsFurniture(root, {
+            _isPreset: true,
+            _presetId: preset.id,
+            _presetUrl: preset.url
+        }, true);
+        this.scene.add(root);
+        const entry = { id: preset.id, name: preset.name, threeObject: root };
+        this._presets.push(entry);
+        return entry;
     }
 
     _setupTransformControls() {
@@ -466,7 +441,7 @@ export class FurnitureEditor {
         // Save undo snapshot when gumball drag STARTS
         this._transformControls.addEventListener('mouseDown', () => {
             this._gizmoDragging = true;
-            this._pushUndo(); // snapshot before move/rotate/scale
+            this._pushUndo();
         });
 
         // Uniform scale — uses instance-level _prevScale (reset on selectItem)
