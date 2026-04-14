@@ -61,6 +61,9 @@ export class FurniturePanel {
         // Setup lazy-load observer
         this._setupLazyLoad();
 
+        // Setup square enforcer (JS measures width → sets height)
+        this._setupSquareObserver();
+
         // Render initial grid (all items)
         this._renderGrid(getAllItems());
     }
@@ -117,6 +120,8 @@ export class FurniturePanel {
                 this._observer.observe(img);
             });
         }
+        // Force square after DOM update
+        requestAnimationFrame(() => this._enforceSquare());
     }
 
     _createThumbCard(item) {
@@ -175,9 +180,29 @@ export class FurniturePanel {
         }, { root: this._gridEl, rootMargin: '100px' });
     }
 
+    /**
+     * JS-enforced square cards: measure first card's width, set ALL cards' height = width.
+     * Runs on grid resize (panel open, window resize, category switch).
+     */
+    _setupSquareObserver() {
+        if (this._resizeObs) this._resizeObs.disconnect();
+        this._resizeObs = new ResizeObserver(() => this._enforceSquare());
+        this._resizeObs.observe(this._gridEl);
+    }
+
+    _enforceSquare() {
+        const cards = this._gridEl.querySelectorAll('.vea-furniture-thumb');
+        if (cards.length === 0) return;
+        const w = cards[0].offsetWidth;
+        if (w <= 0) return;
+        const h = w + 'px';
+        for (const card of cards) card.style.height = h;
+    }
+
     /** Clean up. */
     dispose() {
         if (this._observer) this._observer.disconnect();
+        if (this._resizeObs) this._resizeObs.disconnect();
         this.container.innerHTML = '';
     }
 }

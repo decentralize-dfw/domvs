@@ -875,6 +875,7 @@ canvas.vea-hovering { cursor: pointer; }
     flex: 1;
     min-height: 0;
     padding-right: 2px;
+    align-content: start;
 }
 .vea-furniture-grid::-webkit-scrollbar { width: 3px; }
 .vea-furniture-grid::-webkit-scrollbar-thumb {
@@ -885,16 +886,15 @@ canvas.vea-hovering { cursor: pointer; }
 
 /*
  * SQUARE thumbnail card.
- * padding-bottom: 100% on a block element = height equals width.
+ * Height is set by JS (ResizeObserver) to match width.
  * All children are position:absolute inside.
  */
 .vea-furniture-thumb {
     position: relative;
-    padding-bottom: 100%;
+    overflow: hidden;
     cursor: grab;
     border-radius: 6px;
     border: 1px solid transparent;
-    overflow: hidden;
     background: rgba(255, 255, 255, 0.03);
     transition: background 0.15s ease, border-color 0.15s ease;
 }
