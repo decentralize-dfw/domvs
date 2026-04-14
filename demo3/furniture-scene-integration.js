@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { FurnitureEditor } from './furniture-editor.js';
 import { FurniturePanel } from './furniture-panel.js';
 import { getAllItems } from './furniture-library.js';
+import { FURNITURE_CONFIG as C } from './furniture-config.js';
 
 export class FurnitureSceneIntegration {
     /**
@@ -64,7 +65,7 @@ export class FurnitureSceneIntegration {
         this.editor = new FurnitureEditor(
             this.scene, this._getCamera(), this.renderer, this.orbitControls, this.sceneIndex
         );
-        this.editor.cacheKey = 'vea-furniture-interior';
+        this.editor.cacheKey = C.sharedCacheKey;
         this.editor.onChange = () => {
             this._updateBadge();
             if (this._activeMode === 'toggle-3') this._updateSelectionInfo();
@@ -308,13 +309,16 @@ export class FurnitureSceneIntegration {
 
     _showDragGhost(pos) {
         if (!this._dragGhost) {
-            const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            const mat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0.35, depthWrite: false });
+            const geo = new THREE.BoxGeometry(C.dragGhostSize, C.dragGhostSize, C.dragGhostSize);
+            const mat = new THREE.MeshBasicMaterial({
+                color: C.dragGhostColor, transparent: true,
+                opacity: C.dragGhostOpacity, depthWrite: false
+            });
             this._dragGhost = new THREE.Mesh(geo, mat);
             this._dragGhost.userData._isDragGhost = true;
             this.scene.add(this._dragGhost);
         }
-        this._dragGhost.position.set(pos.x, 0.2, pos.z);
+        this._dragGhost.position.set(pos.x, C.dragGhostHeight, pos.z);
         this._dragGhost.visible = true;
     }
 
@@ -356,7 +360,7 @@ export class FurnitureSceneIntegration {
         this._furnPopupEl.style.left = x + 'px';
         this._furnPopupEl.style.top = (y - 60) + 'px';
         const close = () => this._closeFurniturePopup();
-        setTimeout(close, 3000);
+        setTimeout(close, C.popupAutoCloseMs);
         this._furnPopupEl.addEventListener('click', close);
     }
 

@@ -85,6 +85,7 @@
         import { ClipModeManager } from './clip-mode.js';
         import { FurnitureSceneIntegration } from './furniture-scene-integration.js';
         import { FurnitureEditor } from './furniture-editor.js'; // walkthru mode uses directly to load cache
+        import { FURNITURE_CONFIG as FURN_CFG } from './furniture-config.js';
 
         /* ===============================================================
            SHARED STATE
@@ -99,8 +100,8 @@
             const navEntry = performance.getEntriesByType?.('navigation')?.[0];
             const navType = navEntry ? navEntry.type : (performance.navigation?.type === 1 ? 'reload' : 'navigate');
             if (navType === 'reload') {
-                try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
-                try { sessionStorage.removeItem('vea-furniture-interior-presets'); } catch (_) {}
+                try { sessionStorage.removeItem(FURN_CFG.sharedCacheKey); } catch (_) {}
+                try { sessionStorage.removeItem(FURN_CFG.sharedCacheKey + '-presets'); } catch (_) {}
             }
         }
 
@@ -849,7 +850,7 @@
 
                 // Load furniture placed in the furniture editor scene
                 const _walkFurnEditor = new FurnitureEditor(scene, camera, renderer, null, SCENE_INDEX);
-                _walkFurnEditor.cacheKey = 'vea-furniture-interior';
+                _walkFurnEditor.cacheKey = FURN_CFG.sharedCacheKey;
                 await _walkFurnEditor.loadFromCache().catch(() => {});
 
                 // Add furniture + preset bounding boxes as colliders

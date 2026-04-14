@@ -6,6 +6,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { FURNITURE_CONFIG as C } from './furniture-config.js';
 
 const _gltfLoader = new GLTFLoader();
 const _dracoLoader = new DRACOLoader();
@@ -62,7 +63,7 @@ export class FurnitureEditor {
         // Undo/redo
         this._undoStack = [];
         this._redoStack = [];
-        this._maxHistory = 50;
+        this._maxHistory = C.undoHistoryMax;
         this._restoringSnapshot = false;
 
         this.onChange = null;
@@ -427,14 +428,14 @@ export class FurnitureEditor {
         this._transformControls.visible = false;
         this._transformControls.enabled = false;
         this._transformControls.setMode('translate');
-        this._transformControls.size = 1.5;
+        this._transformControls.size = C.gumballSize;
 
         this._transformControls.addEventListener('dragging-changed', (e) => {
             this._gizmoDragging = e.value;
             if (this.orbitControls) this.orbitControls.enabled = !e.value;
             if (!e.value) {
                 this._recentlyDragged = true;
-                setTimeout(() => { this._recentlyDragged = false; }, 150);
+                setTimeout(() => { this._recentlyDragged = false; }, C.recentlyDraggedMs);
             }
         });
 
@@ -451,7 +452,7 @@ export class FurnitureEditor {
                 const diffs = [Math.abs(s.x - this._prevScale), Math.abs(s.y - this._prevScale), Math.abs(s.z - this._prevScale)];
                 const maxDiffIdx = diffs.indexOf(Math.max(...diffs));
                 const newVal = [s.x, s.y, s.z][maxDiffIdx];
-                const clamped = Math.max(0.05, newVal);
+                const clamped = Math.max(C.scaleMin, newVal);
                 s.set(clamped, clamped, clamped);
                 this._prevScale = clamped;
             }
@@ -462,7 +463,7 @@ export class FurnitureEditor {
                 this._gizmoDragging = false;
                 this.saveToCache();
                 this._notifyChange();
-            }, 50);
+            }, C.saveToCacheDebounceMs);
         });
 
         this.scene.add(this._transformControls);

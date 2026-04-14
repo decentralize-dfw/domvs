@@ -2,6 +2,7 @@
 // Extracted from demo3-scene.html initCamerasMode()
 
 import * as THREE from 'three';
+import { FURNITURE_CONFIG as C } from './furniture-config.js';
 
 export class ClipModeManager {
     /**
@@ -27,8 +28,8 @@ export class ClipModeManager {
         this.orbitControls = deps.orbitControls;
         this.orthoCamera = deps.orthoCamera;
         this.perspCamera = deps.perspCamera;
-        this.clipFrustum = deps.clipFrustum ?? 12;
-        this._clipPercent = deps.clipPercentDefault ?? 0.40;
+        this.clipFrustum = deps.clipFrustum ?? C.clipFrustumSize;
+        this._clipPercent = deps.clipPercentDefault ?? C.clipPercentDefault;
         this._onCameraSwitch = deps.onCameraSwitch || (() => {});
         this._onEnterPlan = deps.onEnterPlan || (() => {});
 
@@ -47,8 +48,7 @@ export class ClipModeManager {
         this._cachedBBox = new THREE.Box3();
         this.scene.traverse(c => {
             if (!c.isMesh) return;
-            if (c.userData.isHotspotSprite || c.userData._isCamHelper) return;
-            if (c.userData._isFurniture || c.userData._isDragGhost) return;
+            if (C.clippingSkipFlags.some(f => c.userData[f])) return;
             if (c.type === 'TransformControlsPlane' || c.type === 'TransformControlsGizmo') return;
             // Skip children of TransformControls
             let p = c.parent;
@@ -95,7 +95,7 @@ export class ClipModeManager {
 
         const center = new THREE.Vector3();
         this._sceneBBox.getCenter(center);
-        const dist = 20;
+        const dist = C.planViewDist;
         this.orthoCamera.position.set(
             center.x + dist * Math.cos(Math.PI / 4),
             center.y + dist * Math.sin(Math.PI / 4),
@@ -130,8 +130,8 @@ export class ClipModeManager {
         // Clone materials → apply clip plane (skips furniture/hotspots/cam helpers)
         this._clippedMeshes = [];
         this.scene.traverse(c => {
-            if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
-            if (c.userData._isFurniture || c.userData._isDragGhost) return;
+            if (!c.isMesh) return;
+            if (C.clippingSkipFlags.some(f => c.userData[f])) return;
             const orig = c.material;
             const clone = orig.clone();
             clone.clippingPlanes = [this._clippingPlane];
@@ -146,7 +146,7 @@ export class ClipModeManager {
         const bloomPass = this.composer.passes.find(p => p.strength !== undefined);
         if (bloomPass && bloomPass._origStrength === undefined) {
             bloomPass._origStrength = bloomPass.strength;
-            bloomPass.strength = 0.1;
+            bloomPass.strength = C.bloomStrengthInPlan;
         }
 
         // Notify caller — they update hotspotMgr.camera, etc.
@@ -200,7 +200,7 @@ export class ClipModeManager {
         const pct = Math.round(this._clipPercent * 100);
         this._sliderEl.innerHTML = `
             <label class="vea-clip-slider-label">Dikey Kesit Yüksekliği</label>
-            <input type="range" class="vea-clip-slider" min="10" max="90" value="${pct}" step="1">
+            <input type="range" class="vea-clip-slider" min="${C.clipPercentMin}" max="${C.clipPercentMax}" value="${pct}" step="1">
             <span class="vea-clip-slider-value">${pct}%</span>
         `;
         document.body.appendChild(this._sliderEl);
