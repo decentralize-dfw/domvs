@@ -606,6 +606,15 @@
                 for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
                 _setHoveredDot(null);
                 _showClipSlider();
+                // Ensure gumball arrows are never clipped
+                if (furnitureEditor) furnitureEditor.exemptGumballFromClipping();
+                if (camEditor) {
+                    camEditor._transformControls?.traverse(c => {
+                        if (c.material) {
+                            (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => { m.clippingPlanes = []; });
+                        }
+                    });
+                }
             }
 
             // ---- Clip height slider ----
@@ -731,6 +740,29 @@
                 if (furnitureEditor) furnitureEditor.deactivate();
                 if (furniturePanel) furniturePanel.hide();
                 if (hotspotMgr) hotspotMgr.suspended = false;
+            }
+
+            // ---- Furniture info popup (room camera mode) ----
+            let _furnPopupEl = null;
+            function _showFurniturePopup(placed, worldPoint) {
+                _closeFurniturePopup();
+                const name = placed.name.replace(/\.glb$/i, '').replace(/_/g, ' ');
+                _furnPopupEl = document.createElement('div');
+                _furnPopupEl.className = 'vea-furniture-popup';
+                _furnPopupEl.innerHTML = `<strong>${name}</strong><br><span style="font-size:11px;opacity:0.6">${placed.id}</span>`;
+                document.body.appendChild(_furnPopupEl);
+                // Position near click
+                const v = worldPoint.clone().project(camera);
+                const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+                _furnPopupEl.style.left = x + 'px';
+                _furnPopupEl.style.top = (y - 60) + 'px';
+                // Auto-close after 3s or on click
+                setTimeout(_closeFurniturePopup, 3000);
+                _furnPopupEl.addEventListener('click', _closeFurniturePopup);
+            }
+            function _closeFurniturePopup() {
+                if (_furnPopupEl) { _furnPopupEl.remove(); _furnPopupEl = null; }
             }
 
             function _renderPlacedItemsList() {
@@ -957,7 +989,9 @@
                 if (_hoveredDot) { selectCamera(_hoveredDot.camIndex); return; }
 
                 // Furniture selection in edit mode
-                if (activeMode === 'toggle-3' && furnitureEditor && !furnitureEditor.isDragging) {
+                if (activeMode === 'toggle-3' && furnitureEditor) {
+                    // Skip if just finished dragging gumball
+                    if (furnitureEditor.isDragging || furnitureEditor.wasRecentlyDragging) return;
                     _furnRC.setFromCamera(_furnMouse, camera);
                     const furnObjs = furnitureEditor.placedItems.map(i => i.threeObject);
                     if (furnObjs.length > 0) {
@@ -969,6 +1003,18 @@
                             furnitureEditor.deselectItem();
                             _updateSelectionInfo();
                         }
+                    }
+                    return;
+                }
+
+                // Furniture click popup in room camera mode (toggle-1)
+                if (activeMode === 'toggle-1' && furnitureEditor && furnitureEditor.placedItems.length > 0) {
+                    _furnRC.setFromCamera(_furnMouse, camera);
+                    const furnObjs = furnitureEditor.placedItems.map(i => i.threeObject);
+                    const hits = _furnRC.intersectObjects(furnObjs, true);
+                    if (hits.length > 0) {
+                        const placed = furnitureEditor.findByObject(hits[0].object);
+                        if (placed) _showFurniturePopup(placed, hits[0].point);
                     }
                 }
             });

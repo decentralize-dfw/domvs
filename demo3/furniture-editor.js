@@ -1,4 +1,4 @@
-// furniture-editor.js — Furniture Editor Core (Prompt 2/7)
+// furniture-editor.js — Furniture Editor Core
 // Spawn GLB items, gumball edit, sessionStorage cache
 
 import * as THREE from 'three';
@@ -7,7 +7,6 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
-// Shared loader (same pattern as hotspot-manager.js)
 const _gltfLoader = new GLTFLoader();
 const _dracoLoader = new DRACOLoader();
 _dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
@@ -15,13 +14,6 @@ _gltfLoader.setDRACOLoader(_dracoLoader);
 _gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
 export class FurnitureEditor {
-    /**
-     * @param {THREE.Scene} threeScene
-     * @param {THREE.Camera} camera
-     * @param {THREE.WebGLRenderer} renderer
-     * @param {import('three/addons/controls/OrbitControls.js').OrbitControls} orbitControls
-     * @param {number} sceneIndex — for sessionStorage key
-     */
     constructor(threeScene, camera, renderer, orbitControls, sceneIndex = 0) {
         this.scene = threeScene;
         this.camera = camera;
@@ -29,13 +21,13 @@ export class FurnitureEditor {
         this.orbitControls = orbitControls;
         this.sceneIndex = sceneIndex;
 
-        this._items = [];       // placed items
-        this._selected = null;  // currently selected placed item
+        this._items = [];
+        this._selected = null;
         this._gizmoDragging = false;
+        this._recentlyDragged = false; // prevents click-deselect after drag
         this._active = false;
         this._cacheLoaded = false;
 
-        /** External callback: called after spawn/delete/move completes. */
         this.onChange = null;
 
         this._setupTransformControls();
@@ -43,7 +35,6 @@ export class FurnitureEditor {
 
     // ---- PUBLIC API ----
 
-    /** Spawn a library item at given world position. Returns the placed item. */
     async spawnItem(libraryItem, position) {
         const pos = position || { x: 0, y: 0, z: 0 };
         const gltf = await new Promise((resolve, reject) => {
@@ -55,20 +46,10 @@ export class FurnitureEditor {
         root.userData._furnitureId = libraryItem.id;
         root.userData._furnitureName = libraryItem.name;
         root.userData._furnitureUrl = libraryItem.url;
-        // Tag ALL descendants so clipping engine can skip them
         root.traverse(child => { child.userData._isFurniture = true; });
         this.scene.add(root);
 
-        const placed = {
-            id: libraryItem.id,
-            url: libraryItem.url,
-            name: libraryItem.name,
-            threeObject: root,
-            get position() { return { x: root.position.x, y: root.position.y, z: root.position.z }; },
-            get rotation() { return { x: root.rotation.x, y: root.rotation.y, z: root.rotation.z }; },
-            get scale() { return { x: root.scale.x, y: root.scale.y, z: root.scale.z }; }
-        };
-
+        const placed = this._makePlacedItem(libraryItem.id, libraryItem.url, libraryItem.name, root);
         this._items.push(placed);
         this.selectItem(placed);
         this.saveToCache();
@@ -76,7 +57,6 @@ export class FurnitureEditor {
         return placed;
     }
 
-    /** Select a placed item and attach the gumball. */
     selectItem(placed) {
         if (!placed) { this.deselectItem(); return; }
         this._selected = placed;
@@ -85,7 +65,6 @@ export class FurnitureEditor {
         this._transformControls.enabled = true;
     }
 
-    /** Deselect current item (detach gumball). */
     deselectItem() {
         this._selected = null;
         this._transformControls.detach();
@@ -93,7 +72,6 @@ export class FurnitureEditor {
         this._transformControls.enabled = false;
     }
 
-    /** Delete the currently selected item. */
     deleteSelected() {
         if (!this._selected) return;
         const obj = this._selected.threeObject;
@@ -101,31 +79,42 @@ export class FurnitureEditor {
         this._transformControls.visible = false;
         this._transformControls.enabled = false;
         this.scene.remove(obj);
-        obj.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { const mats = Array.isArray(c.material) ? c.material : [c.material]; mats.forEach(m => m.dispose()); } });
+        obj.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
         this._items = this._items.filter(i => i !== this._selected);
         this._selected = null;
         this.saveToCache();
         this._notifyChange();
     }
 
-    /** All placed items. */
+    removeItem(placed) {
+        if (!placed) return;
+        if (this._selected === placed) this.deselectItem();
+        this.scene.remove(placed.threeObject);
+        placed.threeObject.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
+        this._items = this._items.filter(i => i !== placed);
+        this.saveToCache();
+        this._notifyChange();
+    }
+
     get placedItems() { return this._items; }
-
-    /** Currently selected placed item (or null). */
     get selected() { return this._selected; }
-
-    /** Whether the gumball is being dragged. */
     get isDragging() { return this._gizmoDragging; }
+    get wasRecentlyDragging() { return this._recentlyDragged; }
+    get itemCount() { return this._items.length; }
 
-    /** Set gumball mode: 'translate', 'rotate', 'scale'. */
     setMode(mode) {
         this._transformControls.setMode(mode);
     }
 
-    /** Activate the editor (disable orbit, show gumball if selected). */
+    /** Activate editor — orbit stays enabled, only disabled during gumball drag */
     activate() {
         this._active = true;
-        if (this.orbitControls) this.orbitControls.enabled = false;
         this._transformControls.camera = this.camera;
         if (this._selected) {
             this._transformControls.visible = true;
@@ -133,7 +122,6 @@ export class FurnitureEditor {
         }
     }
 
-    /** Deactivate the editor (re-enable orbit, hide gumball). */
     deactivate() {
         this._active = false;
         this._transformControls.detach();
@@ -151,12 +139,8 @@ export class FurnitureEditor {
 
     saveToCache() {
         const data = this._items.map(i => ({
-            id: i.id,
-            url: i.url,
-            name: i.name,
-            pos: i.position,
-            rot: i.rotation,
-            scale: i.scale
+            id: i.id, url: i.url, name: i.name,
+            pos: i.position, rot: i.rotation, scale: i.scale
         }));
         try { sessionStorage.setItem(this._cacheKey, JSON.stringify(data)); } catch (_) {}
     }
@@ -171,7 +155,7 @@ export class FurnitureEditor {
         try { data = JSON.parse(raw); } catch (_) { return; }
         if (!Array.isArray(data) || data.length === 0) return;
 
-        const promises = data.map(async (entry) => {
+        await Promise.all(data.map(async (entry) => {
             const gltf = await new Promise((resolve, reject) => {
                 _gltfLoader.load(entry.url, resolve, undefined, reject);
             });
@@ -184,24 +168,11 @@ export class FurnitureEditor {
             root.userData._furnitureUrl = entry.url;
             root.traverse(child => { child.userData._isFurniture = true; });
             this.scene.add(root);
-
-            const placed = {
-                id: entry.id,
-                url: entry.url,
-                name: entry.name,
-                threeObject: root,
-                get position() { return { x: root.position.x, y: root.position.y, z: root.position.z }; },
-                get rotation() { return { x: root.rotation.x, y: root.rotation.y, z: root.rotation.z }; },
-                get scale() { return { x: root.scale.x, y: root.scale.y, z: root.scale.z }; }
-            };
-            this._items.push(placed);
-        });
-
-        await Promise.all(promises);
+            this._items.push(this._makePlacedItem(entry.id, entry.url, entry.name, root));
+        }));
         this._notifyChange();
     }
 
-    /** Find a placed item by its threeObject (for raycasting). */
     findByObject(obj) {
         let target = obj;
         while (target) {
@@ -212,14 +183,22 @@ export class FurnitureEditor {
         return null;
     }
 
-    /** Called each frame (for TransformControls updates). */
     update() {
         if (this._active && this._selected && this._gizmoDragging) {
             this.saveToCache();
         }
     }
 
-    /** Clean up everything. */
+    /** Ensure gumball is never clipped — call after clipping materials are set */
+    exemptGumballFromClipping() {
+        this._transformControls.traverse(c => {
+            if (c.material) {
+                const mats = Array.isArray(c.material) ? c.material : [c.material];
+                mats.forEach(m => { m.clippingPlanes = []; m.clipIntersection = false; });
+            }
+        });
+    }
+
     dispose() {
         this._transformControls.detach();
         this._transformControls.dispose();
@@ -228,35 +207,23 @@ export class FurnitureEditor {
             this.scene.remove(item.threeObject);
             item.threeObject.traverse(c => {
                 if (c.geometry) c.geometry.dispose();
-                if (c.material) {
-                    const mats = Array.isArray(c.material) ? c.material : [c.material];
-                    mats.forEach(m => m.dispose());
-                }
+                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
             });
         }
         this._items = [];
         this._selected = null;
     }
 
-    /** Remove a specific placed item (by reference). */
-    removeItem(placed) {
-        if (!placed) return;
-        if (this._selected === placed) this.deselectItem();
-        this.scene.remove(placed.threeObject);
-        placed.threeObject.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { const mats = Array.isArray(c.material) ? c.material : [c.material]; mats.forEach(m => m.dispose()); } });
-        this._items = this._items.filter(i => i !== placed);
-        this.saveToCache();
-        this._notifyChange();
-    }
-
-    /** Get placed item count. */
-    get itemCount() { return this._items.length; }
-
-    _notifyChange() {
-        if (this.onChange) this.onChange();
-    }
-
     // ---- INTERNAL ----
+
+    _makePlacedItem(id, url, name, root) {
+        return {
+            id, url, name, threeObject: root,
+            get position() { return { x: root.position.x, y: root.position.y, z: root.position.z }; },
+            get rotation() { return { x: root.rotation.x, y: root.rotation.y, z: root.rotation.z }; },
+            get scale() { return { x: root.scale.x, y: root.scale.y, z: root.scale.z }; }
+        };
+    }
 
     _setupTransformControls() {
         this._transformControls = new TransformControls(this.camera, this.renderer.domElement);
@@ -267,7 +234,22 @@ export class FurnitureEditor {
 
         this._transformControls.addEventListener('dragging-changed', (e) => {
             this._gizmoDragging = e.value;
-            if (this.orbitControls) this.orbitControls.enabled = !e.value && !this._active;
+            // Disable orbit ONLY while dragging gumball, re-enable on release
+            if (this.orbitControls) this.orbitControls.enabled = !e.value;
+            if (!e.value) {
+                // Mark recently dragged so click handler doesn't deselect
+                this._recentlyDragged = true;
+                setTimeout(() => { this._recentlyDragged = false; }, 150);
+            }
+        });
+
+        // Uniform scale: when in scale mode, enforce XYZ uniform
+        this._transformControls.addEventListener('objectChange', () => {
+            if (this._transformControls.mode === 'scale' && this._selected) {
+                const s = this._selected.threeObject.scale;
+                const max = Math.max(s.x, s.y, s.z);
+                s.set(max, max, max);
+            }
         });
 
         this._transformControls.addEventListener('mouseDown', () => {
@@ -282,5 +264,9 @@ export class FurnitureEditor {
         });
 
         this.scene.add(this._transformControls);
+    }
+
+    _notifyChange() {
+        if (this.onChange) this.onChange();
     }
 }
