@@ -1307,6 +1307,13 @@
                 _walkFurnEditor.cacheKey = 'vea-furniture-interior';
                 await _walkFurnEditor.loadFromCache().catch(() => {});
 
+                // Add furniture bounding boxes as colliders
+                for (const item of _walkFurnEditor.placedItems) {
+                    item.threeObject.traverse(c => {
+                        if (c.isMesh) colliderMeshes.push(c);
+                    });
+                }
+
                 fadeOutLoading();
                 setupMobileJoystick();
             }).catch(e => {
