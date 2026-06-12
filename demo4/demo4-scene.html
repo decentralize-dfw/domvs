@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA Demo4 — Scene Runner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="demo4-style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/distribution/nipplejs.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- ===== LOADING SCREEN ===== -->
+    <div id="loading">
+        <div class="loading-title">VEA</div>
+        <div class="loading-subtitle" id="loadingSubtitle">Sanal Emlak Deneyimi</div>
+        <div class="loading-bar-track"><div id="loadingProgressBar"></div></div>
+        <div class="loading-tagline" id="loadingTagline">hazırlanıyor…</div>
+    </div>
+
+    <img id="backgroundImg">
+    <div id="sceneLoadingIndicator">Sahne Yükleniyor…</div>
+    <div id="sceneTransitionOverlay"></div>
+
+    <!-- ===== ORBIT / CAMERAS MODE UI ===== -->
+    <p id="modelLabel" class="vea-model-label" style="display:none">Oda</p>
+    <div id="modelToggleBar">
+        <button id="modelToggleBtn1" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn2" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn3" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn4" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn5" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn6" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn7" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn8" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn9" class="vea-model-toggle" style="display:none"></button>
+        <button id="modelToggleBtn10" class="vea-model-toggle" style="display:none"></button>
+    </div>
+
+    <!-- ===== PANELS & DESCRIPTION ===== -->
+    <div id="leftHtmlPanel"></div>
+    <div id="rightHtmlPanel"></div>
+    <div id="description"></div>
+
+    <!-- ===== WALKTHRU MODE UI ===== -->
+    <div id="instructions" style="display:none">
+        <h1>Walk-Thru</h1>
+        <p>Başlamak için ekrana tıklayın · WASD ile gezin</p>
+    </div>
+    <div id="joystickLeft" class="joystick-zone" style="display:none"></div>
+    <div id="joystickRight" class="joystick-zone" style="display:none"></div>
+
+    <!-- ===== COMMON ===== -->
+    <button id="fullscreenButton" class="fab-info-btn" title="Tam Ekran" style="display:none">⛶</button>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+        import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { PMREMGenerator } from 'three';
+        import {
+            loadVeaConfig, yes, num, isMouseBreak,
+            renderPanelHtml, assetUrlFor,
+            parseCameraPositionAction, isColliderEntry
+        } from './xlsx-loader-4.js';
+        import { HotspotManager, CameraEditor } from './hotspot-manager.js';
+        import { FurnitureEditor } from './furniture-editor.js';
+        import { FurniturePanel } from './furniture-panel.js';
+        import { getAllItems, getItemsByCategory } from './furniture-library.js';
+
+        /* ===============================================================
+           SHARED STATE
+           =============================================================== */
+        const SCENE_INDEX = parseInt(new URLSearchParams(location.search).get('scene') ?? '0');
+
+        // Furniture cache lifecycle:
+        // - Survives: scene navigation (?scene=N), back/forward buttons
+        // - Cleared: full page refresh (F5), tab close (sessionStorage)
+        // Only type === 'reload' triggers clear; 'navigate' and 'back_forward' keep cache
+        {
+            const navEntry = performance.getEntriesByType?.('navigation')?.[0];
+            const navType = navEntry ? navEntry.type : (performance.navigation?.type === 1 ? 'reload' : 'navigate');
+            if (navType === 'reload') {
+                try { sessionStorage.removeItem('vea-furniture-interior'); } catch (_) {}
+            }
+        }
+
+        let scene, renderer, composer, camera, pmremGenerator;
+        let config = null;
+        let sceneCfg = null;
+        let hotspotMgr = null;
+        const clock = new THREE.Clock();
+
+        // Mode-specific state — set by initXxxMode(), used by updateXxxMode()
+        let activeUpdateFn = null; // called every frame with (delta)
+
+        // DOM refs
+        const loadingEl              = document.getElementById('loading');
+        const loadingSubtitleEl      = document.getElementById('loadingSubtitle');
+        const loadingTaglineEl       = document.getElementById('loadingTagline');
+        const backgroundImgEl        = document.getElementById('backgroundImg');
+        const sceneLoadingIndicatorEl = document.getElementById('sceneLoadingIndicator');
+        const leftHtmlPanel          = document.getElementById('leftHtmlPanel');
+        const rightHtmlPanel         = document.getElementById('rightHtmlPanel');
+        const descriptionEl          = document.getElementById('description');
+
+        /* ===============================================================
+           LOADING HELPERS
+           =============================================================== */
+        function setLoadingProgress(pct) {
+            const bar = document.getElementById('loadingProgressBar');
+            if (bar) {
+                bar.style.animation = 'none';
+                bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+                bar.style.background = '#c9a96e';
+            }
+        }
+        function fadeOutLoading() {
+            setLoadingProgress(100);
+            setTimeout(() => {
+                loadingEl.classList.add('fading');
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 550);
+            }, 300);
+        }
+
+        // Hide the loading overlay and show a recoverable error message
+        // with a retry button — the scene must never appear frozen.
+        function showLoadError(message) {
+            loadingEl.classList.add('fading');
+            setTimeout(() => { loadingEl.style.display = 'none'; }, 550);
+            sceneLoadingIndicatorEl.innerHTML = '';
+            const msg = document.createElement('div');
+            msg.textContent = message;
+            msg.style.marginBottom = '10px';
+            const retry = document.createElement('button');
+            retry.textContent = 'Tekrar Dene';
+            retry.style.cssText = 'display:block;margin:0 auto;padding:7px 22px;background:#c9a96e;border:none;border-radius:8px;color:#000;font-weight:700;font-size:12px;letter-spacing:0.1em;cursor:pointer;font-family:inherit;text-transform:uppercase';
+            retry.addEventListener('click', () => location.reload());
+            sceneLoadingIndicatorEl.appendChild(msg);
+            sceneLoadingIndicatorEl.appendChild(retry);
+            sceneLoadingIndicatorEl.style.display = 'block';
+        }
+
+        /* ===============================================================
+           ENVIRONMENT (shared by all modes except panoramic)
+           =============================================================== */
+        function setupEnvironment() {
+            if (config.hdriUrl) {
+                new RGBELoader().load(config.hdriUrl, (texture) => {
+                    texture.mapping = THREE.EquirectangularReflectionMapping;
+                    scene.background = texture;
+                    scene.environment = pmremGenerator.fromEquirectangular(texture).texture;
+                    pmremGenerator.dispose();
+                    texture.dispose();
+                    scene.environmentIntensity = 0.7;
+                    setLoadingProgress(80);
+                }, (xhr) => {
+                    if (xhr.total) setLoadingProgress(Math.round((xhr.loaded / xhr.total) * 60));
+                });
+            }
+
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.5));
+
+            const sun = new THREE.DirectionalLight(0xffffff, 3.6);
+            sun.position.set(12, 24, 12);
+            sun.castShadow = true;
+            sun.shadow.mapSize.set(2048, 2048);
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far  = 160;
+            sun.shadow.camera.left = -55; sun.shadow.camera.right = 55;
+            sun.shadow.camera.top  = 55;  sun.shadow.camera.bottom = -55;
+            sun.shadow.bias = -0.0001;
+            sun.shadow.normalBias = 0.025;
+            scene.add(sun);
+        }
+
+        /* ===============================================================
+           MODEL LOADER (shared by orbit, cameras, walkthru)
+           =============================================================== */
+        function createGltfLoader() {
+            const dracoLoader = new DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+            dracoLoader.setDecoderConfig({ type: 'js' });
+            const gltfLoader = new GLTFLoader();
+            gltfLoader.setDRACOLoader(dracoLoader);
+            gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+            return gltfLoader;
+        }
+
+        function loadVisibleModel(gltfLoader, entry) {
+            return new Promise((resolve, reject) => {
+                const url = assetUrlFor(config, entry);
+                if (!url) { resolve(null); return; }
+                gltfLoader.load(url, (gltf) => {
+                    const root = gltf.scene;
+                    root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
+                    root.rotation.set(entry.rot.x, entry.rot.y, entry.rot.z);
+                    root.scale.set(entry.scale.x || 1, entry.scale.y || 1, entry.scale.z || 1);
+                    root.visible = entry.visible;
+                    if (entry.id) root.userData.id = entry.id;
+                    if (entry.toggleKod) root.userData._toggleKod = entry.toggleKod;
+                    root.traverse((c) => {
+                        if (c.isMesh) {
+                            c.castShadow = true;
+                            c.receiveShadow = true;
+                            if (c.material && c.material.emissive) c.material.emissiveIntensity = 1;
+                        }
+                    });
+                    scene.add(root);
+                    resolve(root);
+                }, undefined, reject);
+            });
+        }
+
+        function loadColliderModel(gltfLoader, entry, colliderMeshes) {
+            return new Promise((resolve, reject) => {
+                const url = assetUrlFor(config, entry);
+                if (!url) { resolve(null); return; }
+                gltfLoader.load(url, (gltf) => {
+                    const root = gltf.scene;
+                    root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
+                    root.visible = false;
+                    root.traverse((c) => {
+                        if (c.isMesh) {
+                            c.material = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+                            colliderMeshes.push(c);
+                        }
+                    });
+                    scene.add(root);
+                    resolve();
+                }, undefined, reject);
+            });
+        }
+
+        /**
+         * Load all models for the scene. Returns a promise.
+         * For walkthru mode, pass a colliderMeshes array to collect colliders.
+         */
+        function loadAllModels(colliderMeshes) {
+            const gltfLoader = createGltfLoader();
+            sceneLoadingIndicatorEl.style.display = 'block';
+
+            const promises = sceneCfg.models.map((entry) => {
+                if (colliderMeshes && isColliderEntry(config, entry)) {
+                    return loadColliderModel(gltfLoader, entry, colliderMeshes);
+                }
+                return loadVisibleModel(gltfLoader, entry);
+            });
+
+            return Promise.all(promises).then(() => {
+                sceneLoadingIndicatorEl.style.display = 'none';
+                backgroundImgEl.style.display = 'none';
+                document.getElementById('fullscreenButton').style.display = 'flex';
+            });
+        }
+
+        /* ===============================================================
+           PANEL HELPERS
+           =============================================================== */
+        function updatePanelsById(leftId, rightId) {
+            const L = sceneCfg.panels[leftId];
+            const R = sceneCfg.panels[rightId];
+            leftHtmlPanel.innerHTML  = renderPanelHtml(L);
+            rightHtmlPanel.innerHTML = renderPanelHtml(R);
+            leftHtmlPanel.style.display  = L ? 'block' : 'none';
+            rightHtmlPanel.style.display = R ? 'block' : 'none';
+            leftHtmlPanel.scrollTop  = 0;
+            rightHtmlPanel.scrollTop = 0;
+        }
+
+        function showStaticPanels() {
+            leftHtmlPanel.innerHTML  = renderPanelHtml(sceneCfg.panels['left']);
+            rightHtmlPanel.innerHTML = renderPanelHtml(sceneCfg.panels['right']);
+            leftHtmlPanel.style.display  = 'block';
+            rightHtmlPanel.style.display = 'block';
+        }
+
+        /* ===============================================================
+           RESIZE HANDLER
+           =============================================================== */
+        function setupResizeHandler() {
+            window.addEventListener('resize', () => {
+                const aspect = window.innerWidth / window.innerHeight;
+                if (camera.isOrthographicCamera) {
+                    const fs = camera.userData._frustumSize || 40;
+                    camera.left   = -fs * aspect / 2;
+                    camera.right  =  fs * aspect / 2;
+                    camera.top    =  fs / 2;
+                    camera.bottom = -fs / 2;
+                } else {
+                    camera.aspect = aspect;
+                }
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        /* ===============================================================
+           FULLSCREEN
+           =============================================================== */
+        function setupFullscreenButton() {
+            document.getElementById('fullscreenButton').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else {
+                    document.exitFullscreen().catch(() => {});
+                }
+            });
+        }
+
+        /* ===============================================================
+           ORBIT MODE (type: orbit) — Prompt 3
+           scenes 0-3 behavior: OrbitControls, toggles, panels, hotspots
+           =============================================================== */
+        function initOrbitMode() {
+            const cam = sceneCfg.camera;
+            const aspect = window.innerWidth / window.innerHeight;
+            const isOrtho = String(cam['Kamera Türü'] || '').toLowerCase() === 'orthographic';
+            const frustumSize = num(cam['Frustum Size']) || 40;
+
+            if (isOrtho) {
+                camera = new THREE.OrthographicCamera(
+                    -frustumSize * aspect / 2, frustumSize * aspect / 2,
+                    frustumSize / 2, -frustumSize / 2, 0.1, 1000
+                );
+                camera.userData._frustumSize = frustumSize;
+            } else {
+                const fov = num(cam['Default FOV']) || 75;
+                camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
+            }
+
+            camera.position.set(num(cam['Cam Pos X']), num(cam['Cam Pos Y']), num(cam['Cam Pos Z']));
+            const lookAt = new THREE.Vector3(num(cam['LookAt X']), num(cam['LookAt Y']), num(cam['LookAt Z']));
+            camera.lookAt(lookAt);
+
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping  = true;
+            orbitControls.dampingFactor  = 0.05;
+            orbitControls.target.copy(lookAt);
+            orbitControls.autoRotate     = yes(cam['Auto-Rotate']);
+            orbitControls.autoRotateSpeed = num(cam['Auto-Rotate Speed']) || 1.0;
+            if (isMouseBreak(cam['Auto-Rotate'])) {
+                const stopRotate = () => {
+                    orbitControls.autoRotate = false;
+                    renderer.domElement.removeEventListener('pointerdown', stopRotate);
+                };
+                renderer.domElement.addEventListener('pointerdown', stopRotate);
+            }
+            orbitControls.enablePan    = yes(cam['Enable Pan']);
+            orbitControls.enableZoom   = yes(cam['Enable Zoom']);
+            orbitControls.enableRotate = yes(cam['Enable Rotate']);
+            orbitControls.maxPolarAngle = (Math.PI / 2) * 0.98;
+            orbitControls.update();
+
+            // Setup toggle buttons if present
+            const toggleButtons = Array.from(document.querySelectorAll('#modelToggleBar .vea-model-toggle'));
+            if (sceneCfg.buttons.length > 0) {
+                document.getElementById('modelLabel').style.display = 'block';
+                sceneCfg.buttons.forEach((cfg, i) => {
+                    if (!toggleButtons[i]) return;
+                    const btn = toggleButtons[i];
+                    btn.textContent = cfg.name;
+                    btn.dataset.id = cfg.id;
+                    btn.style.display = 'block';
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleButtons.forEach((b, j) => b.classList.toggle('selected', j === i));
+                        const kod = cfg.kod || `toggle-${i + 1}`;
+
+                        // Toggle model visibility (root-level check)
+                        scene.children.forEach(child => {
+                            if (child.userData._toggleKod) {
+                                child.visible = (child.userData._toggleKod === kod);
+                            }
+                        });
+
+                        // Move camera if action has Pos() → LookAt()
+                        const camPos = parseCameraPositionAction(cfg.action);
+                        if (camPos) {
+                            camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
+                            orbitControls.target.set(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
+                            if (camPos.fov && camera.isPerspectiveCamera) {
+                                camera.fov = camPos.fov;
+                                camera.updateProjectionMatrix();
+                            }
+                            orbitControls.update();
+                        }
+
+                        // Panel lookup: try id-based keys, fall back to kod-based
+                        const idKey = cfg.id || kod;
+                        const hasIdPanels = sceneCfg.panels[`${idKey}-left`] || sceneCfg.panels[`${idKey}-right`];
+                        const panelKey = hasIdPanels ? idKey : kod;
+                        updatePanelsById(`${panelKey}-left`, `${panelKey}-right`);
+                        if (hotspotMgr) hotspotMgr.setToggle(kod);
+                        descriptionEl.textContent = cfg.name;
+                        descriptionEl.style.display = 'block';
+                    });
+                });
+            }
+
+            // Build composer + load models
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            loadAllModels().then(() => {
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                hotspotMgr.loadHotspots();
+                if (sceneCfg.buttons.length > 0) {
+                    // Toggle-based panels — first button click loads them
+                    toggleButtons[0]?.click();
+                } else {
+                    // No buttons — try static left/right panels
+                    showStaticPanels();
+                }
+                fadeOutLoading();
+            }).catch(e => {
+                console.error(e);
+                showLoadError('Sahne yüklenirken bir sorun oluştu');
+            });
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+            };
+        }
+
+        /* ===============================================================
+           CAMERAS MODE (type: cameras) — Prompt 4
+           scene 4 behavior: fixed cameras, clipping, nav dots, teleport
+           =============================================================== */
+        function initCamerasMode() {
+            const cam = sceneCfg.camera;
+            const defaultFov = num(cam['Default FOV']) || 80;
+            const aspect = window.innerWidth / window.innerHeight;
+            const CLIP_FRUSTUM = 12;
+
+            // Dual cameras
+            const perspCamera = new THREE.PerspectiveCamera(defaultFov, aspect, 0.1, 1000);
+            const orthoCamera = new THREE.OrthographicCamera(
+                -CLIP_FRUSTUM * aspect / 2, CLIP_FRUSTUM * aspect / 2,
+                CLIP_FRUSTUM / 2, -CLIP_FRUSTUM / 2, 0.1, 1000
+            );
+
+            const cameraPositions = sceneCfg.buttons.map(b => parseCameraPositionAction(b.action));
+            if (cameraPositions[0]) {
+                perspCamera.position.set(cameraPositions[0].pos.x, cameraPositions[0].pos.y, cameraPositions[0].pos.z);
+            }
+            camera = perspCamera;
+
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.05;
+            orbitControls.maxPolarAngle = (Math.PI / 2) * 0.98;
+            if (cameraPositions[0]) {
+                orbitControls.target.set(cameraPositions[0].lookAt.x, cameraPositions[0].lookAt.y, cameraPositions[0].lookAt.z);
+            }
+            orbitControls.update();
+
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Clip mode state
+            let activeMode = 'toggle-1';
+            let clippingPlane = null;
+            let clippedMeshes = [];
+            let sceneBBox = null;
+            let _cachedBBox = null;   // computed ONCE after model load
+            let _clipPercent = 0.40;  // default 40%, overridable from Excel / slider
+            let camEditor = null;
+            let furnitureEditor = null;
+            let furniturePanel = null;
+            const _furnRC = new THREE.Raycaster();
+            const _furnMouse = new THREE.Vector2();
+
+            // Nav dots state
+            let navDots = [];
+            const _navRC = new THREE.Raycaster();
+            const _navMouse = new THREE.Vector2();
+            let _hoveredDot = null;
+
+            const toggleButtons = Array.from(document.querySelectorAll('#modelToggleBar .vea-model-toggle'));
+
+            // ---- selectCamera ----
+            function selectCamera(index) {
+                toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === index));
+                const camPos = cameraPositions[index];
+                if (!camPos) return;
+
+                camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
+                camera.lookAt(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
+                camera.fov = camPos.fov;
+                camera.updateProjectionMatrix();
+
+                const lookDir = new THREE.Vector3(
+                    camPos.lookAt.x - camPos.pos.x,
+                    camPos.lookAt.y - camPos.pos.y,
+                    camPos.lookAt.z - camPos.pos.z
+                ).normalize().multiplyScalar(0.01);
+                orbitControls.target.set(
+                    camPos.pos.x + lookDir.x,
+                    camPos.pos.y + lookDir.y,
+                    camPos.pos.z + lookDir.z
+                );
+                orbitControls.enablePan = false;
+                orbitControls.enableZoom = true;
+                orbitControls.enableRotate = true;
+                orbitControls.minDistance = 0.001;
+                orbitControls.maxDistance = 0.02;
+                orbitControls.update();
+
+                const btn = sceneCfg.buttons[index];
+                const panelKey = btn?.id || `cam${index + 1}`;
+                updatePanelsById(`${panelKey}-left`, `${panelKey}-right`);
+                const kod = btn?.kod || 'toggle-1';
+                if (hotspotMgr) hotspotMgr.setToggle(kod);
+                descriptionEl.textContent = `Camera: ${btn?.name || ''}`;
+                descriptionEl.style.display = 'block';
+                updateNavDots(index);
+            }
+
+            // ---- Clip mode ----
+            // Compute scene bbox from LOADED MODELS only.
+            // Called once after model load. Skips all helpers/furniture/gizmos.
+            // Stores result in _cachedBBox. Subsequent plan view entries reuse it.
+            function _computeAndCacheBBox() {
+                // Ensure all world matrices are current
+                scene.updateMatrixWorld(true);
+                _cachedBBox = new THREE.Box3();
+                scene.traverse(c => {
+                    if (!c.isMesh) return;
+                    // Skip ALL non-model objects
+                    if (c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    if (c.userData._isFurniture || c.userData._isDragGhost) return;
+                    // Skip TransformControls gizmo parts
+                    if (c.type === 'TransformControlsPlane' || c.type === 'TransformControlsGizmo') return;
+                    let p = c.parent;
+                    let isHelper = false;
+                    while (p && !isHelper) {
+                        if (p.isTransformControls || p.type === 'TransformControlsGizmo') isHelper = true;
+                        p = p.parent;
+                    }
+                    if (isHelper) return;
+                    if (!c.geometry) return;
+                    if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
+                    if (!c.geometry.boundingBox) return;
+                    const size = new THREE.Vector3();
+                    c.geometry.boundingBox.getSize(size);
+                    if (size.x > 500 || size.y > 500 || size.z > 500) return;
+                    const worldBB = c.geometry.boundingBox.clone();
+                    worldBB.applyMatrix4(c.matrixWorld);
+                    _cachedBBox.union(worldBB);
+                });
+                if (_cachedBBox.isEmpty()) _cachedBBox.set(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
+                sceneBBox = _cachedBBox.clone();
+            }
+
+            function _useCachedBBox() {
+                sceneBBox = _cachedBBox ? _cachedBBox.clone() : new THREE.Box3(new THREE.Vector3(-10, -1, -10), new THREE.Vector3(10, 10, 10));
+            }
+
+            // ---- Plan view helpers (shared by clip mode + furniture modes) ----
+            function _switchToPlanView(buttonIndex) {
+                toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === buttonIndex));
+                _useCachedBBox();
+
+                const center = new THREE.Vector3();
+                sceneBBox.getCenter(center);
+                const dist = 20;
+                orthoCamera.position.set(
+                    center.x + dist * Math.cos(Math.PI / 4),
+                    center.y + dist * Math.sin(Math.PI / 4),
+                    center.z + dist * Math.cos(Math.PI / 4)
+                );
+                orthoCamera.lookAt(center);
+                const a = window.innerWidth / window.innerHeight;
+                orthoCamera.left = -CLIP_FRUSTUM * a / 2;
+                orthoCamera.right = CLIP_FRUSTUM * a / 2;
+                orthoCamera.top = CLIP_FRUSTUM / 2;
+                orthoCamera.bottom = -CLIP_FRUSTUM / 2;
+                orthoCamera.updateProjectionMatrix();
+
+                camera = orthoCamera;
+                composer.passes[0].camera = camera;
+                orbitControls.object = camera;
+                orbitControls.target.copy(center);
+                orbitControls.enablePan = true;
+                orbitControls.enableZoom = true;
+                orbitControls.enableRotate = true;
+                orbitControls.minDistance = 0;
+                orbitControls.maxDistance = Infinity;
+                orbitControls.update();
+
+                const height = sceneBBox.max.y - sceneBBox.min.y;
+                // Clip plane: cut at _clipPercent height from bottom
+                // Low % = cut low (floor plan only), High % = cut high (show more building)
+                clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), sceneBBox.min.y + _clipPercent * height);
+
+                clippedMeshes = [];
+                scene.traverse(c => {
+                    if (!c.isMesh || c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                    if (c.userData._isFurniture || c.userData._isDragGhost) return;
+                    const orig = c.material;
+                    const clone = orig.clone();
+                    clone.clippingPlanes = [clippingPlane];
+                    clone.clipShadows = false;
+                    clone.needsUpdate = true;
+                    c.material = clone;
+                    clippedMeshes.push({ mesh: c, origMaterial: orig });
+                });
+                renderer.localClippingEnabled = true;
+
+                const bloomPass = composer.passes.find(p => p.strength !== undefined);
+                if (bloomPass && bloomPass._origStrength === undefined) { bloomPass._origStrength = bloomPass.strength; bloomPass.strength = 0.1; }
+
+                if (hotspotMgr) hotspotMgr.camera = camera;
+                if (camEditor) camEditor.camera = camera;
+                if (furnitureEditor) furnitureEditor.camera = camera;
+                for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                _setHoveredDot(null);
+                _showClipSlider();
+                // Ensure gumball arrows are never clipped
+                if (furnitureEditor) furnitureEditor.exemptGumballFromClipping();
+                if (camEditor) {
+                    camEditor._transformControls?.traverse(c => {
+                        if (c.material) {
+                            (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => { m.clippingPlanes = []; });
+                        }
+                    });
+                }
+            }
+
+            // ---- Clip height slider ----
+            let _clipSliderEl = null;
+
+            function _showClipSlider() {
+                if (_clipSliderEl) { _clipSliderEl.style.display = 'flex'; return; }
+                _clipSliderEl = document.createElement('div');
+                _clipSliderEl.className = 'vea-clip-slider-wrap';
+                _clipSliderEl.innerHTML = `
+                    <label class="vea-clip-slider-label">Dikey Kesit Yüksekliği</label>
+                    <input type="range" class="vea-clip-slider" min="10" max="90" value="${Math.round(_clipPercent * 100)}" step="1">
+                    <span class="vea-clip-slider-value">${Math.round(_clipPercent * 100)}%</span>
+                `;
+                document.body.appendChild(_clipSliderEl);
+                const slider = _clipSliderEl.querySelector('.vea-clip-slider');
+                const valLabel = _clipSliderEl.querySelector('.vea-clip-slider-value');
+                slider.addEventListener('input', () => {
+                    _clipPercent = parseInt(slider.value) / 100;
+                    valLabel.textContent = slider.value + '%';
+                    _updateClipPlane();
+                });
+            }
+
+            function _hideClipSlider() {
+                if (_clipSliderEl) _clipSliderEl.style.display = 'none';
+            }
+
+            function _updateClipPlane() {
+                if (!clippingPlane || !sceneBBox) return;
+                const height = sceneBBox.max.y - sceneBBox.min.y;
+                clippingPlane.constant = sceneBBox.min.y + _clipPercent * height;
+            }
+
+            function _switchToPerspView() {
+                _hideClipSlider();
+                for (const entry of clippedMeshes) {
+                    const cloned = entry.mesh.material;
+                    entry.mesh.material = entry.origMaterial;
+                    cloned.dispose();
+                }
+                clippedMeshes = [];
+                renderer.localClippingEnabled = false;
+                clippingPlane = null;
+
+                const bloomPass = composer.passes.find(p => p._origStrength !== undefined);
+                if (bloomPass) { bloomPass.strength = bloomPass._origStrength; delete bloomPass._origStrength; }
+
+                camera = perspCamera;
+                composer.passes[0].camera = camera;
+                if (hotspotMgr) hotspotMgr.camera = camera;
+                if (camEditor) camEditor.camera = camera;
+                if (furnitureEditor) furnitureEditor.camera = camera;
+                orbitControls.object = camera;
+                orbitControls.enablePan = false;
+                orbitControls.minDistance = 0.001;
+                orbitControls.maxDistance = 0.02;
+                orbitControls.update();
+            }
+
+            function enterClipMode(buttonIndex) {
+                activeMode = 'toggle-2';
+                _switchToPlanView(buttonIndex);
+                if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
+                leftHtmlPanel.style.display = 'none';
+                rightHtmlPanel.style.display = 'none';
+                descriptionEl.textContent = 'Plan Görünümü';
+                descriptionEl.style.display = 'block';
+            }
+
+            function exitClipMode() {
+                _switchToPerspView();
+                activeMode = 'toggle-1';
+            }
+
+            // ---- Furniture modes ----
+            function enterFurnitureEdit(buttonIndex) {
+                activeMode = 'toggle-3';
+                _switchToPlanView(buttonIndex);
+
+                // Activate editor
+                if (furnitureEditor) {
+                    furnitureEditor.camera = camera;
+                    furnitureEditor._transformControls.camera = camera;
+                    furnitureEditor.activate();
+                }
+
+                // Show furniture panel in left panel
+                if (furniturePanel) {
+                    furniturePanel.build();
+                    furniturePanel.show();
+                }
+
+                // Right panel: selection info
+                rightHtmlPanel.innerHTML = '<div class="vea-furniture-info"><p>Bir mobilya seçin</p></div>';
+                rightHtmlPanel.style.display = 'block';
+
+                if (hotspotMgr) hotspotMgr.suspended = true;
+                descriptionEl.textContent = 'Mobilya Editörü';
+                descriptionEl.style.display = 'block';
+            }
+
+            function enterFurnitureView(buttonIndex) {
+                activeMode = 'toggle-3-view';
+                _switchToPlanView(buttonIndex);
+
+                // Load cache if needed
+                if (furnitureEditor && furnitureEditor.placedItems.length === 0) {
+                    furnitureEditor.loadFromCache().catch(() => {});
+                }
+
+                // Show placed items list in left panel
+                _renderPlacedItemsList();
+                leftHtmlPanel.style.display = 'block';
+                rightHtmlPanel.style.display = 'none';
+
+                if (hotspotMgr) hotspotMgr.suspended = true;
+                descriptionEl.textContent = 'Mobilya Görünüm';
+                descriptionEl.style.display = 'block';
+            }
+
+            function exitFurnitureMode() {
+                if (furnitureEditor) furnitureEditor.deactivate();
+                if (furniturePanel) furniturePanel.hide();
+                if (hotspotMgr) hotspotMgr.suspended = false;
+            }
+
+            // ---- Furniture info popup (room camera mode) ----
+            let _furnPopupEl = null;
+            function _showFurniturePopup(placed, worldPoint) {
+                _closeFurniturePopup();
+                const name = placed.name.replace(/\.glb$/i, '').replace(/_/g, ' ');
+                _furnPopupEl = document.createElement('div');
+                _furnPopupEl.className = 'vea-furniture-popup';
+                _furnPopupEl.innerHTML = `<strong>${name}</strong><br><span style="font-size:11px;opacity:0.6">${placed.id}</span>`;
+                document.body.appendChild(_furnPopupEl);
+                // Position near click
+                const v = worldPoint.clone().project(camera);
+                const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
+                _furnPopupEl.style.left = x + 'px';
+                _furnPopupEl.style.top = (y - 60) + 'px';
+                // Auto-close after 3s or on click
+                setTimeout(_closeFurniturePopup, 3000);
+                _furnPopupEl.addEventListener('click', _closeFurniturePopup);
+            }
+            function _closeFurniturePopup() {
+                if (_furnPopupEl) { _furnPopupEl.remove(); _furnPopupEl = null; }
+            }
+
+            function _renderPlacedItemsList() {
+                if (!furnitureEditor) { leftHtmlPanel.innerHTML = ''; return; }
+                const items = furnitureEditor.placedItems;
+                if (items.length === 0) {
+                    leftHtmlPanel.innerHTML = '<p class="vea-furniture-info" style="color:rgba(255,255,255,0.5);">Henüz mobilya yerleştirilmedi</p>';
+                    return;
+                }
+                let html = `<h3 style="margin:0 0 8px;font-size:14px;color:#fff;">Yerleştirilen (${items.length})</h3>`;
+                items.forEach((item, idx) => {
+                    const p = item.position;
+                    html += `<div class="vea-furniture-placed-item" data-idx="${idx}">`;
+                    html += `<div style="font-size:12px;color:#fff;">${item.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
+                    html += `<div style="font-size:10px;color:rgba(255,255,255,0.4);">X: ${p.x.toFixed(1)} &nbsp; Z: ${p.z.toFixed(1)}</div>`;
+                    html += '</div>';
+                });
+                leftHtmlPanel.innerHTML = html;
+                leftHtmlPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const idx = parseInt(el.dataset.idx);
+                        const item = furnitureEditor.placedItems[idx];
+                        if (item) {
+                            orbitControls.target.copy(item.threeObject.position);
+                            orbitControls.update();
+                        }
+                    });
+                });
+            }
+
+            let _furnSpinner = null;
+            function _showFurnSpinner() {
+                if (_furnSpinner) return;
+                _furnSpinner = document.createElement('div');
+                _furnSpinner.className = 'vea-furniture-loading';
+                _furnSpinner.textContent = 'Yükleniyor…';
+                document.body.appendChild(_furnSpinner);
+            }
+            function _hideFurnSpinner() {
+                if (_furnSpinner) { _furnSpinner.remove(); _furnSpinner = null; }
+            }
+
+            function _updateFurnitureBadge() {
+                const count = furnitureEditor ? furnitureEditor.itemCount : 0;
+                toggleButtons.forEach(btn => {
+                    // Find furniture toggle buttons by action
+                    const cfg = sceneCfg.buttons.find(b => b.id === btn.dataset.id);
+                    if (!cfg) return;
+                    const action = (cfg.action || '').trim();
+                    if (action === 'FURNITURE_EDIT' || action === 'FURNITURE_VIEW') {
+                        let badge = btn.querySelector('.vea-furniture-badge');
+                        if (count > 0) {
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'vea-furniture-badge';
+                                btn.appendChild(badge);
+                            }
+                            badge.textContent = count;
+                        } else if (badge) {
+                            badge.remove();
+                        }
+                    }
+                });
+            }
+
+            let _activeGizmoMode = 'translate';
+
+            function _updateSelectionInfo() {
+                if (activeMode !== 'toggle-3') return;
+                const sel = furnitureEditor?.selected;
+                const items = furnitureEditor?.placedItems || [];
+                const m = _activeGizmoMode;
+
+                let html = '<div class="vea-furniture-info">';
+
+                // Selected item section
+                if (sel) {
+                    const p = sel.position;
+                    html += `<h3>${sel.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</h3>`;
+                    html += `<p>X: ${p.x.toFixed(2)} &nbsp; Z: ${p.z.toFixed(2)}</p>`;
+                    html += '<div class="vea-furniture-mode-bar">';
+                    html += `<button class="vea-furniture-mode-btn${m === 'translate' ? ' active' : ''}" data-mode="translate">Taşı</button>`;
+                    html += `<button class="vea-furniture-mode-btn${m === 'rotate' ? ' active' : ''}" data-mode="rotate">Döndür</button>`;
+                    html += `<button class="vea-furniture-mode-btn${m === 'scale' ? ' active' : ''}" data-mode="scale">Boyut</button>`;
+                    html += '</div>';
+                    html += `<button id="furnDeleteBtn" class="vea-furniture-delete-btn">Sil</button>`;
+                    html += '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:10px 0">';
+                }
+
+                // Placed items list — always visible
+                html += `<h3 style="font-size:12px;margin:0 0 6px;">Yerleştirilen (${items.length})</h3>`;
+                if (items.length > 0) {
+                    for (let idx = 0; idx < items.length; idx++) {
+                        const it = items[idx];
+                        const ip = it.position;
+                        const ir = it.rotation;
+                        const is_ = it.scale;
+                        const isSel = sel && sel === it;
+                        html += `<div class="vea-furniture-placed-item${isSel ? ' active' : ''}" data-idx="${idx}">`;
+                        html += `<div style="font-size:11px;color:#fff;">${it.name.replace(/\.glb$/i, '').replace(/_/g, ' ')}</div>`;
+                        html += `<div style="font-size:9px;color:rgba(255,255,255,0.4);">`;
+                        html += `P: ${ip.x.toFixed(1)}, ${ip.z.toFixed(1)}`;
+                        html += ` · R: ${(ir.y * 180 / Math.PI).toFixed(0)}°`;
+                        html += ` · S: ${is_.x.toFixed(2)}`;
+                        html += `</div></div>`;
+                    }
+                    html += `<button id="furnClearAllBtn" class="vea-furniture-clear-btn">Sahneyi Temizle</button>`;
+                } else {
+                    html += '<p style="font-size:11px;color:rgba(255,255,255,0.35);">Henüz mobilya yok</p>';
+                }
+
+                html += '</div>';
+                rightHtmlPanel.innerHTML = html;
+
+                // Wire up events
+                if (sel) {
+                    rightHtmlPanel.querySelectorAll('.vea-furniture-mode-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            _activeGizmoMode = btn.dataset.mode;
+                            if (furnitureEditor) furnitureEditor.setMode(_activeGizmoMode);
+                            _updateSelectionInfo();
+                        });
+                    });
+                    document.getElementById('furnDeleteBtn')?.addEventListener('click', () => {
+                        if (furnitureEditor) { furnitureEditor.deleteSelected(); _updateSelectionInfo(); }
+                    });
+                }
+                // Placed item click → select
+                rightHtmlPanel.querySelectorAll('.vea-furniture-placed-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const idx = parseInt(el.dataset.idx);
+                        const item = furnitureEditor?.placedItems[idx];
+                        if (item) { furnitureEditor.selectItem(item); _updateSelectionInfo(); }
+                    });
+                });
+                // Clear all
+                document.getElementById('furnClearAllBtn')?.addEventListener('click', () => {
+                    if (furnitureEditor) { furnitureEditor.clearAll(); _updateSelectionInfo(); }
+                });
+            }
+
+            // ---- Nav dots ----
+            function _makeNavLabel(text) {
+                const c = document.createElement('canvas');
+                c.width = 256; c.height = 64;
+                const x = c.getContext('2d');
+                x.fillStyle = 'rgba(0,0,0,0.75)';
+                x.beginPath(); x.roundRect(4, 4, 248, 56, 12); x.fill();
+                x.fillStyle = '#fff'; x.font = 'bold 22px Arial';
+                x.textAlign = 'center'; x.textBaseline = 'middle';
+                x.fillText(text, 128, 32);
+                const mat = new THREE.SpriteMaterial({
+                    map: new THREE.CanvasTexture(c), depthTest: false, sizeAttenuation: true
+                });
+                const s = new THREE.Sprite(mat);
+                s.scale.set(1.0, 0.25, 1);
+                return s;
+            }
+
+            function createNavDots() {
+                const dotGeo = new THREE.CircleGeometry(0.12, 32);
+                const ringGeo = new THREE.RingGeometry(0.13, 0.18, 32);
+                sceneCfg.buttons.forEach((btn, i) => {
+                    const cp = cameraPositions[i];
+                    if (!cp) return;
+                    const dx = btn.dotPos ? btn.dotPos.x : cp.pos.x;
+                    const dy = btn.dotPos ? btn.dotPos.y : 0.02;
+                    const dz = btn.dotPos ? btn.dotPos.z : cp.pos.z;
+
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+                    const mesh = new THREE.Mesh(dotGeo.clone(), mat);
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.set(dx, dy, dz);
+                    mesh.userData._navDotIdx = i;
+                    scene.add(mesh);
+
+                    const ringMat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0, side: THREE.DoubleSide });
+                    const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.set(dx, dy + 0.005, dz);
+                    scene.add(ring);
+
+                    const label = _makeNavLabel(btn.name || '');
+                    label.position.set(dx, dy + 0.43, dz);
+                    label.visible = false;
+                    scene.add(label);
+                    navDots.push({ mesh, ring, label, camIndex: i });
+                });
+            }
+
+            function updateNavDots(selectedCamIndex) {
+                for (const dot of navDots) {
+                    const show = dot.camIndex !== selectedCamIndex && activeMode === 'toggle-1';
+                    dot.mesh.visible = show;
+                    dot.ring.visible = show;
+                    if (!show) dot.label.visible = false;
+                }
+            }
+
+            function _setHoveredDot(dot) {
+                if (_hoveredDot === dot) return;
+                if (_hoveredDot) {
+                    _hoveredDot.label.visible = false;
+                    _hoveredDot.mesh.material.opacity = 0.7;
+                    _hoveredDot.ring.material.opacity = 0;
+                }
+                _hoveredDot = dot;
+                if (_hoveredDot) {
+                    _hoveredDot.label.visible = true;
+                    _hoveredDot.mesh.material.opacity = 1.0;
+                    _hoveredDot.ring.material.opacity = 0.8;
+                }
+                renderer.domElement.style.cursor = dot ? 'pointer' : '';
+            }
+
+            function updateNavDotsHover() {
+                if (activeMode !== 'toggle-1' || navDots.length === 0) return;
+                if (camEditor && camEditor.active) return;
+                const meshes = navDots.filter(d => d.mesh.visible).map(d => d.mesh);
+                if (meshes.length === 0) { _setHoveredDot(null); return; }
+                _navRC.setFromCamera(_navMouse, camera);
+                const hits = _navRC.intersectObjects(meshes);
+                _setHoveredDot(hits.length > 0 ? navDots.find(d => d.mesh === hits[0].object) : null);
+            }
+
+            // ---- Toggle buttons ----
+            document.getElementById('modelLabel').style.display = 'block';
+            sceneCfg.buttons.forEach((cfg, i) => {
+                if (!toggleButtons[i]) return;
+                const btn = toggleButtons[i];
+                btn.textContent = cfg.name;
+                btn.dataset.id = cfg.id;
+                btn.style.display = 'block';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const action = (cfg.action || '').trim();
+                    const prevMode = activeMode;
+
+                    // Exit previous mode if switching away
+                    if (prevMode === 'toggle-3' || prevMode === 'toggle-3-view') exitFurnitureMode();
+                    if (prevMode === 'toggle-2' || prevMode === 'toggle-3' || prevMode === 'toggle-3-view') _switchToPerspView();
+
+                    if (action.startsWith('CLIP_MODE')) {
+                        if (prevMode === 'toggle-2') return;
+                        enterClipMode(i);
+                    } else if (action === 'FURNITURE_EDIT') {
+                        if (prevMode === 'toggle-3') return;
+                        enterFurnitureEdit(i);
+                    } else if (action === 'FURNITURE_VIEW') {
+                        if (prevMode === 'toggle-3-view') return;
+                        enterFurnitureView(i);
+                    } else {
+                        activeMode = 'toggle-1';
+                        selectCamera(i);
+                    }
+                });
+            });
+
+            // ---- Nav dot events ----
+            renderer.domElement.addEventListener('pointermove', (e) => {
+                _navMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+                _furnMouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+            });
+            renderer.domElement.addEventListener('click', () => {
+                if (camEditor && camEditor.active) return;
+                if (_hoveredDot) { selectCamera(_hoveredDot.camIndex); return; }
+
+                // Furniture selection in edit mode
+                if (activeMode === 'toggle-3' && furnitureEditor) {
+                    // Skip if just finished dragging gumball
+                    if (furnitureEditor.isDragging || furnitureEditor.wasRecentlyDragging) return;
+                    _furnRC.setFromCamera(_furnMouse, camera);
+                    const furnObjs = furnitureEditor.placedItems.map(i => i.threeObject);
+                    if (furnObjs.length > 0) {
+                        const hits = _furnRC.intersectObjects(furnObjs, true);
+                        if (hits.length > 0) {
+                            const placed = furnitureEditor.findByObject(hits[0].object);
+                            if (placed) { furnitureEditor.selectItem(placed); _updateSelectionInfo(); }
+                        } else {
+                            furnitureEditor.deselectItem();
+                            _updateSelectionInfo();
+                        }
+                    }
+                    return;
+                }
+
+                // Furniture click popup in room camera mode (toggle-1)
+                if (activeMode === 'toggle-1' && furnitureEditor && furnitureEditor.placedItems.length > 0) {
+                    _furnRC.setFromCamera(_furnMouse, camera);
+                    const furnObjs = furnitureEditor.placedItems.map(i => i.threeObject);
+                    const hits = _furnRC.intersectObjects(furnObjs, true);
+                    if (hits.length > 0) {
+                        const placed = furnitureEditor.findByObject(hits[0].object);
+                        if (placed) _showFurniturePopup(placed, hits[0].point);
+                    }
+                }
+            });
+
+            // ---- Furniture drag & drop on canvas ----
+            let _dragGhost = null;
+            const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const _dragHit = new THREE.Vector3();
+
+            function _projectToGround(clientX, clientY) {
+                const rect = renderer.domElement.getBoundingClientRect();
+                const mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+                const my = -((clientY - rect.top) / rect.height) * 2 + 1;
+                _furnRC.setFromCamera(new THREE.Vector2(mx, my), camera);
+                _furnRC.ray.intersectPlane(_dragPlane, _dragHit);
+                return _dragHit;
+            }
+
+            function _showDragGhost(pos) {
+                if (!_dragGhost) {
+                    const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xc9a96e, transparent: true, opacity: 0.35, depthWrite: false });
+                    _dragGhost = new THREE.Mesh(geo, mat);
+                    _dragGhost.userData._isDragGhost = true;
+                    scene.add(_dragGhost);
+                }
+                _dragGhost.position.set(pos.x, 0.2, pos.z);
+                _dragGhost.visible = true;
+            }
+
+            function _hideDragGhost() {
+                if (_dragGhost) {
+                    scene.remove(_dragGhost);
+                    _dragGhost.geometry.dispose();
+                    _dragGhost.material.dispose();
+                    _dragGhost = null;
+                }
+            }
+
+            renderer.domElement.addEventListener('dragenter', (e) => {
+                if (activeMode !== 'toggle-3') return;
+                e.preventDefault();
+            });
+            renderer.domElement.addEventListener('dragover', (e) => {
+                if (activeMode !== 'toggle-3') return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                const hit = _projectToGround(e.clientX, e.clientY);
+                _showDragGhost(hit);
+            });
+            renderer.domElement.addEventListener('dragleave', () => {
+                _hideDragGhost();
+            });
+            renderer.domElement.addEventListener('drop', (e) => {
+                _hideDragGhost();
+                if (activeMode !== 'toggle-3' || !furnitureEditor) return;
+                e.preventDefault();
+                const itemId = e.dataTransfer.getData('application/x-furniture-id');
+                if (!itemId) return;
+                const allItems = getAllItems();
+                const libItem = allItems.find(i => i.id === itemId);
+                if (!libItem) return;
+                const hit = _projectToGround(e.clientX, e.clientY);
+                _showFurnSpinner();
+                furnitureEditor.spawnItem(libItem, { x: hit.x, y: 0, z: hit.z }).then(() => {
+                    _hideFurnSpinner();
+                    _updateSelectionInfo();
+                }).catch(() => _hideFurnSpinner());
+            });
+
+            // ---- Furniture keyboard shortcuts ----
+            window.addEventListener('keydown', (e) => {
+                if (activeMode !== 'toggle-3' || !furnitureEditor || !furnitureEditor.active) return;
+                if (e.key === 'r' || e.key === 'R') { _activeGizmoMode = 'rotate'; furnitureEditor.setMode('rotate'); _updateSelectionInfo(); }
+                if (e.key === 't' || e.key === 'T') { _activeGizmoMode = 'translate'; furnitureEditor.setMode('translate'); _updateSelectionInfo(); }
+                if (e.key === 's' || e.key === 'S') { _activeGizmoMode = 'scale'; furnitureEditor.setMode('scale'); _updateSelectionInfo(); }
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    furnitureEditor.deleteSelected();
+                    _updateSelectionInfo();
+                }
+            });
+
+            // ---- Load models then wire everything up ----
+            loadAllModels().then(() => {
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+                camEditor = new CameraEditor(scene, camera, renderer, config, SCENE_INDEX, orbitControls, sceneCfg);
+
+                camEditor.onToggle = (active) => {
+                    hotspotMgr.suspended = active;
+                    if (active) {
+                        _setHoveredDot(null);
+                        for (const d of navDots) { d.mesh.visible = false; d.ring.visible = false; d.label.visible = false; }
+                    }
+                    // Dim hotspot sprites to 20% in editor, restore on exit
+                    for (const obj of hotspotMgr.objects) {
+                        if (obj.sprite?.material) obj.sprite.material.opacity = active ? 0.2 : 1.0;
+                        if (obj.label?.material) obj.label.material.opacity = active ? 0.2 : 1.0;
+                    }
+                };
+
+                hotspotMgr.onTeleport = (hsData) => {
+                    let bestIdx = 0, bestDist = Infinity;
+                    cameraPositions.forEach((cp, i) => {
+                        if (!cp) return;
+                        const dx = cp.pos.x - hsData.pos.x;
+                        const dz = cp.pos.z - hsData.pos.z;
+                        const dist = dx * dx + dz * dz;
+                        if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+                    });
+                    if (activeMode === 'toggle-3' || activeMode === 'toggle-3-view') exitFurnitureMode();
+                    if (activeMode !== 'toggle-1') { _switchToPerspView(); activeMode = 'toggle-1'; }
+                    selectCamera(bestIdx);
+                };
+
+                hotspotMgr.loadHotspots();
+                createNavDots();
+                camEditor.setNavDots(navDots);
+
+                // Compute scene bounding box ONCE — frozen for all plan view modes
+                _computeAndCacheBBox();
+
+                // Read clip height % from camera config (Excel "1 · KAMERA" section)
+                const excelClip = num(sceneCfg.camera['Clip Height %']);
+                if (excelClip > 0 && excelClip <= 100) _clipPercent = excelClip / 100;
+
+                // Initialize FurnitureEditor — shared cache key across interior scenes
+                furnitureEditor = new FurnitureEditor(scene, camera, renderer, orbitControls, SCENE_INDEX);
+                furnitureEditor.cacheKey = 'vea-furniture-interior';
+                furnitureEditor.onChange = () => {
+                    _updateFurnitureBadge();
+                    if (activeMode === 'toggle-3') _updateSelectionInfo();
+                    if (activeMode === 'toggle-3-view') _renderPlacedItemsList();
+                };
+                furniturePanel = new FurniturePanel(leftHtmlPanel, (item) => {
+                    if (!furnitureEditor) return;
+                    _showFurnSpinner();
+                    const target = orbitControls.target;
+                    furnitureEditor.spawnItem(item, { x: target.x, y: 0, z: target.z }).then(() => {
+                        _hideFurnSpinner();
+                        _updateSelectionInfo();
+                    }).catch(() => _hideFurnSpinner());
+                }, (preset, isLoading) => {
+                    // Preset toggle callback
+                    if (!furnitureEditor) return;
+                    if (isLoading) {
+                        _showFurnSpinner();
+                        furnitureEditor.loadPreset(preset).then(() => {
+                            _hideFurnSpinner();
+                            furniturePanel.refresh();
+                            _updateSelectionInfo();
+                        }).catch(() => _hideFurnSpinner());
+                    } else {
+                        furnitureEditor.removePreset(preset.id);
+                        furniturePanel.refresh();
+                        _updateSelectionInfo();
+                    }
+                });
+                furniturePanel.setEditor(furnitureEditor);
+                // Load cached furniture (non-blocking)
+                furnitureEditor.loadFromCache().catch(() => {});
+
+                // Auto-start first button's mode
+                if (sceneCfg.buttons.length > 0) {
+                    const firstAction = (sceneCfg.buttons[0].action || '').trim();
+                    if (firstAction.startsWith('CLIP_MODE')) {
+                        enterClipMode(0);
+                    } else if (firstAction === 'FURNITURE_EDIT') {
+                        enterFurnitureEdit(0);
+                    } else if (firstAction === 'FURNITURE_VIEW') {
+                        enterFurnitureView(0);
+                    } else {
+                        selectCamera(0);
+                    }
+                }
+                fadeOutLoading();
+            }).catch(e => {
+                console.error(e);
+                showLoadError('Sahne yüklenirken bir sorun oluştu');
+            });
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+                if (furnitureEditor) furnitureEditor.update(delta);
+                updateNavDotsHover();
+            };
+        }
+
+        /* ===============================================================
+           WALKTHRU MODE (type: walkthru) — Prompt 5
+           scene 5 behavior: FPS, PointerLock, WASD, colliders, joystick
+           =============================================================== */
+        function initWalkthruMode() {
+            const cam = sceneCfg.camera;
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            const pointerLockControls = new PointerLockControls(camera, renderer.domElement);
+            const startPos = {
+                x: num(cam['Başlangıç Pos X']),
+                y: num(cam['Başlangıç Pos Y']) || num(cam['Player Height (m)']) || 1.6,
+                z: num(cam['Başlangıç Pos Z'])
+            };
+            pointerLockControls.getObject().position.set(startPos.x, startPos.y, startPos.z);
+            scene.add(pointerLockControls.getObject());
+
+            const instructionsEl = document.getElementById('instructions');
+            instructionsEl.style.display = 'block';
+
+            function isMobile() {
+                return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+            }
+
+            document.body.addEventListener('click', (e) => {
+                if (e.target.closest('button') || e.target.closest('#leftHtmlPanel') || e.target.closest('#rightHtmlPanel')) return;
+                if (isMobile()) return;
+                if (!pointerLockControls.isLocked) pointerLockControls.lock();
+            });
+            pointerLockControls.addEventListener('lock',   () => { instructionsEl.style.display = 'none'; });
+            pointerLockControls.addEventListener('unlock', () => { instructionsEl.style.display = 'block'; });
+
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Mobile joystick
+            const mobileJoystickEnabled = yes(cam['Mobile Joystick']);
+            const mobileJoystickLeft = { x: 0, y: 0 };
+            const mobileJoystickRight = { x: 0, y: 0 };
+
+            function setupMobileJoystick() {
+                if (!mobileJoystickEnabled || !isMobile() || typeof nipplejs === 'undefined') return;
+                const leftZone = document.getElementById('joystickLeft');
+                const rightZone = document.getElementById('joystickRight');
+                leftZone.style.display = 'block';
+                rightZone.style.display = 'block';
+
+                const nleft = nipplejs.create({ zone: leftZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
+                nleft.on('move', (_, d) => { mobileJoystickLeft.x = d.vector.x; mobileJoystickLeft.y = d.vector.y; });
+                nleft.on('end', () => { mobileJoystickLeft.x = 0; mobileJoystickLeft.y = 0; });
+
+                const nright = nipplejs.create({ zone: rightZone, mode: 'static', position: { left: '50%', top: '50%' }, color: 'white', size: 100 });
+                nright.on('move', (_, d) => { mobileJoystickRight.x = d.vector.x; mobileJoystickRight.y = d.vector.y; });
+                nright.on('end', () => { mobileJoystickRight.x = 0; mobileJoystickRight.y = 0; });
+            }
+
+            const colliderMeshes = [];
+            loadAllModels(colliderMeshes).then(async () => {
+                showStaticPanels();
+                hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, null);
+                hotspotMgr.loadHotspots();
+
+                // Load furniture placed in the furniture editor scene
+                const _walkFurnEditor = new FurnitureEditor(scene, camera, renderer, null, SCENE_INDEX);
+                _walkFurnEditor.cacheKey = 'vea-furniture-interior';
+                await _walkFurnEditor.loadFromCache().catch(() => {});
+
+                // Add furniture bounding boxes as colliders
+                for (const item of _walkFurnEditor.placedItems) {
+                    item.threeObject.traverse(c => {
+                        if (c.isMesh) colliderMeshes.push(c);
+                    });
+                }
+
+                fadeOutLoading();
+                setupMobileJoystick();
+            }).catch(e => {
+                console.error(e);
+                showLoadError('Sahne yüklenirken bir sorun oluştu');
+            });
+
+            // Walkthru physics state
+            const playerHeight = num(cam['Player Height (m)']) || 1.6;
+            const playerRadius = num(cam['Player Radius (m)']) || 0.4;
+            const jumpVelocity = num(cam['Jump Velocity']) || 6;
+            const gravity      = num(cam['Gravity']) || -20;
+            const baseMoveSpeed = num(cam['Base Move Speed']) || 20;
+            const sprintMultiplier = num(cam['Sprint Multiplier']) || 4;
+            let currentMoveSpeed = baseMoveSpeed;
+            const playerVelocity = new THREE.Vector3();
+            const playerDirection = new THREE.Vector3();
+            let playerOnFloor = false;
+            const raycaster = new THREE.Raycaster();
+            const keys = { forward: false, backward: false, left: false, right: false, jump: false, sprint: false };
+
+            document.addEventListener('keydown', (e) => {
+                if (!pointerLockControls.isLocked) return;
+                switch (e.code) {
+                    case 'KeyW': keys.forward = true; break;
+                    case 'KeyS': keys.backward = true; break;
+                    case 'KeyA': keys.left = true; break;
+                    case 'KeyD': keys.right = true; break;
+                    case 'Space': if (playerOnFloor) keys.jump = true; break;
+                    case 'ShiftLeft': keys.sprint = true; currentMoveSpeed = baseMoveSpeed * sprintMultiplier; break;
+                    case 'KeyF':
+                        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+                        else document.exitFullscreen().catch(() => {});
+                        break;
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                switch (e.code) {
+                    case 'KeyW': keys.forward = false; break;
+                    case 'KeyS': keys.backward = false; break;
+                    case 'KeyA': keys.left = false; break;
+                    case 'KeyD': keys.right = false; break;
+                    case 'Space': keys.jump = false; break;
+                    case 'ShiftLeft': keys.sprint = false; currentMoveSpeed = baseMoveSpeed; break;
+                }
+            });
+
+            activeUpdateFn = (delta) => {
+                // Mobile joystick → keys mapping
+                if (isMobile() && mobileJoystickEnabled) {
+                    if (mobileJoystickLeft.x !== 0 || mobileJoystickLeft.y !== 0) {
+                        keys.forward = mobileJoystickLeft.y > 0.2;
+                        keys.backward = mobileJoystickLeft.y < -0.2;
+                        keys.left = mobileJoystickLeft.x < -0.2;
+                        keys.right = mobileJoystickLeft.x > 0.2;
+                    } else {
+                        keys.forward = keys.backward = keys.left = keys.right = false;
+                    }
+                    if (Math.abs(mobileJoystickRight.x) > 0.1 || Math.abs(mobileJoystickRight.y) > 0.1) {
+                        camera.rotation.y -= mobileJoystickRight.x * 0.04;
+                        camera.rotation.x -= mobileJoystickRight.y * 0.025;
+                        camera.rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, camera.rotation.x));
+                    }
+                }
+
+                if (!pointerLockControls.isLocked && !isMobile()) return;
+                if (colliderMeshes.length === 0) return;
+
+                const playerPos = pointerLockControls.getObject().position;
+
+                // Gravity + floor
+                raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+                const floorHits = raycaster.intersectObjects(colliderMeshes);
+                const onFloor = floorHits.length > 0 && floorHits[0].distance < playerHeight + 0.1;
+
+                if (onFloor) {
+                    playerVelocity.y = Math.max(0, playerVelocity.y);
+                    if (keys.jump) { playerVelocity.y = jumpVelocity; keys.jump = false; }
+                    if (floorHits[0].distance < playerHeight) playerPos.y += (playerHeight - floorHits[0].distance);
+                } else {
+                    playerVelocity.y += gravity * delta;
+                }
+                playerPos.y += playerVelocity.y * delta;
+
+                // Horizontal movement
+                playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+                playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+                playerDirection.z = Number(keys.forward) - Number(keys.backward);
+                playerDirection.x = Number(keys.right) - Number(keys.left);
+                playerDirection.normalize();
+                if (keys.forward || keys.backward) playerVelocity.z -= playerDirection.z * currentMoveSpeed * delta;
+                if (keys.left || keys.right) playerVelocity.x -= playerDirection.x * currentMoveSpeed * delta;
+                pointerLockControls.moveRight(-playerVelocity.x * delta);
+                pointerLockControls.moveForward(-playerVelocity.z * delta);
+
+                // Wall collision
+                const hPos = new THREE.Vector3(playerPos.x, playerPos.y - playerHeight / 2, playerPos.z);
+                for (const dir of [new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0), new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1)]) {
+                    raycaster.set(hPos, dir);
+                    const wallHits = raycaster.intersectObjects(colliderMeshes);
+                    if (wallHits.length > 0 && wallHits[0].distance < playerRadius) {
+                        const pen = playerRadius - wallHits[0].distance;
+                        playerPos.x -= dir.x * (pen + 0.01);
+                        playerPos.z -= dir.z * (pen + 0.01);
+                        if (dir.x !== 0) playerVelocity.x = 0;
+                        if (dir.z !== 0) playerVelocity.z = 0;
+                    }
+                }
+
+                // Final floor snap
+                raycaster.set(playerPos, new THREE.Vector3(0, -1, 0));
+                const finalHits = raycaster.intersectObjects(colliderMeshes);
+                playerOnFloor = false;
+                if (finalHits.length > 0 && finalHits[0].distance < playerHeight + 0.1) {
+                    playerOnFloor = true;
+                    if (finalHits[0].distance < playerHeight) {
+                        playerPos.y = finalHits[0].point.y + playerHeight;
+                        if (playerVelocity.y < 0) playerVelocity.y = 0;
+                    }
+                }
+
+                if (hotspotMgr) hotspotMgr.update(delta);
+            };
+        }
+
+        /* ===============================================================
+           PANORAMIC MODE (type: panoramic) — Prompt 6
+           360° equirectangular sphere view
+           =============================================================== */
+        function initPanoramicMode() {
+            const cam = sceneCfg.camera;
+            const fov = num(cam['Start FOV']) || 90;
+            const panoUrl = String(cam['Pano Image URL'] || '').trim();
+            const showFloorDots = yes(cam['Show Floor Dots']);
+
+            camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 1100);
+            camera.position.set(0, 0, 0);
+
+            // OrbitControls — rotate only (look around inside sphere)
+            const orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true;
+            orbitControls.dampingFactor = 0.12;
+            orbitControls.enablePan = false;
+            orbitControls.enableZoom = false;
+            orbitControls.enableRotate = true;
+            orbitControls.rotateSpeed = -0.3; // inverted for inside-sphere feel
+            orbitControls.target.set(0, 0, -0.01);
+            orbitControls.update();
+
+            composer.insertPass(new RenderPass(scene, camera), 0);
+
+            // Panorama sphere (inside-out)
+            const sphereGeo = new THREE.SphereGeometry(500, 64, 64);
+            sphereGeo.scale(-1, 1, 1); // flip normals → render inside
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+            const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            scene.add(sphereMesh);
+
+            // Load initial panorama texture
+            const texLoader = new THREE.TextureLoader();
+            let currentPanoUrl = '';
+
+            function loadPanorama(url, fadeIn) {
+                if (!url || url === currentPanoUrl) return;
+                currentPanoUrl = url;
+
+                // Fade overlay
+                const overlay = document.getElementById('sceneTransitionOverlay');
+                if (fadeIn && overlay) {
+                    overlay.style.opacity = '1';
+                    overlay.style.pointerEvents = 'auto';
+                }
+
+                texLoader.load(url, (tex) => {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.mapping = THREE.EquirectangularReflectionMapping;
+                    if (sphereMesh.material.map) sphereMesh.material.map.dispose();
+                    sphereMesh.material.map = tex;
+                    sphereMesh.material.color.set(0xffffff);
+                    sphereMesh.material.needsUpdate = true;
+
+                    if (fadeIn && overlay) {
+                        setTimeout(() => {
+                            overlay.style.opacity = '0';
+                            overlay.style.pointerEvents = 'none';
+                        }, 100);
+                    }
+                });
+            }
+
+            if (panoUrl) {
+                loadPanorama(panoUrl, false);
+                setLoadingProgress(90);
+            }
+
+            // Floor dots for panorama navigation (from hotspots)
+            const panoDots = [];
+            const _panoRC = new THREE.Raycaster();
+            const _panoMouse = new THREE.Vector2();
+            let _panoHovered = null;
+
+            function createPanoDots() {
+                if (!showFloorDots || !sceneCfg.hotspots) return;
+                const dotGeo = new THREE.CircleGeometry(0.5, 32);
+                const ringGeo = new THREE.RingGeometry(0.55, 0.8, 32);
+
+                for (const hs of sceneCfg.hotspots) {
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: 0xffffff, transparent: true, opacity: 0.7,
+                        side: THREE.DoubleSide, depthTest: true
+                    });
+                    const mesh = new THREE.Mesh(dotGeo.clone(), mat);
+                    mesh.rotation.x = -Math.PI / 2;
+                    mesh.position.set(hs.pos.x, hs.pos.y, hs.pos.z);
+                    scene.add(mesh);
+
+                    const ringMat = new THREE.MeshBasicMaterial({
+                        color: 0xc9a96e, transparent: true, opacity: 0,
+                        side: THREE.DoubleSide, depthTest: true
+                    });
+                    const ring = new THREE.Mesh(ringGeo.clone(), ringMat);
+                    ring.rotation.x = -Math.PI / 2;
+                    ring.position.set(hs.pos.x, hs.pos.y + 0.01, hs.pos.z);
+                    scene.add(ring);
+
+                    // Hover label
+                    const lc = document.createElement('canvas');
+                    lc.width = 256; lc.height = 64;
+                    const lx = lc.getContext('2d');
+                    lx.fillStyle = 'rgba(0,0,0,0.75)';
+                    lx.beginPath(); lx.roundRect(4, 4, 248, 56, 12); lx.fill();
+                    lx.fillStyle = '#fff'; lx.font = 'bold 22px Arial';
+                    lx.textAlign = 'center'; lx.textBaseline = 'middle';
+                    lx.fillText(hs.name.split('\n')[0], 128, 32);
+                    const labelMat = new THREE.SpriteMaterial({
+                        map: new THREE.CanvasTexture(lc), depthTest: false, sizeAttenuation: true
+                    });
+                    const label = new THREE.Sprite(labelMat);
+                    label.scale.set(4, 1, 1);
+                    label.position.set(hs.pos.x, hs.pos.y + 2, hs.pos.z);
+                    label.visible = false;
+                    scene.add(label);
+
+                    panoDots.push({ mesh, ring, label, data: hs });
+                }
+            }
+
+            function _setPanoHovered(dot) {
+                if (_panoHovered === dot) return;
+                if (_panoHovered) {
+                    _panoHovered.label.visible = false;
+                    _panoHovered.mesh.material.opacity = 0.7;
+                    _panoHovered.ring.material.opacity = 0;
+                }
+                _panoHovered = dot;
+                if (_panoHovered) {
+                    _panoHovered.label.visible = true;
+                    _panoHovered.mesh.material.opacity = 1.0;
+                    _panoHovered.ring.material.opacity = 0.8;
+                }
+                renderer.domElement.style.cursor = dot ? 'pointer' : '';
+            }
+
+            renderer.domElement.addEventListener('pointermove', (e) => {
+                _panoMouse.set(
+                    (e.clientX / innerWidth) * 2 - 1,
+                    -(e.clientY / innerHeight) * 2 + 1
+                );
+            });
+
+            renderer.domElement.addEventListener('click', () => {
+                if (_panoHovered) {
+                    const targetUrl = _panoHovered.data.hotspotUrl;
+                    if (targetUrl) loadPanorama(targetUrl, true);
+                }
+            });
+
+            // HotspotManager for regular popups (non-floor-dot hotspots)
+            hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
+            hotspotMgr.loadHotspots();
+
+            createPanoDots();
+            showStaticPanels();
+            fadeOutLoading();
+
+            activeUpdateFn = (delta) => {
+                orbitControls.update(delta);
+                if (hotspotMgr) hotspotMgr.update(delta);
+
+                // Pano dot hover
+                if (panoDots.length > 0) {
+                    const meshes = panoDots.map(d => d.mesh);
+                    _panoRC.setFromCamera(_panoMouse, camera);
+                    const hits = _panoRC.intersectObjects(meshes);
+                    _setPanoHovered(hits.length > 0 ? panoDots.find(d => d.mesh === hits[0].object) : null);
+                }
+            };
+        }
+
+        /* ===============================================================
+           INIT — entry point
+           =============================================================== */
+        async function init() {
+            try {
+                config = await loadVeaConfig();
+            } catch (e) {
+                console.error('xlsx load failed:', e);
+                showLoadError('Yapılandırma dosyası yüklenemedi');
+                return;
+            }
+
+            sceneCfg = config.scenes[SCENE_INDEX];
+            if (!sceneCfg) {
+                showLoadError(`Sahne ${SCENE_INDEX} bulunamadı`);
+                return;
+            }
+
+            // Update loading screen with scene info
+            loadingSubtitleEl.textContent = 'Sanal Emlak Deneyimi';
+            loadingTaglineEl.textContent = sceneCfg.title;
+            document.title = `VEA Demo4 — Scene ${SCENE_INDEX} · ${sceneCfg.title}`;
+
+            if (config.bgImageUrl) backgroundImgEl.src = config.bgImageUrl;
+
+            // Create shared Three.js infrastructure
+            scene = new THREE.Scene();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            document.body.appendChild(renderer.domElement);
+
+            pmremGenerator = new PMREMGenerator(renderer);
+
+            // Composer — mode will insert RenderPass at index 0
+            composer = new EffectComposer(renderer);
+            composer.addPass(new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.3, 0.88
+            ));
+            composer.addPass(new OutputPass());
+
+            // Environment (shared)
+            if (sceneCfg.type !== 'panoramic') {
+                setupEnvironment();
+            }
+
+            // Shared event listeners
+            setupResizeHandler();
+            setupFullscreenButton();
+
+            // Launch mode-specific initialization
+            switch (sceneCfg.type) {
+                case 'cameras':   initCamerasMode();   break;
+                case 'walkthru':  initWalkthruMode();  break;
+                case 'panoramic': initPanoramicMode();  break;
+                case 'orbit':
+                default:          initOrbitMode();      break;
+            }
+
+            renderer.setAnimationLoop(animate);
+        }
+
+        /* ===============================================================
+           ANIMATE LOOP
+           =============================================================== */
+        function animate() {
+            const delta = clock.getDelta();
+            if (activeUpdateFn) activeUpdateFn(delta);
+            if (composer) composer.render();
+        }
+
+        init();
+    </script>
+</body>
+</html>
