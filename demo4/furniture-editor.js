@@ -1,0 +1,426 @@
+// furniture-editor.js — Furniture Editor Core
+// Spawn GLB items, gumball edit, sessionStorage cache
+
+import * as THREE from 'three';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+const _gltfLoader = new GLTFLoader();
+const _dracoLoader = new DRACOLoader();
+_dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+_gltfLoader.setDRACOLoader(_dracoLoader);
+_gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+
+export class FurnitureEditor {
+    constructor(threeScene, camera, renderer, orbitControls, sceneIndex = 0) {
+        this.scene = threeScene;
+        this.camera = camera;
+        this.renderer = renderer;
+        this.orbitControls = orbitControls;
+        this.sceneIndex = sceneIndex;
+
+        this._items = [];
+        this._selected = null;
+        this._gizmoDragging = false;
+        this._recentlyDragged = false; // prevents click-deselect after drag
+        this._active = false;
+        this._cacheLoaded = false;
+        this._presets = [];     // [{ id, threeObject }] — locked, no gumball
+        this._history = [];     // undo stack (max 30)
+        this._dragBefore = null;
+
+        this.onChange = null;
+
+        this._setupTransformControls();
+    }
+
+    // ---- PUBLIC API ----
+
+    async spawnItem(libraryItem, position) {
+        const pos = position || { x: 0, y: 0, z: 0 };
+        const gltf = await new Promise((resolve, reject) => {
+            _gltfLoader.load(libraryItem.url, resolve, undefined, reject);
+        });
+
+        const root = gltf.scene;
+        root.position.set(pos.x, 0, pos.z);
+        root.userData._furnitureId = libraryItem.id;
+        root.userData._furnitureName = libraryItem.name;
+        root.userData._furnitureUrl = libraryItem.url;
+        root.traverse(child => { child.userData._isFurniture = true; });
+        this.scene.add(root);
+
+        const placed = this._makePlacedItem(libraryItem.id, libraryItem.url, libraryItem.name, root);
+        this._items.push(placed);
+        this._pushHistory({ type: 'spawn', placed });
+        this.selectItem(placed);
+        this.saveToCache();
+        this._notifyChange();
+        return placed;
+    }
+
+    selectItem(placed) {
+        if (!placed) { this.deselectItem(); return; }
+        this._selected = placed;
+        this._transformControls.attach(placed.threeObject);
+        this._transformControls.visible = true;
+        this._transformControls.enabled = true;
+    }
+
+    deselectItem() {
+        this._selected = null;
+        this._transformControls.detach();
+        this._transformControls.visible = false;
+        this._transformControls.enabled = false;
+    }
+
+    deleteSelected() {
+        if (!this._selected) return;
+        this._pushHistory({ type: 'delete', data: this._snapshot(this._selected) });
+        const obj = this._selected.threeObject;
+        this._transformControls.detach();
+        this._transformControls.visible = false;
+        this._transformControls.enabled = false;
+        this.scene.remove(obj);
+        obj.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
+        this._items = this._items.filter(i => i !== this._selected);
+        this._selected = null;
+        this.saveToCache();
+        this._notifyChange();
+    }
+
+    removeItem(placed) {
+        if (!placed) return;
+        this._pushHistory({ type: 'delete', data: this._snapshot(placed) });
+        if (this._selected === placed) this.deselectItem();
+        this.scene.remove(placed.threeObject);
+        placed.threeObject.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
+        this._items = this._items.filter(i => i !== placed);
+        this.saveToCache();
+        this._notifyChange();
+    }
+
+    get placedItems() { return this._items; }
+    get selected() { return this._selected; }
+    get isDragging() { return this._gizmoDragging; }
+    get wasRecentlyDragging() { return this._recentlyDragged; }
+    get itemCount() { return this._items.length; }
+
+    setMode(mode) {
+        this._transformControls.setMode(mode);
+    }
+
+    /** Activate editor — orbit stays enabled, only disabled during gumball drag */
+    activate() {
+        this._active = true;
+        this._transformControls.camera = this.camera;
+        if (this._selected) {
+            this._transformControls.visible = true;
+            this._transformControls.enabled = true;
+        }
+    }
+
+    deactivate() {
+        this._active = false;
+        this._transformControls.detach();
+        this._transformControls.visible = false;
+        this._transformControls.enabled = false;
+        this._selected = null;
+        if (this.orbitControls) this.orbitControls.enabled = true;
+    }
+
+    get active() { return this._active; }
+
+    // ---- SESSION CACHE ----
+
+    /** Cache key — shared across all scenes using same interior model */
+    get _cacheKey() { return this._customCacheKey || `vea-furniture-${this.sceneIndex}`; }
+    set cacheKey(key) { this._customCacheKey = key; }
+
+    saveToCache() {
+        const data = this._items.map(i => ({
+            id: i.id, url: i.url, name: i.name,
+            pos: i.position, rot: i.rotation, scale: i.scale
+        }));
+        try { sessionStorage.setItem(this._cacheKey, JSON.stringify(data)); } catch (_) {}
+    }
+
+    /** Clear all placed items and wipe cache */
+    clearAll() {
+        while (this._items.length > 0) {
+            const item = this._items[0];
+            this.scene.remove(item.threeObject);
+            item.threeObject.traverse(c => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+            });
+            this._items.shift();
+        }
+        this.deselectItem();
+        try { sessionStorage.removeItem(this._cacheKey); } catch (_) {}
+        this._history = []; // history entries would reference removed objects
+        this._notifyChange();
+    }
+
+    // ---- PRESETS (locked GLBs, no gumball, add/remove only) ----
+
+    /** Load a preset GLB into the scene. Returns the preset entry. */
+    async loadPreset(preset) {
+        // Remove existing preset with same id first
+        this.removePreset(preset.id);
+        const gltf = await new Promise((resolve, reject) => {
+            _gltfLoader.load(preset.url, resolve, undefined, reject);
+        });
+        const root = gltf.scene;
+        root.position.set(0, 0, 0);
+        root.userData._isPreset = true;
+        root.userData._presetId = preset.id;
+        root.traverse(child => {
+            child.userData._isFurniture = true;
+            child.userData._isPreset = true;
+        });
+        this.scene.add(root);
+        const entry = { id: preset.id, name: preset.name, threeObject: root };
+        this._presets.push(entry);
+        this._notifyChange();
+        return entry;
+    }
+
+    /** Remove a preset by id */
+    removePreset(presetId) {
+        const idx = this._presets.findIndex(p => p.id === presetId);
+        if (idx === -1) return;
+        const entry = this._presets[idx];
+        this.scene.remove(entry.threeObject);
+        entry.threeObject.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
+        this._presets.splice(idx, 1);
+        this._notifyChange();
+    }
+
+    /** Check if a preset is currently loaded */
+    isPresetLoaded(presetId) {
+        return this._presets.some(p => p.id === presetId);
+    }
+
+    /** Get all loaded presets */
+    get loadedPresets() { return this._presets; }
+
+    async loadFromCache() {
+        if (this._cacheLoaded) return;
+        this._cacheLoaded = true;
+        let raw;
+        try { raw = sessionStorage.getItem(this._cacheKey); } catch (_) { return; }
+        if (!raw) return;
+        let data;
+        try { data = JSON.parse(raw); } catch (_) { return; }
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        await Promise.all(data.map(async (entry) => {
+            const gltf = await new Promise((resolve, reject) => {
+                _gltfLoader.load(entry.url, resolve, undefined, reject);
+            });
+            const root = gltf.scene;
+            root.position.set(entry.pos.x, entry.pos.y, entry.pos.z);
+            root.rotation.set(entry.rot.x, entry.rot.y, entry.rot.z);
+            root.scale.set(entry.scale.x, entry.scale.y, entry.scale.z);
+            root.userData._furnitureId = entry.id;
+            root.userData._furnitureName = entry.name;
+            root.userData._furnitureUrl = entry.url;
+            root.traverse(child => { child.userData._isFurniture = true; });
+            this.scene.add(root);
+            this._items.push(this._makePlacedItem(entry.id, entry.url, entry.name, root));
+        }));
+        this._notifyChange();
+    }
+
+    findByObject(obj) {
+        let target = obj;
+        while (target) {
+            const found = this._items.find(i => i.threeObject === target);
+            if (found) return found;
+            target = target.parent;
+        }
+        return null;
+    }
+
+    update() {
+        if (this._active && this._selected && this._gizmoDragging) {
+            this.saveToCache();
+        }
+    }
+
+    /** Ensure gumball is never clipped — call after clipping materials are set */
+    exemptGumballFromClipping() {
+        this._transformControls.traverse(c => {
+            if (c.material) {
+                const mats = Array.isArray(c.material) ? c.material : [c.material];
+                mats.forEach(m => { m.clippingPlanes = []; m.clipIntersection = false; });
+            }
+        });
+    }
+
+    dispose() {
+        this._transformControls.detach();
+        this._transformControls.dispose();
+        this.scene.remove(this._transformControls);
+        for (const item of this._items) {
+            this.scene.remove(item.threeObject);
+            item.threeObject.traverse(c => {
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+            });
+        }
+        this._items = [];
+        this._selected = null;
+    }
+
+    // ---- UNDO ----
+
+    _snapshot(placed) {
+        const o = placed.threeObject;
+        return {
+            id: placed.id, url: placed.url, name: placed.name,
+            pos: { x: o.position.x, y: o.position.y, z: o.position.z },
+            rot: { x: o.rotation.x, y: o.rotation.y, z: o.rotation.z },
+            scl: { x: o.scale.x, y: o.scale.y, z: o.scale.z }
+        };
+    }
+
+    _pushHistory(entry) {
+        this._history.push(entry);
+        if (this._history.length > 30) this._history.shift();
+    }
+
+    /** Undo the last spawn / delete / transform action. */
+    async undo() {
+        const h = this._history.pop();
+        if (!h) return;
+        if (h.type === 'spawn') {
+            if (this._items.includes(h.placed)) this._removeNoHistory(h.placed);
+        } else if (h.type === 'transform') {
+            if (this._items.includes(h.placed)) {
+                const o = h.placed.threeObject;
+                o.position.set(h.pos.x, h.pos.y, h.pos.z);
+                o.rotation.set(h.rot.x, h.rot.y, h.rot.z);
+                o.scale.set(h.scl.x, h.scl.y, h.scl.z);
+                this.saveToCache();
+                this._notifyChange();
+            }
+        } else if (h.type === 'delete') {
+            await this._respawn(h.data).catch(() => {});
+        }
+    }
+
+    _removeNoHistory(placed) {
+        if (this._selected === placed) this.deselectItem();
+        this.scene.remove(placed.threeObject);
+        placed.threeObject.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
+        this._items = this._items.filter(i => i !== placed);
+        this.saveToCache();
+        this._notifyChange();
+    }
+
+    async _respawn(d) {
+        const gltf = await new Promise((resolve, reject) => {
+            _gltfLoader.load(d.url, resolve, undefined, reject);
+        });
+        const root = gltf.scene;
+        root.position.set(d.pos.x, d.pos.y, d.pos.z);
+        root.rotation.set(d.rot.x, d.rot.y, d.rot.z);
+        root.scale.set(d.scl.x, d.scl.y, d.scl.z);
+        root.userData._furnitureId = d.id;
+        root.userData._furnitureName = d.name;
+        root.userData._furnitureUrl = d.url;
+        root.traverse(child => { child.userData._isFurniture = true; });
+        this.scene.add(root);
+        this._items.push(this._makePlacedItem(d.id, d.url, d.name, root));
+        this.saveToCache();
+        this._notifyChange();
+    }
+
+    // ---- INTERNAL ----
+
+    _makePlacedItem(id, url, name, root) {
+        return {
+            id, url, name, threeObject: root,
+            get position() { return { x: root.position.x, y: root.position.y, z: root.position.z }; },
+            get rotation() { return { x: root.rotation.x, y: root.rotation.y, z: root.rotation.z }; },
+            get scale() { return { x: root.scale.x, y: root.scale.y, z: root.scale.z }; }
+        };
+    }
+
+    _setupTransformControls() {
+        this._transformControls = new TransformControls(this.camera, this.renderer.domElement);
+        this._transformControls.visible = false;
+        this._transformControls.enabled = false;
+        this._transformControls.setMode('translate');
+        this._transformControls.size = 1.5;
+        // 15° rotation snap — furniture aligns neatly with walls
+        this._transformControls.setRotationSnap(THREE.MathUtils.degToRad(15));
+
+        this._transformControls.addEventListener('dragging-changed', (e) => {
+            this._gizmoDragging = e.value;
+            // Record transform for undo: snapshot at drag start, push at drag end
+            if (e.value && this._selected) {
+                this._dragBefore = { placed: this._selected, ...this._snapshot(this._selected) };
+            } else if (!e.value && this._dragBefore) {
+                this._pushHistory({ type: 'transform', ...this._dragBefore });
+                this._dragBefore = null;
+            }
+            // Disable orbit ONLY while dragging gumball, re-enable on release
+            if (this.orbitControls) this.orbitControls.enabled = !e.value;
+            if (!e.value) {
+                // Mark recently dragged so click handler doesn't deselect
+                this._recentlyDragged = true;
+                setTimeout(() => { this._recentlyDragged = false; }, 150);
+            }
+        });
+
+        // Uniform scale: when in scale mode, enforce XYZ uniform
+        // Track previous scale to detect which axis changed
+        let _prevScale = 1;
+        this._transformControls.addEventListener('objectChange', () => {
+            if (this._transformControls.mode === 'scale' && this._selected) {
+                const s = this._selected.threeObject.scale;
+                // Find which axis changed most from previous uniform value
+                const diffs = [Math.abs(s.x - _prevScale), Math.abs(s.y - _prevScale), Math.abs(s.z - _prevScale)];
+                const maxDiffIdx = diffs.indexOf(Math.max(...diffs));
+                const newVal = [s.x, s.y, s.z][maxDiffIdx];
+                const clamped = Math.max(0.05, newVal); // minimum 5%
+                s.set(clamped, clamped, clamped);
+                _prevScale = clamped;
+            }
+        });
+
+        this._transformControls.addEventListener('mouseDown', () => {
+            this._gizmoDragging = true;
+        });
+        this._transformControls.addEventListener('mouseUp', () => {
+            setTimeout(() => {
+                this._gizmoDragging = false;
+                this.saveToCache();
+                this._notifyChange();
+            }, 50);
+        });
+
+        this.scene.add(this._transformControls);
+    }
+
+    _notifyChange() {
+        if (this.onChange) this.onChange();
+    }
+}

@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VEA · Demo v4 — Sanal Emlak Deneyimi</title>
+    <meta name="description" content="VEA Demo v4 — interaktif 3D sanal emlak sunum deneyimi. Proje genel görünümü, cephe seçenekleri, iç mekan turu, mobilya editörü ve yürüyüş modu.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --fg: #fff;
+            --bg: #000;
+            --muted: #9aa0a6;
+            --accent: #e5e5e5;
+            --gold: #c9a96e;
+            --panel: rgba(0, 0, 0, .55);
+            --panelBlur: 8px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: #000;
+            color: var(--fg);
+            font-family: 'Raleway', Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        /* ===== THIN TOP BAR ===== */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 0 24px;
+            backdrop-filter: blur(14px) saturate(140%);
+            -webkit-backdrop-filter: blur(14px) saturate(140%);
+            background: linear-gradient(180deg, rgba(8, 8, 10, .82), rgba(8, 8, 10, .55));
+            border-bottom: 1px solid rgba(201, 169, 110, .14);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
+            user-select: none;
+        }
+
+        .brand {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            color: var(--gold);
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .brand .v {
+            font-family: 'Raleway', sans-serif;
+            font-weight: 400;
+            font-size: 11px;
+            letter-spacing: 0.25em;
+            color: rgba(255, 255, 255, 0.45);
+            margin-left: 6px;
+            text-transform: uppercase;
+            vertical-align: 1px;
+        }
+
+        .divider {
+            width: 1px;
+            height: 22px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+            flex: 1;
+        }
+        .track-num {
+            font-family: 'Raleway', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .track-num .sep { color: rgba(255, 255, 255, 0.3); margin: 0 4px; }
+        .track-title {
+            font-family: 'Raleway', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.18em;
+            color: rgba(255, 255, 255, 0.75);
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dots {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+            cursor: pointer;
+        }
+        .dot:hover { background: rgba(201, 169, 110, 0.6); }
+        .dot.active {
+            background: var(--gold);
+            transform: scale(1.35);
+            box-shadow: 0 0 10px rgba(201, 169, 110, 0.7);
+        }
+
+        .nav {
+            display: flex;
+            gap: 8px;
+        }
+        .nav button {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 8px;
+            color: #fff;
+            padding: 7px 14px;
+            font-family: 'Raleway', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav button:hover {
+            background: rgba(201, 169, 110, 0.15);
+            border-color: rgba(201, 169, 110, 0.55);
+            color: var(--gold);
+        }
+        .nav button:active { transform: translateY(1px); }
+        .nav button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .nav button:disabled:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+        .nav button .arrow {
+            font-size: 13px;
+            line-height: 1;
+            opacity: 0.85;
+        }
+        .nav button.help-btn {
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ===== SCENE VIEWPORT ===== */
+        #viewport {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            overflow: hidden;
+        }
+        #scene-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background: #000;
+        }
+
+        #fade {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+            z-index: 3;
+        }
+        #fade.visible { opacity: 1; }
+
+        /* Title card shown over the black fade between scenes */
+        #sceneCard {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #sceneCard.visible { opacity: 1; }
+        #sceneCard .num {
+            font-size: 11px;
+            letter-spacing: 0.5em;
+            padding-left: 0.5em;
+            color: var(--gold);
+        }
+        #sceneCard .ttl {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(22px, 4vw, 42px);
+            color: #fff;
+            letter-spacing: 0.06em;
+            text-align: center;
+            padding: 0 24px;
+        }
+        #sceneCard .rule {
+            width: 48px;
+            height: 1px;
+            background: rgba(201, 169, 110, 0.6);
+        }
+
+        /* ===== BOOT OVERLAY (while xlsx is being fetched) ===== */
+        #boot {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: rgba(255, 255, 255, 0.65);
+            transition: opacity 0.4s ease;
+        }
+        #boot.hidden { opacity: 0; pointer-events: none; }
+        #boot .title {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 36px;
+            color: var(--gold);
+            letter-spacing: 0.08em;
+        }
+        #boot .sub {
+            font-size: 11px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        #boot .spinner {
+            width: 26px;
+            height: 26px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: boot-spin 0.7s linear infinite;
+        }
+        @keyframes boot-spin { to { transform: rotate(360deg); } }
+        #boot .retry-btn {
+            display: none;
+            margin-top: 8px;
+            padding: 9px 28px;
+            background: var(--gold);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-family: 'Raleway', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        #boot .retry-btn:hover { transform: scale(1.05); }
+        #boot.error .spinner { display: none; }
+        #boot.error .retry-btn { display: block; }
+        #boot.error .sub { color: rgba(255, 120, 120, 0.85); }
+
+        /* ===== HELP MODAL ===== */
+        #helpModal {
+            position: fixed;
+            inset: 0;
+            z-index: 600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(6px);
+        }
+        #helpModal.open { display: flex; }
+        .help-card {
+            width: min(560px, calc(100vw - 32px));
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            background: rgba(10, 10, 10, 0.96);
+            border: 1px solid rgba(201, 169, 110, 0.35);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            padding: 26px 30px;
+        }
+        .help-card::-webkit-scrollbar { width: 4px; }
+        .help-card::-webkit-scrollbar-thumb { background: rgba(201, 169, 110, 0.4); border-radius: 4px; }
+        .help-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .help-head h2 {
+            margin: 0;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 0.04em;
+        }
+        .help-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.15s ease;
+        }
+        .help-close:hover { color: #fff; }
+        .help-section { margin-bottom: 14px; }
+        .help-section h3 {
+            margin: 0 0 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold);
+        }
+        .help-section p {
+            margin: 3px 0;
+            font-size: 13px;
+            line-height: 1.55;
+            color: rgba(255, 255, 255, 0.78);
+        }
+        .help-section .key {
+            display: inline-block;
+            padding: 1px 7px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-bottom-width: 2px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.06);
+            font-family: monospace;
+            font-size: 11px;
+            color: #fff;
+            margin: 0 1px;
+        }
+        .help-foot {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.06em;
+        }
+
+        @media (max-width: 720px) {
+            #topbar { height: 48px; padding: 0 12px; gap: 10px; }
+            .brand { font-size: 15px; }
+            .brand .v { font-size: 9px; }
+            .track-title { display: none; }
+            .dots { display: none; }
+            .nav button { padding: 6px 10px; font-size: 10px; letter-spacing: 0.12em; }
+            .nav button .label { display: none; }
+            #viewport { top: 48px; }
+            .help-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="topbar">
+        <div class="brand">VEA<span class="v">demo v4</span></div>
+        <div class="divider"></div>
+
+        <div class="track-info">
+            <span class="track-num">
+                <span id="trackNum">--</span>
+                <span class="sep">/</span>
+                <span id="trackTotal">--</span>
+            </span>
+            <span class="track-title" id="trackTitle">Yükleniyor…</span>
+        </div>
+
+        <div class="dots" id="dots"></div>
+
+        <div class="nav">
+            <button id="btnPrev" title="Önceki sahne (←)" aria-label="Önceki sahne">
+                <span class="arrow">◂</span><span class="label">Önceki</span>
+            </button>
+            <button id="btnNext" title="Sonraki sahne (→)" aria-label="Sonraki sahne">
+                <span class="label">Sonraki</span><span class="arrow">▸</span>
+            </button>
+            <button id="btnFs" class="help-btn" title="Tam Ekran" aria-label="Tam ekran">⛶</button>
+            <button id="btnHelp" class="help-btn" title="Nasıl kullanılır?" aria-label="Yardım">?</button>
+        </div>
+    </div>
+
+    <div id="viewport">
+        <iframe id="scene-frame" title="Aktif Sahne" allow="fullscreen; xr-spatial-tracking"></iframe>
+        <div id="fade"></div>
+        <div id="sceneCard">
+            <div class="num" id="sceneCardNum"></div>
+            <div class="ttl" id="sceneCardTtl"></div>
+            <div class="rule"></div>
+        </div>
+    </div>
+
+    <div id="boot">
+        <div class="title">VEA</div>
+        <div class="spinner"></div>
+        <div class="sub" id="bootSub">demo v4 · yapılandırma okunuyor…</div>
+        <button class="retry-btn" id="bootRetry">Tekrar Dene</button>
+    </div>
+
+    <!-- ===== HELP MODAL ===== -->
+    <div id="helpModal" role="dialog" aria-modal="true" aria-label="Kullanım kılavuzu">
+        <div class="help-card">
+            <div class="help-head">
+                <h2>Nasıl Kullanılır?</h2>
+                <button class="help-close" id="helpClose" aria-label="Kapat">✕</button>
+            </div>
+
+            <div class="help-section">
+                <h3>Sahneler Arası Geçiş</h3>
+                <p>Üst bardaki <strong>Önceki / Sonraki</strong> düğmeleri, noktalar veya klavyede
+                   <span class="key">←</span> <span class="key">→</span> tuşları ile sahneler arasında gezinin.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>3D Görünüm</h3>
+                <p><strong>Döndürme:</strong> sol tık basılı tutup sürükleyin (mobilde tek parmak).</p>
+                <p><strong>Yakınlaştırma:</strong> fare tekerleği (mobilde iki parmakla sıkıştırma).</p>
+                <p><strong>Altın noktalar (hotspot):</strong> tıklayınca bilgi kartı açılır; “Teleport” düğmesi sizi o odaya ışınlar.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>İç Mekan &amp; Plan Görünümü</h3>
+                <p>Sol üstteki düğmelerle odalar ve <strong>Plan</strong> görünümü arasında geçiş yapın.</p>
+                <p>Plan görünümünde alttaki <strong>kesit yüksekliği</strong> kaydırıcısı ile binayı istediğiniz seviyeden kesin; zemindeki beyaz noktalara tıklayarak odalara geçin.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Mobilya Editörü</h3>
+                <p>Soldaki panelden hazır bir <strong>set yükleyin</strong> ya da tek tek mobilyaları tıklayarak / sürükleyerek plana yerleştirin.</p>
+                <p>Seçili mobilyada <span class="key">T</span> taşı, <span class="key">R</span> döndür, <span class="key">S</span> boyutlandır, <span class="key">Del</span> siler.</p>
+                <p>Yerleştirdiğiniz mobilyalar oda kameralarında ve yürüyüş modunda da görünür.</p>
+            </div>
+
+            <div class="help-section">
+                <h3>Yürüyüş Modu (Walk-Thru)</h3>
+                <p>Ekrana tıklayın, ardından <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> ile yürüyün;
+                   <span class="key">Shift</span> koşma, <span class="key">Space</span> zıplama, <span class="key">Esc</span> ile fare imlecine geri dönün.</p>
+                <p>Mobil cihazlarda ekrandaki çift joystick ile hareket edin ve etrafa bakın.</p>
+            </div>
+
+            <div class="help-foot">
+                Tam ekran için sahnenin sağ üstündeki ⛶ düğmesini kullanabilirsiniz.
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { loadVeaConfig } from './xlsx-loader-4.js';
+
+        // Scene runner URL — all scenes use this single file with ?scene=N
+        const SCENE_RUNNER = 'demo4-scene.html';
+
+        // Type badges for the topbar
+        const TYPE_BADGE = {
+            orbit: '⟳', cameras: '📷', walkthru: '🚶', panoramic: '⬡'
+        };
+
+        let TRACKS = []; // built dynamically from Excel
+        let currentTrack = 0;
+
+        const frame      = document.getElementById('scene-frame');
+        const trackNum   = document.getElementById('trackNum');
+        const trackTotal = document.getElementById('trackTotal');
+        const trackTitle = document.getElementById('trackTitle');
+        const dotsEl     = document.getElementById('dots');
+        const fade       = document.getElementById('fade');
+        const boot       = document.getElementById('boot');
+        const bootSub    = document.getElementById('bootSub');
+        const bootRetry  = document.getElementById('bootRetry');
+        const btnPrev    = document.getElementById('btnPrev');
+        const btnNext    = document.getElementById('btnNext');
+        const btnHelp    = document.getElementById('btnHelp');
+        const sceneCard    = document.getElementById('sceneCard');
+        const sceneCardNum = document.getElementById('sceneCardNum');
+        const sceneCardTtl = document.getElementById('sceneCardTtl');
+        const helpModal  = document.getElementById('helpModal');
+        const helpClose  = document.getElementById('helpClose');
+
+        function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+        function buildDots() {
+            dotsEl.innerHTML = '';
+            TRACKS.forEach((t, i) => {
+                const d = document.createElement('span');
+                d.className = 'dot';
+                d.dataset.index = i;
+                d.title = `${t.title} ${TYPE_BADGE[t.type] || ''}`;
+                d.addEventListener('click', () => goTo(i));
+                dotsEl.appendChild(d);
+            });
+        }
+
+        function updateUi() {
+            if (TRACKS.length === 0) {
+                trackNum.textContent   = '--';
+                trackTotal.textContent = '--';
+                trackTitle.textContent = 'Sahne bulunamadı';
+                btnPrev.disabled = true;
+                btnNext.disabled = true;
+                return;
+            }
+            const t = TRACKS[currentTrack];
+            trackNum.textContent   = pad2(currentTrack + 1);
+            trackTotal.textContent = pad2(TRACKS.length);
+            trackTitle.textContent = `${TYPE_BADGE[t.type] || ''} ${t.title}`.trim();
+
+            Array.from(dotsEl.children).forEach((d, i) => {
+                d.classList.toggle('active', i === currentTrack);
+            });
+
+            btnPrev.disabled = (currentTrack === 0);
+            btnNext.disabled = (currentTrack === TRACKS.length - 1);
+
+            // Deep link: #scene-N (N = Excel scene index) — shareable URLs
+            try { history.replaceState(null, '', `#scene-${t.index}`); } catch (_) {}
+        }
+
+        function loadCurrent() {
+            if (TRACKS.length === 0) return;
+            const t = TRACKS[currentTrack];
+            sceneCardNum.textContent = `${pad2(currentTrack + 1)} / ${pad2(TRACKS.length)}`;
+            sceneCardTtl.textContent = t.title;
+            fade.classList.add('visible');
+            sceneCard.classList.add('visible');
+            setTimeout(() => {
+                frame.src = t.url;
+                setTimeout(() => fade.classList.remove('visible'), 220);
+                setTimeout(() => sceneCard.classList.remove('visible'), 1100);
+                setTimeout(preloadAround, 2500);
+            }, 280);
+        }
+
+        function goTo(index) {
+            if (index < 0 || index >= TRACKS.length || index === currentTrack) return;
+            currentTrack = index;
+            updateUi();
+            loadCurrent();
+        }
+        function next() { goTo(currentTrack + 1); }
+        function prev() { goTo(currentTrack - 1); }
+
+        btnNext.addEventListener('click', next);
+        btnPrev.addEventListener('click', prev);
+        document.addEventListener('keydown', (e) => {
+            if (helpModal.classList.contains('open')) {
+                if (e.code === 'Escape') closeHelp();
+                return;
+            }
+            if (e.target.tagName === 'IFRAME') return;
+            if (e.code === 'ArrowRight') { e.preventDefault(); next(); }
+            if (e.code === 'ArrowLeft')  { e.preventDefault(); prev(); }
+        });
+
+        // --- Help modal ---
+        function openHelp()  { helpModal.classList.add('open'); }
+        function closeHelp() { helpModal.classList.remove('open'); }
+        btnHelp.addEventListener('click', openHelp);
+        helpClose.addEventListener('click', closeHelp);
+        helpModal.addEventListener('click', (e) => { if (e.target === helpModal) closeHelp(); });
+
+        bootRetry.addEventListener('click', () => location.reload());
+
+        document.getElementById('btnFs').addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+            else document.exitFullscreen().catch(() => {});
+        });
+
+        // --- Neighbour-scene asset warm-up ---
+        // After the active scene settles, quietly pull the previous/next
+        // scenes' GLBs into the HTTP cache so navigation feels instant.
+        let CONFIG = null;
+        const _preloaded = new Set();
+        let _preloading = false;
+        async function preloadAround() {
+            if (!CONFIG || _preloading) return;
+            _preloading = true;
+            try {
+                for (const ti of [currentTrack + 1, currentTrack - 1]) {
+                    const t = TRACKS[ti];
+                    if (!t) continue;
+                    const models = CONFIG.scenes[t.index]?.models || [];
+                    for (const m of models) {
+                        if (!m.url || _preloaded.has(m.url)) continue;
+                        _preloaded.add(m.url);
+                        try {
+                            const r = await fetch(m.url, { mode: 'cors' });
+                            await r.blob(); // fully consume so the cache keeps it
+                        } catch (_) {}
+                    }
+                }
+            } finally {
+                _preloading = false;
+            }
+        }
+
+        // --- Bootstrap: read scenes from Excel, build TRACKS dynamically ---
+        (async function bootstrap() {
+            let config;
+            try {
+                config = await loadVeaConfig();
+            } catch (e) {
+                console.error(e);
+                boot.classList.add('error');
+                bootSub.textContent = 'yapılandırma yüklenemedi — bağlantınızı kontrol edin';
+                trackTitle.textContent = 'Yükleme hatası';
+                return;
+            }
+
+            CONFIG = config;
+
+            // Build TRACKS from Excel scenes — sorted by scene index
+            const sceneIndices = Object.keys(config.scenes).map(Number).sort((a, b) => a - b);
+            TRACKS = sceneIndices.map(idx => {
+                const s = config.scenes[idx];
+                return {
+                    index: idx,
+                    url:   `${SCENE_RUNNER}?scene=${idx}`,
+                    title: s.title || `Sahne ${idx}`,
+                    type:  s.type || 'orbit'
+                };
+            });
+
+            // Honour deep link (#scene-N) if present and valid
+            const m = location.hash.match(/^#scene-(\d+)$/);
+            if (m) {
+                const wanted = parseInt(m[1], 10);
+                const found = TRACKS.findIndex(t => t.index === wanted);
+                if (found >= 0) currentTrack = found;
+            }
+
+            buildDots();
+            updateUi();
+            if (TRACKS.length > 0) {
+                frame.src = TRACKS[currentTrack].url;
+                setTimeout(preloadAround, 3500);
+            }
+
+            // Hide boot overlay
+            setTimeout(() => {
+                boot.classList.add('hidden');
+                setTimeout(() => { boot.style.display = 'none'; }, 500);
+            }, 200);
+        })();
+    </script>
+</body>
+</html>
