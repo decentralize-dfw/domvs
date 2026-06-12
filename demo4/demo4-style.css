@@ -1262,3 +1262,252 @@ canvas.vea-hovering { cursor: pointer; }
 @keyframes vea-furn-spin {
     to { transform: rotate(360deg); }
 }
+
+/* =========================================================
+   V4 PREMIUM REFINEMENTS
+   Layered on top of the base styles — refined glass panels,
+   gold identity, calmer typography. Desktop-only size changes
+   are wrapped in min-width queries so the mobile bottom-sheet
+   layout above stays untouched.
+   ========================================================= */
+:root {
+    --glass: rgba(10, 10, 12, 0.62);
+    --hairline: rgba(255, 255, 255, 0.07);
+}
+
+/* --- Side panels: deeper glass, more breathing room --- */
+#leftHtmlPanel,
+#rightHtmlPanel {
+    background: var(--glass);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-color: var(--hairline);
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    font-weight: 300;
+}
+@media (min-width: 601px) {
+    #leftHtmlPanel, #rightHtmlPanel {
+        width: 250px;
+        top: 84px;
+        bottom: 110px;
+        padding: 18px;
+    }
+    #leftHtmlPanel  { left: 16px; }
+    #rightHtmlPanel { right: 16px; }
+    #leftHtmlPanel.vea-furniture-wide { width: 300px; }
+}
+#leftHtmlPanel h3,
+#rightHtmlPanel h3,
+.vea-panel-heading {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--hairline);
+}
+#leftHtmlPanel p, #rightHtmlPanel p { line-height: 1.6; }
+#leftHtmlPanel::-webkit-scrollbar-thumb,
+#rightHtmlPanel::-webkit-scrollbar-thumb { background: rgba(201, 169, 110, 0.45); }
+
+/* --- Toggle buttons: glass pills, gold selected state --- */
+.vea-model-toggle {
+    padding: 9px 18px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    background: rgba(10, 10, 12, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.vea-model-toggle:hover {
+    border-color: rgba(201, 169, 110, 0.55);
+    color: var(--gold);
+}
+.vea-model-toggle.selected {
+    background: var(--gold) !important;
+    border-color: var(--gold) !important;
+    color: #0c0c0c !important;
+    font-weight: 700;
+    box-shadow: 0 4px 18px rgba(201, 169, 110, 0.35);
+}
+.vea-model-toggle.selected .vea-furniture-badge { background: #0c0c0c; color: var(--gold); }
+.vea-model-label {
+    color: rgba(201, 169, 110, 0.85);
+    letter-spacing: 0.32em;
+    font-size: 9px;
+}
+
+/* --- Description pill: quiet caption that dims away --- */
+#description {
+    width: auto;
+    max-width: min(560px, 86vw);
+    padding: 11px 26px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: var(--hairline);
+    transition: opacity 0.6s ease;
+}
+#description.vea-desc-dim { opacity: 0.22; }
+#description:hover { opacity: 1; }
+
+/* --- Loading screen: wider tracking, jewel-like restraint --- */
+#loading .loading-title {
+    font-size: 56px;
+    letter-spacing: 0.22em;
+    padding-left: 0.22em; /* optically recenters tracked text */
+}
+
+/* --- Scene loading chip + hotspot popup glass --- */
+#sceneLoadingIndicator {
+    background: rgba(8, 8, 10, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-color: rgba(201, 169, 110, 0.22);
+}
+.vea-hs-popup {
+    background: rgba(8, 8, 10, 0.92);
+    border-radius: 14px;
+    border-color: rgba(201, 169, 110, 0.25);
+}
+.vea-hs-popup-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+/* --- Tabs as pills --- */
+.vea-tab, .vea-furniture-tab { border-radius: 999px; }
+
+/* --- Walk-thru: refined instructions card, key hints --- */
+#instructions {
+    padding: 30px 44px;
+    border-radius: 20px;
+    border-color: rgba(201, 169, 110, 0.25);
+    background: rgba(8, 8, 10, 0.55);
+}
+.vea-walk-keys {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+.vea-walk-keys span {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.vea-walk-keys kbd {
+    padding: 2px 7px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.06);
+    font-family: monospace;
+    font-size: 10px;
+    color: #fff;
+}
+#walkCrosshair {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin: -2.5px 0 0 -2.5px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+    z-index: 40;
+    display: none;
+    pointer-events: none;
+}
+#walkResetBtn {
+    position: fixed;
+    right: 16px;
+    bottom: 20px;
+    z-index: 10;
+    padding: 9px 18px;
+    border-radius: 999px;
+    background: rgba(10, 10, 12, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+#walkResetBtn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* --- Reset view FAB (orbit scenes) — pill under fullscreen --- */
+#resetViewButton {
+    position: fixed !important;
+    right: 16px !important;
+    top: 62px !important;
+    bottom: auto !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 12px !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+}
+
+/* --- Furniture search box --- */
+.vea-furniture-search { margin: 0 0 8px; flex: none; }
+.vea-furniture-search input {
+    width: 100%;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-family: 'Raleway', Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+}
+.vea-furniture-search input:focus { border-color: rgba(201, 169, 110, 0.6); }
+.vea-furniture-search input::placeholder { color: rgba(255, 255, 255, 0.35); }
+
+/* --- Clip slider: glass pill --- */
+.vea-clip-slider-wrap {
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 999px;
+    padding: 10px 22px;
+    border-color: var(--hairline);
+}
+
+/* --- Mobile: keep floating controls above the bottom sheet --- */
+@media (max-width: 600px) {
+    .vea-clip-slider-wrap {
+        bottom: calc(40vh + 16px);
+        max-width: calc(100vw - 24px);
+    }
+    #walkResetBtn { bottom: calc(40vh + 16px); }
+    #resetViewButton { top: 56px !important; }
+}

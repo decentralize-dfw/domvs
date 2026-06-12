@@ -76,6 +76,7 @@ export class HotspotManager {
     update(delta) {
         const lerpSpeed = 8;
         const dt = delta || 0.016;
+        this._pulseT = (this._pulseT || 0) + dt;
         let anyHovered = false;
 
         // Adaptive sizing: for orthographic cameras, compute world-units-
@@ -97,7 +98,10 @@ export class HotspotManager {
             const curr = obj._hoverScale || 1.0;
             obj._hoverScale = THREE.MathUtils.lerp(curr, targetScale, lerpSpeed * dt);
             if (obj.sprite && obj.sprite.isSprite) {
-                const s = dotBase * obj._hoverScale;
+                // Gentle pulse invites clicks; pauses while hovered
+                if (obj._pulsePhase === undefined) obj._pulsePhase = Math.random() * Math.PI * 2;
+                const pulse = obj.hovered ? 1 : 1 + Math.sin(this._pulseT * 2.2 + obj._pulsePhase) * 0.07;
+                const s = dotBase * obj._hoverScale * pulse;
                 obj.sprite.scale.set(s, s, s);
             }
             if (obj.hovered) anyHovered = true;

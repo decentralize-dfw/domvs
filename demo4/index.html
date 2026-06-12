@@ -38,24 +38,25 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 48px;
+            height: 56px;
             z-index: 100;
             display: flex;
             align-items: center;
-            gap: 18px;
-            padding: 0 18px;
-            backdrop-filter: blur(var(--panelBlur));
-            background: var(--panel);
-            border-bottom: 1px solid rgba(255, 255, 255, .08);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, .35);
+            gap: 20px;
+            padding: 0 24px;
+            backdrop-filter: blur(14px) saturate(140%);
+            -webkit-backdrop-filter: blur(14px) saturate(140%);
+            background: linear-gradient(180deg, rgba(8, 8, 10, .82), rgba(8, 8, 10, .55));
+            border-bottom: 1px solid rgba(201, 169, 110, .14);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
             user-select: none;
         }
 
         .brand {
             font-family: 'Playfair Display', Georgia, serif;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.18em;
             color: var(--gold);
             line-height: 1;
             white-space: nowrap;
@@ -112,17 +113,18 @@
             gap: 6px;
         }
         .dot {
-            width: 6px;
-            height: 6px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.15);
-            transition: background 0.25s ease, transform 0.25s ease;
+            transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
             cursor: pointer;
         }
         .dot:hover { background: rgba(201, 169, 110, 0.6); }
         .dot.active {
             background: var(--gold);
             transform: scale(1.35);
+            box-shadow: 0 0 10px rgba(201, 169, 110, 0.7);
         }
 
         .nav {
@@ -130,8 +132,8 @@
             gap: 8px;
         }
         .nav button {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.14);
             border-radius: 8px;
             color: #fff;
             padding: 7px 14px;
@@ -175,7 +177,7 @@
         /* ===== SCENE VIEWPORT ===== */
         #viewport {
             position: fixed;
-            top: 48px;
+            top: 56px;
             left: 0;
             right: 0;
             bottom: 0;
@@ -200,6 +202,41 @@
             z-index: 3;
         }
         #fade.visible { opacity: 1; }
+
+        /* Title card shown over the black fade between scenes */
+        #sceneCard {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            z-index: 4;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #sceneCard.visible { opacity: 1; }
+        #sceneCard .num {
+            font-size: 11px;
+            letter-spacing: 0.5em;
+            padding-left: 0.5em;
+            color: var(--gold);
+        }
+        #sceneCard .ttl {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(22px, 4vw, 42px);
+            color: #fff;
+            letter-spacing: 0.06em;
+            text-align: center;
+            padding: 0 24px;
+        }
+        #sceneCard .rule {
+            width: 48px;
+            height: 1px;
+            background: rgba(201, 169, 110, 0.6);
+        }
 
         /* ===== BOOT OVERLAY (while xlsx is being fetched) ===== */
         #boot {
@@ -343,14 +380,14 @@
         }
 
         @media (max-width: 720px) {
-            #topbar { height: 44px; padding: 0 12px; gap: 10px; }
+            #topbar { height: 48px; padding: 0 12px; gap: 10px; }
             .brand { font-size: 15px; }
             .brand .v { font-size: 9px; }
             .track-title { display: none; }
             .dots { display: none; }
             .nav button { padding: 6px 10px; font-size: 10px; letter-spacing: 0.12em; }
             .nav button .label { display: none; }
-            #viewport { top: 44px; }
+            #viewport { top: 48px; }
             .help-card { padding: 20px; }
         }
     </style>
@@ -378,6 +415,7 @@
             <button id="btnNext" title="Sonraki sahne (→)" aria-label="Sonraki sahne">
                 <span class="label">Sonraki</span><span class="arrow">▸</span>
             </button>
+            <button id="btnFs" class="help-btn" title="Tam Ekran" aria-label="Tam ekran">⛶</button>
             <button id="btnHelp" class="help-btn" title="Nasıl kullanılır?" aria-label="Yardım">?</button>
         </div>
     </div>
@@ -385,6 +423,11 @@
     <div id="viewport">
         <iframe id="scene-frame" title="Aktif Sahne" allow="fullscreen; xr-spatial-tracking"></iframe>
         <div id="fade"></div>
+        <div id="sceneCard">
+            <div class="num" id="sceneCardNum"></div>
+            <div class="ttl" id="sceneCardTtl"></div>
+            <div class="rule"></div>
+        </div>
     </div>
 
     <div id="boot">
@@ -467,6 +510,9 @@
         const btnPrev    = document.getElementById('btnPrev');
         const btnNext    = document.getElementById('btnNext');
         const btnHelp    = document.getElementById('btnHelp');
+        const sceneCard    = document.getElementById('sceneCard');
+        const sceneCardNum = document.getElementById('sceneCardNum');
+        const sceneCardTtl = document.getElementById('sceneCardTtl');
         const helpModal  = document.getElementById('helpModal');
         const helpClose  = document.getElementById('helpClose');
 
@@ -511,10 +557,16 @@
 
         function loadCurrent() {
             if (TRACKS.length === 0) return;
+            const t = TRACKS[currentTrack];
+            sceneCardNum.textContent = `${pad2(currentTrack + 1)} / ${pad2(TRACKS.length)}`;
+            sceneCardTtl.textContent = t.title;
             fade.classList.add('visible');
+            sceneCard.classList.add('visible');
             setTimeout(() => {
-                frame.src = TRACKS[currentTrack].url;
+                frame.src = t.url;
                 setTimeout(() => fade.classList.remove('visible'), 220);
+                setTimeout(() => sceneCard.classList.remove('visible'), 1100);
+                setTimeout(preloadAround, 2500);
             }, 280);
         }
 
@@ -548,6 +600,39 @@
 
         bootRetry.addEventListener('click', () => location.reload());
 
+        document.getElementById('btnFs').addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+            else document.exitFullscreen().catch(() => {});
+        });
+
+        // --- Neighbour-scene asset warm-up ---
+        // After the active scene settles, quietly pull the previous/next
+        // scenes' GLBs into the HTTP cache so navigation feels instant.
+        let CONFIG = null;
+        const _preloaded = new Set();
+        let _preloading = false;
+        async function preloadAround() {
+            if (!CONFIG || _preloading) return;
+            _preloading = true;
+            try {
+                for (const ti of [currentTrack + 1, currentTrack - 1]) {
+                    const t = TRACKS[ti];
+                    if (!t) continue;
+                    const models = CONFIG.scenes[t.index]?.models || [];
+                    for (const m of models) {
+                        if (!m.url || _preloaded.has(m.url)) continue;
+                        _preloaded.add(m.url);
+                        try {
+                            const r = await fetch(m.url, { mode: 'cors' });
+                            await r.blob(); // fully consume so the cache keeps it
+                        } catch (_) {}
+                    }
+                }
+            } finally {
+                _preloading = false;
+            }
+        }
+
         // --- Bootstrap: read scenes from Excel, build TRACKS dynamically ---
         (async function bootstrap() {
             let config;
@@ -560,6 +645,8 @@
                 trackTitle.textContent = 'Yükleme hatası';
                 return;
             }
+
+            CONFIG = config;
 
             // Build TRACKS from Excel scenes — sorted by scene index
             const sceneIndices = Object.keys(config.scenes).map(Number).sort((a, b) => a - b);
@@ -585,6 +672,7 @@
             updateUi();
             if (TRACKS.length > 0) {
                 frame.src = TRACKS[currentTrack].url;
+                setTimeout(preloadAround, 3500);
             }
 
             // Hide boot overlay

@@ -136,6 +136,22 @@ export class FurniturePanel {
     _renderItemsView() {
         this._contentEl.innerHTML = '';
 
+        // Search box — filters by name and tags
+        this._query = '';
+        const searchWrap = document.createElement('div');
+        searchWrap.className = 'vea-furniture-search';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'search';
+        searchInput.placeholder = 'Mobilya ara…';
+        searchInput.addEventListener('input', () => {
+            this._query = searchInput.value.trim().toLowerCase();
+            this._applyFilter();
+        });
+        // Keep R/T/S/Del shortcuts from firing while typing
+        searchInput.addEventListener('keydown', (e) => e.stopPropagation());
+        searchWrap.appendChild(searchInput);
+        this._contentEl.appendChild(searchWrap);
+
         // Category tab bar
         const tabBar = document.createElement('div');
         tabBar.className = 'vea-furniture-tabs';
@@ -156,16 +172,26 @@ export class FurniturePanel {
 
         this._setupLazyLoad();
         this._setupSquareObserver();
-        this._renderGrid(getAllItems());
+        this._applyFilter();
     }
 
     filterByCategory(cat) {
         this._activeCat = cat;
-        const items = cat ? getItemsByCategory(cat) : getAllItems();
-        this._renderGrid(items);
+        this._applyFilter();
 
         const tabs = this._contentEl.querySelectorAll('.vea-furniture-tab');
         tabs.forEach(t => t.classList.toggle('active', t.dataset.cat === (cat || '')));
+    }
+
+    _applyFilter() {
+        let items = this._activeCat ? getItemsByCategory(this._activeCat) : getAllItems();
+        if (this._query) {
+            const q = this._query;
+            items = items.filter(i =>
+                i.name.toLowerCase().includes(q) ||
+                (i.tags || []).some(t => String(t).toLowerCase().includes(q)));
+        }
+        this._renderGrid(items);
     }
 
     // ---- INTERNAL ----

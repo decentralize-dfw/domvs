@@ -28,6 +28,8 @@ export class FurnitureEditor {
         this._active = false;
         this._cacheLoaded = false;
         this._presets = [];     // [{ id, threeObject }] — locked, no gumball
+        this._history = [];     // undo stack (max 30)
+        this._dragBefore = null;
 
         this.onChange = null;
 
@@ -52,6 +54,7 @@ export class FurnitureEditor {
 
         const placed = this._makePlacedItem(libraryItem.id, libraryItem.url, libraryItem.name, root);
         this._items.push(placed);
+        this._pushHistory({ type: 'spawn', placed });
         this.selectItem(placed);
         this.saveToCache();
         this._notifyChange();
@@ -75,6 +78,7 @@ export class FurnitureEditor {
 
     deleteSelected() {
         if (!this._selected) return;
+        this._pushHistory({ type: 'delete', data: this._snapshot(this._selected) });
         const obj = this._selected.threeObject;
         this._transformControls.detach();
         this._transformControls.visible = false;
@@ -92,6 +96,7 @@ export class FurnitureEditor {
 
     removeItem(placed) {
         if (!placed) return;
+        this._pushHistory({ type: 'delete', data: this._snapshot(placed) });
         if (this._selected === placed) this.deselectItem();
         this.scene.remove(placed.threeObject);
         placed.threeObject.traverse(c => {
@@ -161,6 +166,7 @@ export class FurnitureEditor {
         }
         this.deselectItem();
         try { sessionStorage.removeItem(this._cacheKey); } catch (_) {}
+        this._history = []; // history entries would reference removed objects
         this._notifyChange();
     }
 
@@ -279,6 +285,73 @@ export class FurnitureEditor {
         this._selected = null;
     }
 
+    // ---- UNDO ----
+
+    _snapshot(placed) {
+        const o = placed.threeObject;
+        return {
+            id: placed.id, url: placed.url, name: placed.name,
+            pos: { x: o.position.x, y: o.position.y, z: o.position.z },
+            rot: { x: o.rotation.x, y: o.rotation.y, z: o.rotation.z },
+            scl: { x: o.scale.x, y: o.scale.y, z: o.scale.z }
+        };
+    }
+
+    _pushHistory(entry) {
+        this._history.push(entry);
+        if (this._history.length > 30) this._history.shift();
+    }
+
+    /** Undo the last spawn / delete / transform action. */
+    async undo() {
+        const h = this._history.pop();
+        if (!h) return;
+        if (h.type === 'spawn') {
+            if (this._items.includes(h.placed)) this._removeNoHistory(h.placed);
+        } else if (h.type === 'transform') {
+            if (this._items.includes(h.placed)) {
+                const o = h.placed.threeObject;
+                o.position.set(h.pos.x, h.pos.y, h.pos.z);
+                o.rotation.set(h.rot.x, h.rot.y, h.rot.z);
+                o.scale.set(h.scl.x, h.scl.y, h.scl.z);
+                this.saveToCache();
+                this._notifyChange();
+            }
+        } else if (h.type === 'delete') {
+            await this._respawn(h.data).catch(() => {});
+        }
+    }
+
+    _removeNoHistory(placed) {
+        if (this._selected === placed) this.deselectItem();
+        this.scene.remove(placed.threeObject);
+        placed.threeObject.traverse(c => {
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) { (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose()); }
+        });
+        this._items = this._items.filter(i => i !== placed);
+        this.saveToCache();
+        this._notifyChange();
+    }
+
+    async _respawn(d) {
+        const gltf = await new Promise((resolve, reject) => {
+            _gltfLoader.load(d.url, resolve, undefined, reject);
+        });
+        const root = gltf.scene;
+        root.position.set(d.pos.x, d.pos.y, d.pos.z);
+        root.rotation.set(d.rot.x, d.rot.y, d.rot.z);
+        root.scale.set(d.scl.x, d.scl.y, d.scl.z);
+        root.userData._furnitureId = d.id;
+        root.userData._furnitureName = d.name;
+        root.userData._furnitureUrl = d.url;
+        root.traverse(child => { child.userData._isFurniture = true; });
+        this.scene.add(root);
+        this._items.push(this._makePlacedItem(d.id, d.url, d.name, root));
+        this.saveToCache();
+        this._notifyChange();
+    }
+
     // ---- INTERNAL ----
 
     _makePlacedItem(id, url, name, root) {
@@ -296,9 +369,18 @@ export class FurnitureEditor {
         this._transformControls.enabled = false;
         this._transformControls.setMode('translate');
         this._transformControls.size = 1.5;
+        // 15° rotation snap — furniture aligns neatly with walls
+        this._transformControls.setRotationSnap(THREE.MathUtils.degToRad(15));
 
         this._transformControls.addEventListener('dragging-changed', (e) => {
             this._gizmoDragging = e.value;
+            // Record transform for undo: snapshot at drag start, push at drag end
+            if (e.value && this._selected) {
+                this._dragBefore = { placed: this._selected, ...this._snapshot(this._selected) };
+            } else if (!e.value && this._dragBefore) {
+                this._pushHistory({ type: 'transform', ...this._dragBefore });
+                this._dragBefore = null;
+            }
             // Disable orbit ONLY while dragging gumball, re-enable on release
             if (this.orbitControls) this.orbitControls.enabled = !e.value;
             if (!e.value) {

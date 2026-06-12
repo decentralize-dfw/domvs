@@ -54,14 +54,18 @@
 
     <!-- ===== WALKTHRU MODE UI ===== -->
     <div id="instructions" style="display:none">
-        <h1>Walk-Thru</h1>
-        <p>Başlamak için ekrana tıklayın · WASD ile gezin</p>
+        <h1>Yürüyüş Modu</h1>
+        <p id="instructionsText">Başlamak için ekrana tıklayın</p>
+        <div class="vea-walk-keys" id="instructionsKeys"></div>
     </div>
+    <div id="walkCrosshair"></div>
+    <button id="walkResetBtn" style="display:none">⌂ Başa Dön</button>
     <div id="joystickLeft" class="joystick-zone" style="display:none"></div>
     <div id="joystickRight" class="joystick-zone" style="display:none"></div>
 
     <!-- ===== COMMON ===== -->
     <button id="fullscreenButton" class="fab-info-btn" title="Tam Ekran" style="display:none">⛶</button>
+    <button id="resetViewButton" class="fab-info-btn" title="Görünümü Sıfırla" style="display:none">⌂</button>
 
     <script type="module">
         import * as THREE from 'three';
@@ -122,14 +126,26 @@
         const rightHtmlPanel         = document.getElementById('rightHtmlPanel');
         const descriptionEl          = document.getElementById('description');
 
+        // Description pill: dim after 4s so it doesn't block the view
+        new MutationObserver(() => {
+            descriptionEl.classList.remove('vea-desc-dim');
+            clearTimeout(descriptionEl._dimT);
+            descriptionEl._dimT = setTimeout(() => descriptionEl.classList.add('vea-desc-dim'), 4000);
+        }).observe(descriptionEl, { childList: true, characterData: true, subtree: true });
+
         /* ===============================================================
            LOADING HELPERS
            =============================================================== */
+        let _maxLoadPct = 0;
         function setLoadingProgress(pct) {
+            const clamped = Math.min(100, Math.max(0, pct));
+            if (clamped < _maxLoadPct) return; // keep the bar monotonic
+            _maxLoadPct = clamped;
             const bar = document.getElementById('loadingProgressBar');
             if (bar) {
                 bar.style.animation = 'none';
-                bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+                bar.style.transition = 'width 0.3s ease';
+                bar.style.width = clamped + '%';
                 bar.style.background = '#c9a96e';
             }
         }
@@ -160,6 +176,96 @@
         }
 
         /* ===============================================================
+           CAMERA FLIGHT — smooth eased transitions between viewpoints
+           =============================================================== */
+        let _camTween = null;
+        const _easeInOut = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        function flyCameraTo(controls, view, duration = 1.1, onDone = null) {
+            if (!camera || !view || !view.pos) return;
+            if (duration <= 0) {
+                camera.position.set(view.pos.x, view.pos.y, view.pos.z);
+                if (controls && view.target) controls.target.set(view.target.x, view.target.y, view.target.z);
+                if (view.fov && camera.isPerspectiveCamera) { camera.fov = view.fov; camera.updateProjectionMatrix(); }
+                if (view.zoom && camera.isOrthographicCamera) { camera.zoom = view.zoom; camera.updateProjectionMatrix(); }
+                if (controls) controls.update();
+                if (onDone) onDone();
+                return;
+            }
+            _camTween = {
+                controls, t: 0, duration, onDone,
+                p0: camera.position.clone(),
+                p1: new THREE.Vector3(view.pos.x, view.pos.y, view.pos.z),
+                t0: controls ? controls.target.clone() : null,
+                t1: (controls && view.target) ? new THREE.Vector3(view.target.x, view.target.y, view.target.z) : null,
+                f0: camera.isPerspectiveCamera ? camera.fov : null,
+                f1: (view.fov && camera.isPerspectiveCamera) ? view.fov : null,
+                z0: camera.isOrthographicCamera ? camera.zoom : null,
+                z1: (view.zoom && camera.isOrthographicCamera) ? view.zoom : null
+            };
+        }
+        function cancelCameraTween() { _camTween = null; }
+        function updateCameraTween(delta) {
+            if (!_camTween) return;
+            const tw = _camTween;
+            tw.t = Math.min(1, tw.t + delta / tw.duration);
+            const u = _easeInOut(tw.t);
+            camera.position.lerpVectors(tw.p0, tw.p1, u);
+            if (tw.controls && tw.t0 && tw.t1) tw.controls.target.lerpVectors(tw.t0, tw.t1, u);
+            if (tw.f0 !== null && tw.f1 !== null) { camera.fov = tw.f0 + (tw.f1 - tw.f0) * u; camera.updateProjectionMatrix(); }
+            if (tw.z0 !== null && tw.z1 !== null) { camera.zoom = tw.z0 + (tw.z1 - tw.z0) * u; camera.updateProjectionMatrix(); }
+            if (tw.controls) tw.controls.update();
+            if (tw.t >= 1) { _camTween = null; if (tw.onDone) tw.onDone(); }
+        }
+
+        /* ===============================================================
+           VIEW FRAMING — bbox of loaded models, zoom-extents helpers
+           =============================================================== */
+        function computeVisibleBBox() {
+            scene.updateMatrixWorld(true);
+            const box = new THREE.Box3();
+            scene.traverse(c => {
+                if (!c.isMesh || !c.visible) return;
+                if (c.userData.isHotspotSprite || c.userData._isCamHelper) return;
+                if (c.userData._isFurniture || c.userData._isDragGhost) return;
+                if (!c.geometry) return;
+                if (!c.geometry.boundingBox) c.geometry.computeBoundingBox();
+                if (!c.geometry.boundingBox) return;
+                const size = new THREE.Vector3();
+                c.geometry.boundingBox.getSize(size);
+                if (size.x > 500 || size.y > 500 || size.z > 500) return;
+                const wb = c.geometry.boundingBox.clone();
+                wb.applyMatrix4(c.matrixWorld);
+                box.union(wb);
+            });
+            return box;
+        }
+
+        // Frame the bbox keeping the current view direction.
+        // Returns a view object consumable by flyCameraTo, or null.
+        function frameView(bbox, margin = 1.3) {
+            if (!bbox || bbox.isEmpty()) return null;
+            const center = bbox.getCenter(new THREE.Vector3());
+            const sphere = bbox.getBoundingSphere(new THREE.Sphere());
+            const dir = camera.position.clone().sub(center);
+            if (dir.lengthSq() < 1e-6) dir.set(1, 0.8, 1);
+            dir.normalize();
+            if (camera.isPerspectiveCamera) {
+                const vFov = THREE.MathUtils.degToRad(camera.fov);
+                const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
+                const dist = (sphere.radius * margin) / Math.sin(Math.min(vFov, hFov) / 2);
+                const p = center.clone().add(dir.multiplyScalar(dist));
+                return { pos: { x: p.x, y: p.y, z: p.z }, target: { x: center.x, y: center.y, z: center.z } };
+            }
+            // Orthographic: keep direction, fit via zoom
+            const halfH = (camera.top - camera.bottom) / 2;
+            const halfW = (camera.right - camera.left) / 2;
+            const zoom = Math.min(halfH, halfW) / (sphere.radius * margin);
+            const p = center.clone().add(dir.multiplyScalar(sphere.radius * 3 + 5));
+            return { pos: { x: p.x, y: p.y, z: p.z }, target: { x: center.x, y: center.y, z: center.z }, zoom };
+        }
+
+        /* ===============================================================
            ENVIRONMENT (shared by all modes except panoramic)
            =============================================================== */
         function setupEnvironment() {
@@ -171,9 +277,9 @@
                     pmremGenerator.dispose();
                     texture.dispose();
                     scene.environmentIntensity = 0.7;
-                    setLoadingProgress(80);
+                    setLoadingProgress(30);
                 }, (xhr) => {
-                    if (xhr.total) setLoadingProgress(Math.round((xhr.loaded / xhr.total) * 60));
+                    if (xhr.total) setLoadingProgress(Math.round((xhr.loaded / xhr.total) * 28));
                 });
             }
 
@@ -205,7 +311,7 @@
             return gltfLoader;
         }
 
-        function loadVisibleModel(gltfLoader, entry) {
+        function loadVisibleModel(gltfLoader, entry, onProgress) {
             return new Promise((resolve, reject) => {
                 const url = assetUrlFor(config, entry);
                 if (!url) { resolve(null); return; }
@@ -226,11 +332,11 @@
                     });
                     scene.add(root);
                     resolve(root);
-                }, undefined, reject);
+                }, onProgress, reject);
             });
         }
 
-        function loadColliderModel(gltfLoader, entry, colliderMeshes) {
+        function loadColliderModel(gltfLoader, entry, colliderMeshes, onProgress) {
             return new Promise((resolve, reject) => {
                 const url = assetUrlFor(config, entry);
                 if (!url) { resolve(null); return; }
@@ -246,7 +352,7 @@
                     });
                     scene.add(root);
                     resolve();
-                }, undefined, reject);
+                }, onProgress, reject);
             });
         }
 
@@ -258,11 +364,30 @@
             const gltfLoader = createGltfLoader();
             sceneLoadingIndicatorEl.style.display = 'block';
 
-            const promises = sceneCfg.models.map((entry) => {
-                if (colliderMeshes && isColliderEntry(config, entry)) {
-                    return loadColliderModel(gltfLoader, entry, colliderMeshes);
-                }
-                return loadVisibleModel(gltfLoader, entry);
+            // Aggregate real download progress across all models → 30..95%
+            const prog = sceneCfg.models.map(() => ({ loaded: 0, total: 0, done: false }));
+            const report = () => {
+                if (prog.length === 0) return;
+                let loaded = 0, total = 0, done = 0;
+                for (const p of prog) { loaded += p.loaded; total += p.total; if (p.done) done++; }
+                const frac = total > 0 ? Math.min(1, loaded / total) : done / prog.length;
+                setLoadingProgress(30 + Math.round(frac * 65));
+            };
+
+            const promises = sceneCfg.models.map((entry, i) => {
+                const onP = (xhr) => {
+                    if (xhr && xhr.total) { prog[i].loaded = xhr.loaded; prog[i].total = xhr.total; }
+                    report();
+                };
+                const loading = (colliderMeshes && isColliderEntry(config, entry))
+                    ? loadColliderModel(gltfLoader, entry, colliderMeshes, onP)
+                    : loadVisibleModel(gltfLoader, entry, onP);
+                return loading.then((r) => {
+                    prog[i].done = true;
+                    if (prog[i].total) prog[i].loaded = prog[i].total;
+                    report();
+                    return r;
+                });
             });
 
             return Promise.all(promises).then(() => {
@@ -360,11 +485,15 @@
             orbitControls.autoRotate     = yes(cam['Auto-Rotate']);
             orbitControls.autoRotateSpeed = num(cam['Auto-Rotate Speed']) || 1.0;
             if (isMouseBreak(cam['Auto-Rotate'])) {
-                const stopRotate = () => {
+                // Stop on interaction, gently resume after 25s idle
+                let _idleTimer = null;
+                const pauseRotate = () => {
                     orbitControls.autoRotate = false;
-                    renderer.domElement.removeEventListener('pointerdown', stopRotate);
+                    clearTimeout(_idleTimer);
+                    _idleTimer = setTimeout(() => { orbitControls.autoRotate = true; }, 25000);
                 };
-                renderer.domElement.addEventListener('pointerdown', stopRotate);
+                renderer.domElement.addEventListener('pointerdown', pauseRotate);
+                renderer.domElement.addEventListener('wheel', pauseRotate, { passive: true });
             }
             orbitControls.enablePan    = yes(cam['Enable Pan']);
             orbitControls.enableZoom   = yes(cam['Enable Zoom']);
@@ -394,16 +523,10 @@
                             }
                         });
 
-                        // Move camera if action has Pos() → LookAt()
+                        // Move camera if action has Pos() → LookAt() — smooth flight
                         const camPos = parseCameraPositionAction(cfg.action);
                         if (camPos) {
-                            camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
-                            orbitControls.target.set(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
-                            if (camPos.fov && camera.isPerspectiveCamera) {
-                                camera.fov = camPos.fov;
-                                camera.updateProjectionMatrix();
-                            }
-                            orbitControls.update();
+                            flyCameraTo(orbitControls, { pos: camPos.pos, target: camPos.lookAt, fov: camPos.fov }, 1.1);
                         }
 
                         // Panel lookup: try id-based keys, fall back to kod-based
@@ -422,6 +545,67 @@
             composer.insertPass(new RenderPass(scene, camera), 0);
 
             loadAllModels().then(() => {
+                // Auto zoom-extents: frame loaded models when Excel defines
+                // no camera position; always derive zoom limits + Home view
+                // from the real model bounds.
+                const bbox = computeVisibleBBox();
+                if (!bbox.isEmpty()) {
+                    const sphere = bbox.getBoundingSphere(new THREE.Sphere());
+                    if (camera.isPerspectiveCamera) {
+                        orbitControls.minDistance = sphere.radius * 0.15;
+                        orbitControls.maxDistance = sphere.radius * 6;
+                    } else {
+                        orbitControls.minZoom = 0.4;
+                        orbitControls.maxZoom = 12;
+                    }
+                    const hasExcelPos = !!(num(cam['Cam Pos X']) || num(cam['Cam Pos Y']) || num(cam['Cam Pos Z']));
+                    if (!hasExcelPos) {
+                        const fitted = frameView(bbox);
+                        if (fitted) flyCameraTo(orbitControls, fitted, 0);
+                    }
+                }
+                const homeView = {
+                    pos:    { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+                    target: { x: orbitControls.target.x, y: orbitControls.target.y, z: orbitControls.target.z },
+                    fov:    camera.isPerspectiveCamera ? camera.fov : undefined,
+                    zoom:   camera.isOrthographicCamera ? camera.zoom : undefined
+                };
+                const resetBtn = document.getElementById('resetViewButton');
+                resetBtn.style.display = 'flex';
+                resetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    flyCameraTo(orbitControls, homeView, 1.2);
+                });
+
+                // Double-click → focus the clicked point (smooth)
+                if (yes(cam['Enable Zoom']) || yes(cam['Enable Rotate'])) {
+                    const _dcRC = new THREE.Raycaster();
+                    renderer.domElement.addEventListener('dblclick', (e) => {
+                        const m = new THREE.Vector2((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+                        _dcRC.setFromCamera(m, camera);
+                        const meshes = [];
+                        scene.traverse(c => {
+                            if (c.isMesh && c.visible && !c.userData.isHotspotSprite && !c.userData._isCamHelper) meshes.push(c);
+                        });
+                        const hits = _dcRC.intersectObjects(meshes, false);
+                        if (!hits.length) return;
+                        const p = hits[0].point;
+                        const view = { target: { x: p.x, y: p.y, z: p.z } };
+                        if (camera.isOrthographicCamera) {
+                            view.pos = {
+                                x: camera.position.x + (p.x - orbitControls.target.x),
+                                y: camera.position.y + (p.y - orbitControls.target.y),
+                                z: camera.position.z + (p.z - orbitControls.target.z)
+                            };
+                            view.zoom = Math.min(orbitControls.maxZoom || 12, camera.zoom * 1.6);
+                        } else {
+                            const np = camera.position.clone().lerp(p, 0.3);
+                            view.pos = { x: np.x, y: np.y, z: np.z };
+                        }
+                        flyCameraTo(orbitControls, view, 1.0);
+                    });
+                }
+
                 hotspotMgr = new HotspotManager(scene, camera, renderer, config, SCENE_INDEX, orbitControls);
                 hotspotMgr.loadHotspots();
                 if (sceneCfg.buttons.length > 0) {
@@ -499,32 +683,27 @@
             const toggleButtons = Array.from(document.querySelectorAll('#modelToggleBar .vea-model-toggle'));
 
             // ---- selectCamera ----
-            function selectCamera(index) {
+            function selectCamera(index, instant = false) {
                 toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === index));
                 const camPos = cameraPositions[index];
                 if (!camPos) return;
-
-                camera.position.set(camPos.pos.x, camPos.pos.y, camPos.pos.z);
-                camera.lookAt(camPos.lookAt.x, camPos.lookAt.y, camPos.lookAt.z);
-                camera.fov = camPos.fov;
-                camera.updateProjectionMatrix();
 
                 const lookDir = new THREE.Vector3(
                     camPos.lookAt.x - camPos.pos.x,
                     camPos.lookAt.y - camPos.pos.y,
                     camPos.lookAt.z - camPos.pos.z
                 ).normalize().multiplyScalar(0.01);
-                orbitControls.target.set(
-                    camPos.pos.x + lookDir.x,
-                    camPos.pos.y + lookDir.y,
-                    camPos.pos.z + lookDir.z
-                );
+                const tweenTarget = {
+                    x: camPos.pos.x + lookDir.x,
+                    y: camPos.pos.y + lookDir.y,
+                    z: camPos.pos.z + lookDir.z
+                };
                 orbitControls.enablePan = false;
                 orbitControls.enableZoom = true;
                 orbitControls.enableRotate = true;
                 orbitControls.minDistance = 0.001;
                 orbitControls.maxDistance = 0.02;
-                orbitControls.update();
+                flyCameraTo(orbitControls, { pos: camPos.pos, target: tweenTarget, fov: camPos.fov }, instant ? 0 : 1.0);
 
                 const btn = sceneCfg.buttons[index];
                 const panelKey = btn?.id || `cam${index + 1}`;
@@ -578,6 +757,7 @@
 
             // ---- Plan view helpers (shared by clip mode + furniture modes) ----
             function _switchToPlanView(buttonIndex) {
+                cancelCameraTween();
                 toggleButtons.forEach((btn, i) => btn.classList.toggle('selected', i === buttonIndex));
                 _useCachedBBox();
 
@@ -680,6 +860,7 @@
             }
 
             function _switchToPerspView() {
+                cancelCameraTween();
                 _hideClipSlider();
                 for (const entry of clippedMeshes) {
                     const cloned = entry.mesh.material;
@@ -711,7 +892,8 @@
                 if (hotspotMgr) hotspotMgr.setToggle('toggle-2');
                 leftHtmlPanel.style.display = 'none';
                 rightHtmlPanel.style.display = 'none';
-                descriptionEl.textContent = 'Plan Görünümü';
+                updateNavDots();
+                descriptionEl.textContent = 'Plan Görünümü · odaya gitmek için zemindeki noktalara tıklayın';
                 descriptionEl.style.display = 'block';
             }
 
@@ -983,12 +1165,18 @@
                 });
             }
 
+            let _lastCamIdx = 0;
             function updateNavDots(selectedCamIndex) {
+                if (selectedCamIndex !== undefined) _lastCamIdx = selectedCamIndex;
+                const planMode = activeMode === 'toggle-2';
                 for (const dot of navDots) {
-                    const show = dot.camIndex !== selectedCamIndex && activeMode === 'toggle-1';
+                    const show = planMode || (activeMode === 'toggle-1' && dot.camIndex !== _lastCamIdx);
                     dot.mesh.visible = show;
                     dot.ring.visible = show;
                     if (!show) dot.label.visible = false;
+                    const s = planMode ? 2.2 : 1;
+                    dot.mesh.scale.setScalar(s);
+                    dot.ring.scale.setScalar(s);
                 }
             }
 
@@ -1009,7 +1197,7 @@
             }
 
             function updateNavDotsHover() {
-                if (activeMode !== 'toggle-1' || navDots.length === 0) return;
+                if ((activeMode !== 'toggle-1' && activeMode !== 'toggle-2') || navDots.length === 0) return;
                 if (camEditor && camEditor.active) return;
                 const meshes = navDots.filter(d => d.mesh.visible).map(d => d.mesh);
                 if (meshes.length === 0) { _setHoveredDot(null); return; }
@@ -1058,7 +1246,13 @@
             });
             renderer.domElement.addEventListener('click', () => {
                 if (camEditor && camEditor.active) return;
-                if (_hoveredDot) { selectCamera(_hoveredDot.camIndex); return; }
+                if (_hoveredDot) {
+                    const idx = _hoveredDot.camIndex;
+                    if (activeMode === 'toggle-2') exitClipMode();
+                    activeMode = 'toggle-1';
+                    selectCamera(idx);
+                    return;
+                }
 
                 // Furniture selection in edit mode
                 if (activeMode === 'toggle-3' && furnitureEditor) {
@@ -1160,6 +1354,11 @@
             // ---- Furniture keyboard shortcuts ----
             window.addEventListener('keydown', (e) => {
                 if (activeMode !== 'toggle-3' || !furnitureEditor || !furnitureEditor.active) return;
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+                    e.preventDefault();
+                    furnitureEditor.undo().then(() => _updateSelectionInfo());
+                    return;
+                }
                 if (e.key === 'r' || e.key === 'R') { _activeGizmoMode = 'rotate'; furnitureEditor.setMode('rotate'); _updateSelectionInfo(); }
                 if (e.key === 't' || e.key === 'T') { _activeGizmoMode = 'translate'; furnitureEditor.setMode('translate'); _updateSelectionInfo(); }
                 if (e.key === 's' || e.key === 'S') { _activeGizmoMode = 'scale'; furnitureEditor.setMode('scale'); _updateSelectionInfo(); }
@@ -1258,7 +1457,7 @@
                     } else if (firstAction === 'FURNITURE_VIEW') {
                         enterFurnitureView(0);
                     } else {
-                        selectCamera(0);
+                        selectCamera(0, true);
                     }
                 }
                 fadeOutLoading();
@@ -1294,6 +1493,15 @@
 
             const instructionsEl = document.getElementById('instructions');
             instructionsEl.style.display = 'block';
+            if (isMobile()) {
+                document.getElementById('instructionsText').textContent = 'Sol joystick ile yürüyün · sağ joystick ile etrafa bakın';
+            } else {
+                document.getElementById('instructionsKeys').innerHTML =
+                    '<span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> yürü</span>' +
+                    '<span><kbd>Shift</kbd> koş</span>' +
+                    '<span><kbd>Space</kbd> zıpla</span>' +
+                    '<span><kbd>ESC</kbd> çıkış</span>';
+            }
 
             function isMobile() {
                 return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -1304,8 +1512,9 @@
                 if (isMobile()) return;
                 if (!pointerLockControls.isLocked) pointerLockControls.lock();
             });
-            pointerLockControls.addEventListener('lock',   () => { instructionsEl.style.display = 'none'; });
-            pointerLockControls.addEventListener('unlock', () => { instructionsEl.style.display = 'block'; });
+            const crosshairEl = document.getElementById('walkCrosshair');
+            pointerLockControls.addEventListener('lock',   () => { instructionsEl.style.display = 'none'; crosshairEl.style.display = 'block'; });
+            pointerLockControls.addEventListener('unlock', () => { instructionsEl.style.display = 'block'; crosshairEl.style.display = 'none'; });
 
             composer.insertPass(new RenderPass(scene, camera), 0);
 
@@ -1393,6 +1602,15 @@
                     case 'Space': keys.jump = false; break;
                     case 'ShiftLeft': keys.sprint = false; currentMoveSpeed = baseMoveSpeed; break;
                 }
+            });
+
+            // "Başa Dön" — teleport back to the start position
+            const walkResetBtn = document.getElementById('walkResetBtn');
+            walkResetBtn.style.display = 'block';
+            walkResetBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                pointerLockControls.getObject().position.set(startPos.x, startPos.y, startPos.z);
+                playerVelocity.set(0, 0, 0);
             });
 
             activeUpdateFn = (delta) => {
@@ -1676,6 +1894,7 @@
             scene = new THREE.Scene();
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1683,11 +1902,13 @@
             renderer.toneMappingExposure = 1.0;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             document.body.appendChild(renderer.domElement);
+            renderer.domElement.addEventListener('pointerdown', cancelCameraTween);
 
             pmremGenerator = new PMREMGenerator(renderer);
 
             // Composer — mode will insert RenderPass at index 0
             composer = new EffectComposer(renderer);
+            composer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
             composer.addPass(new UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.3, 0.88
             ));
@@ -1719,6 +1940,7 @@
            =============================================================== */
         function animate() {
             const delta = clock.getDelta();
+            updateCameraTween(delta);
             if (activeUpdateFn) activeUpdateFn(delta);
             if (composer) composer.render();
         }
