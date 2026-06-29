@@ -3,10 +3,10 @@ Options -Indexes
   RewriteEngine On
   RewriteBase /
 
-  # Remove .html extension — serve clean URLs
+  # Remove .html extension — serve clean URLs (root and sub-folders, e.g. /tr/services)
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME}\.html -f
-  RewriteRule ^([^/]+)/?$ $1.html [L]
+  RewriteRule ^(.+?)/?$ $1.html [L]
 
   # 301 redirects: legacy blog-N URLs → clean slugs
   RewriteRule ^blog-1$   /blog/the-bosphorus-premium                   [R=301,L]

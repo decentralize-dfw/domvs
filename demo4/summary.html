@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VEA Demo4 — Mimari Özet (Sonraki Agent'lar İçin Not)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Raleway:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--gold:#c9a96e;--bg:#0a0a0c;--panel:#141417;--line:rgba(201,169,110,.18);--fg:#e8e6e1;--muted:#9aa0a6}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:'Raleway',system-ui,sans-serif;font-weight:300;line-height:1.7;padding:0 0 6rem}
+  header{padding:3.5rem 2rem 2.5rem;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#101013,#0a0a0c)}
+  .wrap{max-width:980px;margin:0 auto;padding:0 1.5rem}
+  h1{font-family:'Playfair Display',serif;font-weight:700;color:var(--gold);font-size:clamp(1.8rem,4vw,2.6rem);margin:0 0 .4rem;letter-spacing:.02em}
+  .sub{color:var(--muted);font-size:.95rem;letter-spacing:.02em}
+  .tag{display:inline-block;margin-top:1rem;font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);border:1px solid var(--line);padding:.4rem .9rem;border-radius:6px}
+  h2{font-family:'Playfair Display',serif;font-weight:700;color:var(--gold);font-size:1.4rem;margin:3rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--line)}
+  h3{color:#fff;font-weight:500;font-size:1.05rem;margin:1.6rem 0 .5rem;letter-spacing:.02em}
+  p{margin:.6rem 0}
+  code{background:#1c1c20;color:var(--gold);padding:.12em .45em;border-radius:5px;font-family:ui-monospace,Menlo,monospace;font-size:.85em}
+  pre{background:#101013;border:1px solid var(--line);border-radius:10px;padding:1rem 1.2rem;overflow:auto;font-family:ui-monospace,Menlo,monospace;font-size:.82rem;color:#cfcabb;line-height:1.6}
+  ul{margin:.5rem 0 1rem;padding-left:1.3rem}li{margin:.35rem 0}
+  table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}
+  th,td{text-align:left;padding:.7rem .9rem;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}
+  th{color:var(--gold);font-weight:500;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+  td code{font-size:.82em}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1.2rem 1.4rem;margin:1rem 0}
+  .note{border-left:3px solid var(--gold);background:rgba(201,169,110,.06);padding:.9rem 1.2rem;border-radius:0 8px 8px 0;margin:1rem 0}
+  .warn{border-left:3px solid #d9776c;background:rgba(217,119,108,.07);padding:.9rem 1.2rem;border-radius:0 8px 8px 0;margin:1rem 0}
+  .pill{display:inline-block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;background:#1c1c20;border:1px solid var(--line);color:var(--gold);padding:.2rem .6rem;border-radius:20px;margin:0 .25rem .3rem 0}
+  a{color:var(--gold)}
+  footer{color:var(--muted);font-size:.8rem;text-align:center;margin-top:4rem;padding-top:2rem;border-top:1px solid var(--line)}
+  strong{color:#fff;font-weight:500}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>VEA Demo4 — Mimari Özet</h1>
+    <div class="sub">Bu dosya bir <strong>not</strong>tur; sonraki agent'ların demo4'ü tekrar baştan çözmeden anlaması için yazıldı. Kod değil, harita.</div>
+    <span class="tag">Sonraki Agent'lar İçin · Salt Bilgi</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2>Tek cümlede</h2>
+  <p><strong>demo4</strong> = <strong>VEA</strong> ("Virtually Ever After") — bir Excel dosyasından beslenen, tamamen <strong>config-driven</strong> interaktif 3D emlak sunum motoru. Aynı tek motor; dış kütle/cephe turundan iç mekân yürüyüşüne, mobilya editöründen 360° panoramaya kadar her sahneyi oynatır. Ana sitenin (MERGVS) "3D archviz" olarak tanıttığı <strong>asıl ürün budur.</strong></p>
+
+  <div class="note">
+    <strong>Neden config-driven?</strong> Sahneleri eklemek/düzenlemek için HTML/JS'e dokunmaya gerek yok. Her şey <code>demo4-input.xlsx</code> içindeki <em>"VEA Config"</em> sayfasından okunur. Yeni sahne eklemek için sayfaya yeni bir <code>▌ SAHNE N</code> bloğu eklemek yeterli — loader otomatik bulur.
+  </div>
+
+  <h2>Dosya haritası</h2>
+  <table>
+    <tr><th>Dosya</th><th>Görev</th></tr>
+    <tr><td><code>index.html</code></td><td><strong>Oynatıcı kabuğu (shell).</strong> Üst bar, sahne dots, önceki/sonraki, tam ekran, yardım modali. Config'i okur, sahneleri <code>&lt;iframe&gt;</code> içine <code>demo4-scene.html?scene=N</code> ile yükler. Deep-link: <code>#scene-N</code>.</td></tr>
+    <tr><td><code>demo4-scene.html</code></td><td><strong>3D motor (~1950 satır).</strong> Three.js runtime. Parse edilmiş sahne config'ini okuyup 4 sahne tipini render eder. Tek dosya, <code>?scene=N</code> ile parametrize.</td></tr>
+    <tr><td><code>xlsx-loader-4.js</code></td><td><strong>Config sözleşmesi.</strong> "VEA Config" sayfasını yapısal JS objesine çevirir. Sahne/asset/kamera/model/buton/panel/hotspot parser'ları + panel HTML renderer'ı burada. <em>Veri şemasını değiştireceksen önce burayı oku.</em></td></tr>
+    <tr><td><code>link.txt</code></td><td>Aktif xlsx kaynağının URL'ini tutan tek merkezî dosya. İlk yorumsuz satır = config URL. Yerel <code>demo4-input.xlsx</code> (prod) ↔ Google Sheets canlı export (dev) arası geçiş buradan.</td></tr>
+    <tr><td><code>demo4-input.xlsx</code></td><td>Üretimdeki stabil config (sahneler, modeller, hotspotlar, paneller). Sitenin yanında ships eder, dış bağımlılık yok.</td></tr>
+    <tr><td><code>hotspot-manager.js</code></td><td>3D hotspot işaretçileri (GLB/PNG sprite) + popup'lar. Export: <code>HotspotManager</code>, <code>CameraEditor</code>.</td></tr>
+    <tr><td><code>furniture-library.js</code></td><td>Mobilya kataloğu verisi (büyük). Export: <code>getAllItems</code>, <code>getItemsByCategory</code>.</td></tr>
+    <tr><td><code>furniture-editor.js</code></td><td>Mobilya yerleştirme/taşıma/döndürme/ölçek/silme mantığı. Export: <code>FurnitureEditor</code>.</td></tr>
+    <tr><td><code>furniture-panel.js</code></td><td>Mobilya editörünün sol panel UI'ı. Export: <code>FurniturePanel</code>.</td></tr>
+    <tr><td><code>demo4-style.css</code></td><td>Motorun tüm UI stili (paneller, joystick zonları, yükleme ekranı, hotspot popup'ları).</td></tr>
+  </table>
+
+  <h2>Çalışma akışı</h2>
+  <pre>link.txt  ──►  xlsx URL'i çöz
+                 │
+demo4-input.xlsx ──►  loadVeaConfig()  (xlsx-loader-4.js)
+                 │         │
+                 │         └─► { assets, scenes:{0:…,1:…}, sceneCount, bgImageUrl, hdriUrl }
+                 ▼
+index.html  ──►  TRACKS[] kur  ──►  &lt;iframe src="demo4-scene.html?scene=N"&gt;
+                                          │
+                                          └─► demo4-scene.html sahne tipine göre init eder</pre>
+
+  <h2>Sahne tipleri (Excel "Tip" hücresinden)</h2>
+  <table>
+    <tr><th>Tip</th><th>Davranış</th><th>Tipik kullanım</th></tr>
+    <tr><td><code>orbit</code> ⟳</td><td>OrbitControls + toggle butonları + bilgi panelleri + hotspotlar. Modeli yörüngede döndür, varyant değiştir.</td><td>Proje genel görünümü, cephe/malzeme seçenekleri</td></tr>
+    <tr><td><code>cameras</code> 📷</td><td>Sabit kamera pozisyonları, <strong>kesit (clipping) modu</strong>, zemin nav dots, odaya teleport.</td><td>İç mekân turu + kesilebilir plan görünümü</td></tr>
+    <tr><td><code>walkthru</code> 🚶</td><td>FPS hareket: PointerLockControls, WASD, collider'lar, koşma/zıplama. Mobilde <strong>çift joystick</strong>.</td><td>Birinci şahıs yürüyüş modu</td></tr>
+    <tr><td><code>panoramic</code> ⬡</td><td>360° equirectangular küre, sadece-döndür OrbitControls, zemin dot navigasyonu.</td><td>Panorama/render gezintisi</td></tr>
+  </table>
+  <p>Mevcut <code>demo4-input.xlsx</code>'te tipik dizilim: sahne 0–3 <code>orbit</code>, sahne 4 <code>cameras</code>, sahne 5 <code>walkthru</code> (motor içi yorumlar bunu doğruluyor).</p>
+
+  <h2>Excel "VEA Config" şeması</h2>
+  <p>Loader, A sütunundaki <strong>marker</strong>'ları tarayarak çalışır (satır numarası hardcode <em>değil</em>).</p>
+  <h3>Global Assets tablosu (≈ satır 7–36)</h3>
+  <p>Yeniden kullanılabilir varlıklar: <code>B</code>=Ad, <code>C</code>=URL, <code>D</code>=Tip (GLB/HDRI/JPEG/collider…), görünürlük/collider bayrakları, pos/scale, autoRot, notlar. <code>slotXX</code> ve <code>null</code> satırları atlanır.</p>
+  <h3>Sahne bloğu — <code>▌ SAHNE N — Başlık · Altbaşlık</code></h3>
+  <p>Her sahne bloğu şu numaralı bölümlerden oluşur:</p>
+  <table>
+    <tr><th>Bölüm</th><th>İçerik</th></tr>
+    <tr><td><code>1 · KAMERA</code></td><td>Anahtar/değer çiftleri (Tip dahil). Sahne tipini belirleyen <code>Tip</code> hücresi burada.</td></tr>
+    <tr><td><code>2 · KULLANILAN MODELLER</code></td><td>GLB modelleri. <code>C</code>=URL veya Global Assets adına referans. <code>D</code>=<code>YES</code>/<code>NO</code>/<code>toggle-1</code>… (görünürlük/toggle). pos/rot/scale, <code>O</code>=model ID + not.</td></tr>
+    <tr><td><code>3 · TOGGLE BUTONLARI</code></td><td>Etiket+ID+aksiyon. Opsiyonel <code>F/G/H</code> ile zemin nav-dot pozisyonu override.</td></tr>
+    <tr><td><code>4 · BİLGİ PANELLERİ</code></td><td>Medya yığını: <code>text/html/image/video/youtube/drive/iframe/link/glb/teleport</code>. 2+ öğe → sekme (tab) olur. Eski "Panel ID:" formatı + yeni "Kod"-gruplu flat format desteklenir.</td></tr>
+    <tr><td><code>5 · HOTSPOT</code></td><td>3D işaretçi: tip (GLB/PNG), pos/rot/scale, popup içeriği, toggle-kod ile koşullu görünürlük.</td></tr>
+  </table>
+  <div class="note"><strong>Değer kuralları:</strong> <code>yes()</code> → "yes"/"mouse-break" truthy; <code>mouse-break</code> = otomatik döner, etkileşimde durur. Panel boyutları <code>normalizeSize()</code> ile <code>px/%/em…</code>'e çevrilir. Kamera aksiyon string'i <code>Pos(x,y,z) → LookAt(x,y,z) · FOV n</code> formatında parse edilir.</div>
+
+  <h2>Teknoloji yığını</h2>
+  <p>
+    <span class="pill">Three.js r0.158 (ESM)</span>
+    <span class="pill">GLTFLoader</span>
+    <span class="pill">DRACOLoader</span>
+    <span class="pill">MeshoptDecoder</span>
+    <span class="pill">RGBELoader / HDRI</span>
+    <span class="pill">PMREMGenerator</span>
+    <span class="pill">OrbitControls</span>
+    <span class="pill">PointerLockControls</span>
+    <span class="pill">EffectComposer + UnrealBloom</span>
+    <span class="pill">nipplejs (mobil joystick)</span>
+    <span class="pill">SheetJS / xlsx</span>
+  </p>
+  <ul>
+    <li>Tüm bağımlılıklar <strong>CDN importmap</strong> üzerinden (jsdelivr) — build adımı yok.</li>
+    <li>Sıkıştırılmış GLB desteği: <strong>Draco + Meshopt</strong> decoder'lar bağlı.</li>
+    <li>Aydınlatma: HDRI environment + <strong>bloom</strong> post-process zinciri (gündüz/gece ve sıcak ışık atmosferi).</li>
+  </ul>
+
+  <h2>VR &amp; mobil uyumluluk (ana sitede vurgulanan iddianın kaynağı)</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Render döngüsü <code>renderer.setAnimationLoop(animate)</code></strong> — WebXR uyumlu döngü; XR oturumu açılabilir. Shell'deki iframe <code>allow="fullscreen; xr-spatial-tracking"</code> ile gömülür.</li>
+      <li><strong>Mobil:</strong> walkthru modunda <code>nipplejs</code> ile <strong>çift joystick</strong> (sol = yürü, sağ = bak). <code>user-scalable=no</code> ile dokunmatik gezinme stabil.</li>
+      <li><strong>Tek kod tabanı, her cihaz:</strong> aynı URL telefon / masaüstü / tablet / VR başlığında açılır — indirme, uygulama veya hesap yok.</li>
+      <li>Hotspot popup ve panel medyaları (video/youtube/iframe) gyroscope/fullscreen izinleriyle gömülür.</li>
+    </ul>
+  </div>
+  <div class="warn"><strong>Not:</strong> Açık bir <code>VRButton</code>/<code>XRButton</code> UI'ı şu an eklenmemiş; XR-uyumlu render döngüsü ve spatial-tracking izni hazır. Tam "headset'e gir" düğmesi istenirse eklenmesi küçük bir iştir (gelecek iş).</div>
+
+  <h2>Bilinmesi gereken davranışlar</h2>
+  <ul>
+    <li><strong>Mobilya cache:</strong> <code>sessionStorage['vea-furniture-interior']</code>. Sahne navigasyonu ve geri/ileri'de <em>korunur</em>; sadece tam sayfa yenilemede (F5) temizlenir. Yerleştirilen mobilya oda kameralarında ve yürüyüş modunda da görünür.</li>
+    <li><strong>Komşu sahne ön-yükleme:</strong> aktif sahne oturduktan sonra önceki/sonraki sahnenin GLB'leri sessizce HTTP cache'e çekilir → geçişler anlık hissedilir.</li>
+    <li><strong>Hata kurtarma:</strong> her yükleme hatasında "Tekrar Dene" düğmesi gösterilir; sahne asla donmuş görünmez.</li>
+    <li><strong>Deep-link:</strong> shell <code>#scene-N</code> (Excel sahne index'i) paylaşılabilir URL üretir; motor <code>?scene=N</code> okur.</li>
+  </ul>
+
+  <h2>Sonraki agent'a ipuçları</h2>
+  <ul>
+    <li>İçerik/sahne değişikliği isteniyorsa muhtemelen <strong>kodu değil Excel'i</strong> düzenlemek gerekir. Önce <code>link.txt</code>'in hangi kaynağı işaret ettiğine bak.</li>
+    <li>Yeni alan/sütun ekleyeceksen şemayı <code>xlsx-loader-4.js</code>'teki ilgili <code>parseXxxSection</code> ile hizala.</li>
+    <li>Motor davranışı (kamera, kesit, fizik, joystick) → <code>demo4-scene.html</code> içinde <code>initOrbitMode</code> (~458), <code>cameras</code> modu (~632), <code>walkthru</code> (~1479), <code>panoramic</code> (~1707) bölümleri.</li>
+    <li>Bu klasör kendi kendine yeter (self-contained) — herhangi bir host'ta (mergvs.com, preview, local) çalışacak şekilde göreli yollar kullanır.</li>
+    <li>Bu demo4, ana sitenin sattığı deneyimin <strong>referans/canlı örneğidir</strong>; ana sitedeki "Request Live Demo" akışı potansiyel müşteriyi bu tür bir deneyime yönlendirir.</li>
+  </ul>
+
+  <footer>
+    VEA Demo4 mimari özeti · sonraki agent'lar için hazırlanan teknik not.<br>
+    Kaynak dosyalar: <code>index.html</code>, <code>demo4-scene.html</code>, <code>xlsx-loader-4.js</code>, <code>hotspot-manager.js</code>, <code>furniture-*.js</code>, <code>link.txt</code>.
+  </footer>
+
+</div>
+</body>
+</html>
