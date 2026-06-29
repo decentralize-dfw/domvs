@@ -194,7 +194,7 @@ const HTML = `
         </div>
       </div>
 
-      <div style="margin-top:1.8rem">
+      <div style="display:none;margin-top:1.8rem">
         <div class="mgv-slider-wrap">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.6rem">
             <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin:0">Listing Price</p>
