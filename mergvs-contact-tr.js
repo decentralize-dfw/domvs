@@ -98,83 +98,83 @@ select.mgv-input{appearance:none;cursor:pointer}
 /* ── HTML TEMPLATE ── */
 const HTML = `
 <div id="mgv-backdrop"></div>
-<div id="mgv-overlay" role="dialog" aria-modal="true" aria-label="Contact MERGVS">
-  <button id="mgv-close" aria-label="Close">✕</button>
+<div id="mgv-overlay" role="dialog" aria-modal="true" aria-label="MERGVS ile iletişim">
+  <button id="mgv-close" aria-label="Kapat">✕</button>
   <div id="mgv-box">
 
     <!-- PROGRESS -->
     <div class="mgv-progress" aria-hidden="true">
       <div class="mgv-step-dot active" data-step="0">
         <span class="mgv-dot-num">1</span>
-        <span class="mgv-dot-label">Property</span>
+        <span class="mgv-dot-label">Mülk</span>
       </div>
       <div class="mgv-step-dot" data-step="1">
         <span class="mgv-dot-num">2</span>
-        <span class="mgv-dot-label">Services</span>
+        <span class="mgv-dot-label">Hizmetler</span>
       </div>
       <div class="mgv-step-dot" data-step="2">
         <span class="mgv-dot-num">3</span>
-        <span class="mgv-dot-label">Contact</span>
+        <span class="mgv-dot-label">İletişim</span>
       </div>
     </div>
 
     <!-- STEP 1: PROPERTY -->
     <div class="mgv-step active" data-step="0">
-      <p class="mgv-eyebrow">Step 1 of 3</p>
-      <h2 class="mgv-title">Tell us about<br>your <em>property</em></h2>
-      <p class="mgv-sub">We'll tailor our approach to your specific asset.</p>
+      <p class="mgv-eyebrow">Adım 1 / 3</p>
+      <h2 class="mgv-title">Bize <em>mülkünüzü</em><br>anlatın</h2>
+      <p class="mgv-sub">Yaklaşımımızı özel varlığınıza göre uyarlarız.</p>
 
       <div style="margin-bottom:1.8rem">
-        <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">I am</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">Ben</p>
         <div class="mgv-cards" style="grid-template-columns:repeat(2,1fr)">
           <label class="mgv-card">
             <input type="radio" name="mgv-role" value="Agent / Estate Professional" hidden>
             <span class="mgv-card-icon" style="font-size:1.1rem">◇</span>
-            <span class="mgv-card-label">Agent / Professional</span>
-            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">No cost · commission model</span>
+            <span class="mgv-card-label">Danışman / Profesyonel</span>
+            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">Ücretsiz · komisyon modeli</span>
           </label>
           <label class="mgv-card">
             <input type="radio" name="mgv-role" value="Private Owner / Seller" hidden>
             <span class="mgv-card-icon" style="font-size:1.1rem">◈</span>
-            <span class="mgv-card-label">Private Owner / Seller</span>
-            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">Fixed production packages</span>
+            <span class="mgv-card-label">Bireysel Sahip / Satıcı</span>
+            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">Sabit üretim paketleri</span>
           </label>
         </div>
       </div>
 
       <div style="margin-top:1.8rem">
-        <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">City</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">Şehir</p>
         <div class="mgv-cards" style="grid-template-columns:repeat(4,1fr)">
           <label class="mgv-card">
             <input type="radio" name="mgv-city" value="Luxembourg" hidden>
             <span style="font-size:1.4rem;display:block;margin-bottom:0.4rem">🇱🇺</span>
-            <span class="mgv-card-label">Luxembourg</span>
+            <span class="mgv-card-label">Lüksemburg</span>
           </label>
           <label class="mgv-card">
             <input type="radio" name="mgv-city" value="Milan" hidden>
             <span style="font-size:1.4rem;display:block;margin-bottom:0.4rem">🇮🇹</span>
-            <span class="mgv-card-label">Milan</span>
+            <span class="mgv-card-label">Milano</span>
           </label>
           <label class="mgv-card">
             <input type="radio" name="mgv-city" value="Istanbul" hidden>
             <span style="font-size:1.4rem;display:block;margin-bottom:0.4rem">🇹🇷</span>
-            <span class="mgv-card-label">Istanbul</span>
+            <span class="mgv-card-label">İstanbul</span>
           </label>
           <label class="mgv-card">
             <input type="radio" name="mgv-city" value="Other" hidden>
             <span style="font-size:1.4rem;display:block;margin-bottom:0.4rem">🌍</span>
-            <span class="mgv-card-label">Other</span>
+            <span class="mgv-card-label">Diğer</span>
           </label>
         </div>
       </div>
 
       <div style="margin-top:1.6rem">
-        <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">Property Type</p>
+        <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">Mülk Türü</p>
         <div class="mgv-cards">
           <label class="mgv-card">
             <input type="radio" name="mgv-type" value="Apartment" hidden>
             <span class="mgv-card-icon">⬜</span>
-            <span class="mgv-card-label">Apartment</span>
+            <span class="mgv-card-label">Daire</span>
           </label>
           <label class="mgv-card">
             <input type="radio" name="mgv-type" value="Villa" hidden>
@@ -184,12 +184,12 @@ const HTML = `
           <label class="mgv-card">
             <input type="radio" name="mgv-type" value="Penthouse" hidden>
             <span class="mgv-card-icon">◈</span>
-            <span class="mgv-card-label">Penthouse</span>
+            <span class="mgv-card-label">Çatı Katı</span>
           </label>
           <label class="mgv-card">
             <input type="radio" name="mgv-type" value="Commercial" hidden>
             <span class="mgv-card-icon">▦</span>
-            <span class="mgv-card-label">Commercial</span>
+            <span class="mgv-card-label">Ticari</span>
           </label>
         </div>
       </div>
@@ -197,7 +197,7 @@ const HTML = `
       <div style="display:none;margin-top:1.8rem">
         <div class="mgv-slider-wrap">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.6rem">
-            <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin:0">Listing Price</p>
+            <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin:0">İlan Fiyatı</p>
             <span id="mgv-price-display" style="font-family:'Lora',serif;font-size:1rem;color:#2E3D28;font-weight:400">€2,000,000</span>
           </div>
           <input type="range" class="mgv-range" id="mgv-price-slider" min="0" max="100" value="25" step="1">
@@ -209,98 +209,98 @@ const HTML = `
       </div>
 
       <div class="mgv-btns">
-        <button class="mgv-btn-next" id="mgv-next-1">Continue →</button>
+        <button class="mgv-btn-next" id="mgv-next-1">Devam →</button>
       </div>
     </div>
 
     <!-- STEP 2: SERVICES -->
     <div class="mgv-step" data-step="1">
-      <p class="mgv-eyebrow">Step 2 of 3</p>
-      <h2 class="mgv-title">What do you<br>need <em>created</em>?</h2>
-      <p class="mgv-sub">Select all that apply. We'll build a tailored proposal.</p>
+      <p class="mgv-eyebrow">Adım 2 / 3</p>
+      <h2 class="mgv-title">Neyin <em>üretilmesini</em><br>istersiniz?</h2>
+      <p class="mgv-sub">Geçerli olanların hepsini seçin. Size özel bir teklif hazırlarız.</p>
 
       <div class="mgv-cards" style="margin-top:1.8rem;grid-template-columns:repeat(2,1fr)">
         <label class="mgv-card">
           <input type="checkbox" name="mgv-svc" value="3D Immersive Tour" hidden>
           <span class="mgv-card-icon" style="font-size:1.1rem">⟐</span>
-          <span class="mgv-card-label">3D Immersive Tour</span>
+          <span class="mgv-card-label">3D Sürükleyici Tur</span>
         </label>
         <label class="mgv-card">
           <input type="checkbox" name="mgv-svc" value="Cinematic Video" hidden>
           <span class="mgv-card-icon" style="font-size:1.1rem">▶</span>
-          <span class="mgv-card-label">Cinematic Video</span>
+          <span class="mgv-card-label">Sinematik 3D Video</span>
         </label>
         <label class="mgv-card">
           <input type="checkbox" name="mgv-svc" value="Photography Editing" hidden>
           <span class="mgv-card-icon" style="font-size:1.1rem">◎</span>
-          <span class="mgv-card-label">Photo Editing</span>
+          <span class="mgv-card-label">Foto Düzenleme</span>
         </label>
         <label class="mgv-card">
           <input type="checkbox" name="mgv-svc" value="Virtual Staging" hidden>
           <span class="mgv-card-icon" style="font-size:1.1rem">□</span>
-          <span class="mgv-card-label">Virtual Staging</span>
+          <span class="mgv-card-label">Sanal Sahneleme</span>
         </label>
         <label class="mgv-card">
           <input type="checkbox" name="mgv-svc" value="Presentation Boards" hidden>
           <span class="mgv-card-icon" style="font-size:1.1rem">≡</span>
-          <span class="mgv-card-label">Presentation Boards</span>
+          <span class="mgv-card-label">Sunum Panoları</span>
         </label>
         <label class="mgv-card">
           <input type="checkbox" name="mgv-svc" value="Full Package" hidden>
           <span class="mgv-card-icon" style="font-size:1.1rem">◈</span>
-          <span class="mgv-card-label">Full Package</span>
+          <span class="mgv-card-label">Tam Paket</span>
         </label>
       </div>
 
       <div class="mgv-btns">
-        <button class="mgv-btn-back" id="mgv-back-2">← Back</button>
-        <button class="mgv-btn-next" id="mgv-next-2">Continue →</button>
+        <button class="mgv-btn-back" id="mgv-back-2">← Geri</button>
+        <button class="mgv-btn-next" id="mgv-next-2">Devam →</button>
       </div>
     </div>
 
     <!-- STEP 3: CONTACT -->
     <div class="mgv-step" data-step="2">
-      <p class="mgv-eyebrow">Step 3 of 3</p>
-      <h2 class="mgv-title">How should<br>we <em>reach you</em>?</h2>
-      <p class="mgv-sub">We respond within 24 hours, always personally.</p>
+      <p class="mgv-eyebrow">Adım 3 / 3</p>
+      <h2 class="mgv-title">Size nasıl<br><em>ulaşalım</em>?</h2>
+      <p class="mgv-sub">24 saat içinde, her zaman bizzat yanıt veririz.</p>
 
       <div class="mgv-fields" style="margin-top:1.8rem">
         <div class="mgv-field">
-          <label class="mgv-label" for="mgv-name">Full Name</label>
-          <input class="mgv-input" type="text" id="mgv-name" placeholder="Your name" autocomplete="name">
+          <label class="mgv-label" for="mgv-name">Ad Soyad</label>
+          <input class="mgv-input" type="text" id="mgv-name" placeholder="Adınız" autocomplete="name">
         </div>
         <div class="mgv-field">
-          <label class="mgv-label" for="mgv-email">Email Address</label>
+          <label class="mgv-label" for="mgv-email">E-posta Adresi</label>
           <input class="mgv-input" type="email" id="mgv-email" placeholder="your@email.com" autocomplete="email">
         </div>
         <div class="mgv-field">
-          <label class="mgv-label" for="mgv-phone">Phone (optional)</label>
+          <label class="mgv-label" for="mgv-phone">Telefon (opsiyonel)</label>
           <input class="mgv-input" type="tel" id="mgv-phone" placeholder="+352 …" autocomplete="tel">
         </div>
         <div class="mgv-field">
-          <label class="mgv-label" for="mgv-timeline">Timeline</label>
+          <label class="mgv-label" for="mgv-timeline">Zaman Çizelgesi</label>
           <select class="mgv-input" id="mgv-timeline" style="appearance:none;cursor:pointer">
-            <option value="">Select…</option>
-            <option value="This month">This month</option>
-            <option value="1-3 months">1–3 months</option>
-            <option value="3-6 months">3–6 months</option>
-            <option value="Just exploring">Just exploring</option>
+            <option value="">Seçin…</option>
+            <option value="This month">Bu ay</option>
+            <option value="1-3 months">1–3 ay</option>
+            <option value="3-6 months">3–6 ay</option>
+            <option value="Just exploring">Sadece bakıyorum</option>
           </select>
         </div>
       </div>
 
       <div id="mgv-form-error" role="alert"></div>
       <div class="mgv-btns">
-        <button class="mgv-btn-back" id="mgv-back-3">← Back</button>
-        <button class="mgv-btn-next" id="mgv-submit" style="background:#2E3D28">Send Request →</button>
+        <button class="mgv-btn-back" id="mgv-back-3">← Geri</button>
+        <button class="mgv-btn-next" id="mgv-submit" style="background:#2E3D28">Talebi Gönder →</button>
       </div>
     </div>
 
     <!-- SUCCESS -->
     <div id="mgv-success">
       <img src="https://mergvs.com/mergvs-son.png" alt="MERGVS" style="width:60px;height:60px;object-fit:contain;opacity:0.8;margin-bottom:1.2rem">
-      <h2 class="mgv-s-title">Your request<br>has been <em>received</em>.</h2>
-      <p class="mgv-s-sub">We'll be in touch within 24 hours to discuss<br>your property and what we can create together.</p>
+      <h2 class="mgv-s-title">Talebiniz<br><em>alındı</em>.</h2>
+      <p class="mgv-s-sub">Mülkünüzü ve birlikte neler yaratabileceğimizi konuşmak için<br>24 saat içinde sizinle iletişime geçeceğiz.</p>
     </div>
 
   </div>
@@ -308,10 +308,10 @@ const HTML = `
 
 <!-- FLOAT BUTTON -->
 <div id="mgv-float">
-  <span id="mgv-float-tip">Request a presentation</span>
+  <span id="mgv-float-tip">Sunum talep edin</span>
   <button id="mgv-float-btn">
     <span id="mgv-float-pulse"></span>
-    Begin your story
+    Hikâyenizi başlatın
   </button>
 </div>
 `;
@@ -443,12 +443,12 @@ function init(){
     const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if(!name){
       document.getElementById('mgv-name').focus();
-      showFormError('Please enter your name so we know who we\'re speaking with.');
+      showFormError('Lütfen adınızı girin ki kiminle konuştuğumuzu bilelim.');
       return;
     }
     if(!email||!emailOk){
       document.getElementById('mgv-email').focus();
-      showFormError('Please enter a valid email address — we\'ll use it only to reply to your enquiry.');
+      showFormError('Lütfen geçerli bir e-posta adresi girin — yalnızca talebinize yanıt vermek için kullanırız.');
       return;
     }
 
@@ -465,7 +465,7 @@ function init(){
     /* Send to Formspree */
     var btn=document.getElementById('mgv-submit');
     btn.disabled=true;
-    btn.textContent='Sending…';
+    btn.textContent='Gönderiliyor…';
 
     fetch('https://formspree.io/f/mwvwzjeo',{
       method:'POST',
@@ -491,27 +491,27 @@ function init(){
       }else{
         res.json().then(function(data){
           console.error('Formspree error:', JSON.stringify(data));
-          var msg='Something went wrong on our end. Please try again, or write to us directly at hello@mergvs.com.';
+          var msg='Tarafımızda bir şeyler ters gitti. Lütfen tekrar deneyin ya da bize doğrudan hello@mergvs.com adresinden yazın.';
           if(data&&data.errors&&data.errors.length){
             var fieldErr=data.errors.find(function(e){return e.field==='email';});
-            if(fieldErr) msg='The email address you entered doesn\'t appear to be valid. Please double-check it.';
+            if(fieldErr) msg='Girdiğiniz e-posta adresi geçerli görünmüyor. Lütfen tekrar kontrol edin.';
           } else if(data&&data.error&&typeof data.error==='string'){
             if(data.error.toLowerCase().indexOf('activate')!==-1){
-              msg='The form is not yet active. Please contact us directly at hello@mergvs.com.';
+              msg='Form henüz aktif değil. Lütfen bize doğrudan hello@mergvs.com adresinden ulaşın.';
             }
           }
           showFormError(msg);
         }).catch(function(){
-          showFormError('Something went wrong. Please write to us directly at hello@mergvs.com.');
+          showFormError('Bir şeyler ters gitti. Lütfen bize doğrudan hello@mergvs.com adresinden yazın.');
         });
         btn.disabled=false;
-        btn.textContent='Send Request →';
+        btn.textContent='Talebi Gönder →';
       }
     }).catch(function(err){
       console.error('Formspree fetch error:', err);
       btn.disabled=false;
-      btn.textContent='Send Request →';
-      showFormError('Unable to send — please check your connection, or write to us at hello@mergvs.com.');
+      btn.textContent='Talebi Gönder →';
+      showFormError('Gönderilemedi — lütfen bağlantınızı kontrol edin ya da bize hello@mergvs.com adresinden yazın.');
     });
   });
 
