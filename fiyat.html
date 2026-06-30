@@ -149,6 +149,10 @@
   .chip input:checked ~ .label{ color:var(--ink); }
   .chip:has(input:checked){ border-color:var(--ink); background:#EFEDE3; }
   .chip input:focus-visible ~ .box{ outline:2px solid var(--ink); outline-offset:2px; }
+  .chip-price{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; margin-left:2px; }
+  .chip input:checked ~ .chip-price{ color:var(--ink); }
+  .addon-row{ display:flex; align-items:center; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-top:18px; }
+  .addon-name{ font-size:14.5px; color:var(--ink); }
 
   /* stepper */
   .stepper{ display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
@@ -278,6 +282,28 @@
             <div class="chips" id="ortakChips">
               <!-- doldurulacak -->
             </div>
+            <p class="hint">Her ortak alan €900.</p>
+          </div>
+          <div class="field">
+            <p class="block-label">Eklentiler</p>
+            <div class="chips">
+              <label class="chip">
+                <input type="checkbox" id="mobilyaChk">
+                <span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9 10 2.8" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="label">Mobilya düzenleme motoru</span>
+              </label>
+            </div>
+            <div class="addon-row">
+              <div>
+                <div class="addon-name">İç mimari öneri paketi</div>
+                <div class="hint" style="margin-top:3px">Adet başı €300</div>
+              </div>
+              <div class="stepper" data-step="icmimari">
+                <button type="button" data-d="-1" aria-label="azalt">−</button>
+                <span class="val" id="icmimariVal">0</span>
+                <button type="button" data-d="1" aria-label="arttır">+</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -310,11 +336,13 @@
 
         <div class="field">
           <p class="block-label">Kısa Film</p>
-          <div class="num-input" style="max-width:240px">
-            <input id="filmDk" type="number" min="0" step="0.5" value="0" inputmode="decimal">
-            <span class="cur">dk</span>
+          <div class="stepper" data-step="film">
+            <button type="button" data-d="-1" aria-label="azalt">−</button>
+            <span class="val" id="filmVal">0</span>
+            <button type="button" data-d="1" aria-label="arttır">+</button>
           </div>
-          <p class="hint">Dakika başı €450. Mülkün hikâyesini anlatan sinematik kurgu.</p>
+          <p class="hint">Dakika başı €520 · 2 dakikadan başlar.</p>
+          <p class="hint" style="margin-top:8px">Aynı çekimden, sosyal medya için kısa kesik kesik reel'ler de çıkarılabilir.</p>
         </div>
       </div>
 
@@ -346,14 +374,24 @@
 const P = {
   luksKomisyonOrani:  0.008,    // binde 8
   luksMinFiyat:       2000000,  // € — modelin alt sınırı
-  apartmanTaban:      8000,     // € — bina kabuğu + sirkülasyon + genel
-  apartmanTipBasi:    2500,     // € — her konut tipi
-  apartmanOrtakBasi:  1500,     // € — her ortak alan
+  apartmanTaban:      7100,     // € — boş paket (bina kabuğu + sirkülasyon + genel)
+  apartmanOrtakBasi:  900,      // € — her ortak alan
+  mobilyaMotoru:      1000,     // € — mobilya düzenleme motoru eklentisi
+  icMimariPaket:      300,      // € — iç mimari öneri paketi (adet başı)
   reelFiyat:          650,      // € — 40 sn reel (adet)
-  filmDkFiyat:        450,      // € — kısa film (dakika)
+  filmDkFiyat:        520,      // € — kısa film (dakika)
+  filmMinDk:          2,        // kısa film alt sınırı (dakika)
 };
 
-const KONUT_TIPLERI = ['Stüdyo','1+1','2+1','3+1','4+1','Dubleks','Penthouse'];
+const KONUT_TIPLERI = [
+  { ad:'Stüdyo',    fiyat:800  },
+  { ad:'1+1',       fiyat:800  },
+  { ad:'2+1',       fiyat:800  },
+  { ad:'3+1',       fiyat:800  },
+  { ad:'4+1',       fiyat:900  },
+  { ad:'Dubleks',   fiyat:1000 },
+  { ad:'Penthouse', fiyat:1100 },
+];
 const ORTAK_ALANLAR = ['Lobi / Giriş','Otopark','Çatı Terası','Fitness','Yüzme Havuzu','Sauna & Spa','Çalışma / Toplantı','Çocuk Oyun Alanı','Peyzaj / Bahçe'];
 const TIP_VARSAYILAN   = ['2+1','3+1'];
 const ORTAK_VARSAYILAN = ['Lobi / Giriş','Otopark'];
@@ -368,20 +406,27 @@ const $$ = s => document.querySelectorAll(s);
 const CHECK_SVG = '<svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9 10 2.8" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* ---------- chip üret ---------- */
-function buildChips(container, items, defaults, group){
-  container.innerHTML = items.map(it => `
-    <label class="chip">
-      <input type="checkbox" data-group="${group}" value="${it}" ${defaults.includes(it)?'checked':''}>
-      <span class="box">${CHECK_SVG}</span>
-      <span class="label">${it}</span>
-    </label>`).join('');
-}
-buildChips($('#tipChips'), KONUT_TIPLERI, TIP_VARSAYILAN, 'tip');
-buildChips($('#ortakChips'), ORTAK_ALANLAR, ORTAK_VARSAYILAN, 'ortak');
+// konut tipleri — her birinin kendi fiyatı, etikette gösterilir
+$('#tipChips').innerHTML = KONUT_TIPLERI.map(t => `
+  <label class="chip">
+    <input type="checkbox" data-group="tip" value="${t.ad}" data-price="${t.fiyat}" ${TIP_VARSAYILAN.includes(t.ad)?'checked':''}>
+    <span class="box">${CHECK_SVG}</span>
+    <span class="label">${t.ad}</span>
+  </label>`).join('');
+
+// ortak alanlar — her biri sabit
+$('#ortakChips').innerHTML = ORTAK_ALANLAR.map(o => `
+  <label class="chip">
+    <input type="checkbox" data-group="ortak" value="${o}" ${ORTAK_VARSAYILAN.includes(o)?'checked':''}>
+    <span class="box">${CHECK_SVG}</span>
+    <span class="label">${o}</span>
+  </label>`).join('');
 
 /* ---------- durum ---------- */
 let emlakMode = 'luks';
 let reels = 1;
+let icmimari = 0;
+let filmDk = 0;
 
 function rate(){ const r = parseFloat($('#rateInput').value); return (isFinite(r) && r>0) ? r : 52.63; }
 function rowsHTML(rows){ return rows.map(r => `<div class="b-row${r.total?' total':''}"><span>${r.k}</span><span class="v">${r.v}</span></div>`).join(''); }
@@ -418,9 +463,14 @@ function render(){
   }
 
   /* --- APARTMAN --- */
-  const tipSayisi = $$('input[data-group="tip"]:checked').length;
+  const tipChecked = [...$$('input[data-group="tip"]:checked')];
+  const tipSayisi = tipChecked.length;
+  const tipToplam = tipChecked.reduce((s,el)=> s + (parseInt(el.dataset.price,10) || 0), 0);
   const ortakSayisi = $$('input[data-group="ortak"]:checked').length;
-  const apartmanTotal = P.apartmanTaban + tipSayisi*P.apartmanTipBasi + ortakSayisi*P.apartmanOrtakBasi;
+  const ortakToplam = ortakSayisi * P.apartmanOrtakBasi;
+  const mobilya = $('#mobilyaChk').checked ? P.mobilyaMotoru : 0;
+  const icmimariToplam = icmimari * P.icMimariPaket;
+  const apartmanTotal = P.apartmanTaban + tipToplam + ortakToplam + mobilya + icmimariToplam;
 
   if (emlakMode === 'apartman'){
     $('#emlakREyebrow').textContent = 'Proje Bedeli';
@@ -428,12 +478,15 @@ function render(){
     setTimeout(()=>{ fig.textContent = eur(apartmanTotal); fig.style.opacity = 1; }, 60);
     tryEl.textContent = '≈ ' + tryf(apartmanTotal * R);
 
-    $('#emlakBreak').innerHTML = rowsHTML([
-      { k:'Taban (kabuk + genel)', v: eur(P.apartmanTaban) },
-      { k:`Konut tipi × ${tipSayisi}`, v: eur(tipSayisi*P.apartmanTipBasi) },
-      { k:`Ortak alan × ${ortakSayisi}`, v: eur(ortakSayisi*P.apartmanOrtakBasi) },
-      { k:'Toplam', v: eur(apartmanTotal), total:true },
-    ]);
+    const apRows = [
+      { k:'Taban (boş paket)', v: eur(P.apartmanTaban) },
+      { k:`Konut tipi × ${tipSayisi}`, v: eur(tipToplam) },
+      { k:`Ortak alan × ${ortakSayisi}`, v: eur(ortakToplam) },
+    ];
+    if (mobilya) apRows.push({ k:'Mobilya düzenleme motoru', v: eur(mobilya) });
+    if (icmimariToplam) apRows.push({ k:`İç mimari öneri paketi × ${icmimari}`, v: eur(icmimariToplam) });
+    apRows.push({ k:'Toplam', v: eur(apartmanTotal), total:true });
+    $('#emlakBreak').innerHTML = rowsHTML(apRows);
 
     const notice = $('#emlakNotice');
     notice.innerHTML = (tipSayisi === 0)
@@ -442,7 +495,7 @@ function render(){
   }
 
   /* --- VIDEO --- */
-  const dk = parseFloat($('#filmDk').value) || 0;
+  const dk = filmDk;   // stepper'dan: 0 = film yok, en az 2 dk
   const reelTutar = reels * P.reelFiyat;
   const filmTutar = dk * P.filmDkFiyat;
   const videoTotal = reelTutar + filmTutar;
@@ -494,9 +547,26 @@ $('[data-step="reel"]').addEventListener('click', e => {
   $('#reelVal').textContent = reels; render();
 });
 
+// iç mimari öneri paketi stepper
+$('[data-step="icmimari"]').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  icmimari = Math.max(0, icmimari + parseInt(b.dataset.d, 10));
+  $('#icmimariVal').textContent = icmimari; render();
+});
+
 // tüm input değişiklikleri
 document.addEventListener('input', e => {
-  if (e.target.matches('#luksFiyat, #filmDk, #rateInput') || e.target.matches('input[type="checkbox"]')) render();
+  if (e.target.matches('#luksFiyat, #rateInput') || e.target.matches('input[type="checkbox"]')) render();
+});
+
+// kısa film stepper: 0 → 2 → 3 … (1 atlanır, geri inişte 2'den 0'a)
+$('[data-step="film"]').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = parseInt(b.dataset.d, 10);
+  if (d > 0) filmDk = (filmDk < P.filmMinDk) ? P.filmMinDk : filmDk + 1;
+  else       filmDk = (filmDk <= P.filmMinDk) ? 0 : filmDk - 1;
+  $('#filmVal').textContent = filmDk;
+  render();
 });
 
 render();
