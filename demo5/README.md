@@ -24,8 +24,18 @@
 | `x{k}{b}`   | 21 | 1.2 sn /  36 kare | daldan çıkış (girişin tersi) |
 
 Bölümler: 01 Okyanus · 02 Gün Batımı · 03 Yeşim · 04 Nebula · 05 Bakır · 06 Buzul · 07 Gül Kuartz
-Her bölümün dalları: **+ AKIŞ** (uzun akan filamanlar) · **+ IŞIK** (hacimli parlama) · **+ DOKU** (ince yoğun desen).
-Dal sahneleri, ana bölümün paletinden türetilir — üzerine eklenmiş bir katman gibi görünür.
+
+Her bölümün 3 dalı, ana sahnenin **üzerine ayrı bir yapısal katman ekler** — palet aynı kalır,
+yapı tamamen değişir:
+
+| dal | katman | görünen fark |
+|---|---|---|
+| **+ IZGARA**   | `grid_layer`     | kayan geometrik kafes; bir devirde tam 1 hücre öteler |
+| **+ PARÇACIK** | `particle_layer` | kapalı yörüngelerde dönen 45 ışık noktası, arka plan kısılır |
+| **+ HALKA**    | `ring_layer`     | merkezden dışarı açılan halkalar; devirde tam 2 halka |
+
+Katman miktarı (`grid` / `parts` / `rings`) ana sahnelerde 0'dır; giriş klibi bu değeri
+0 → 1 arasında yumuşatır, yani katman gerçekten sahnenin üzerine "eklenerek" gelir.
 
 ## Kare sözleşmesi
 
@@ -71,7 +81,7 @@ birleşmeleri doğal kare farkı seviyesinde.
 
 Tarayıcı tarafı (Playwright): 82/82 klip bellekte, 31 eleman sınırı korunuyor, 7 bölümlük aks
 ileri/geri, **21 dalın hepsinde giriş/çıkış piksel dikişi** (0 siyah kare, 0 donan kare,
-maks Δparlaklık 5.5), dal→dal geçişi, uzak düğüme zincir (691 örnek, 0 siyah/donan kare),
+maks Δparlaklık 4.9), dal→dal geçişi, uzak düğüme zincir (691 örnek, 0 siyah/donan kare),
 28 istekli rastgele stres, döngü kararlılığı, 0 konsol hatası.
 
 ## Kullanım
@@ -85,7 +95,8 @@ python3 -m http.server 8000     # file:// değil — fetch/blob için http gerek
 
 ```bash
 pip install numpy imageio-ffmpeg
-python3 tools/generate_videos.py    # 82 klip × (mp4 + webm), ~8 dk, ~26 MB
+python3 tools/generate_videos.py                   # 82 klip × (mp4 + webm), ~8 dk, ~23 MB
+python3 tools/generate_videos.py --branches-only   # yalnız dal kliplerini yenile (m/f/r korunur)
 ```
 
 Yeni bölüm eklemek için `SECTIONS` listesine bir palet sözlüğü eklemek yeterli; dallar

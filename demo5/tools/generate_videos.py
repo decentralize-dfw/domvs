@@ -99,35 +99,92 @@ SECTIONS = [
                (0.85, 0.15, 0.32, 0.95, 0.40)]},
 ]
 
-BRANCH_NAMES = ["AKIŞ", "IŞIK", "DOKU"]
+BRANCH_NAMES = ["IZGARA", "PARÇACIK", "HALKA"]
+
+# Ana sahnelerde kapali duran katman anahtarlari. Dala giris klibi bunlari
+# 0 -> 1 arasinda yumusatarak katmani sahnenin uzerine "ekler".
+OVERLAY_DEFAULTS = {"grid": 0.0, "parts": 0.0, "rings": 0.0, "dim": 1.0, "tint": (1.0, 1.0, 1.0)}
+for _s in SECTIONS:
+    _s.update({k: (tuple(v) if isinstance(v, tuple) else v) for k, v in OVERLAY_DEFAULTS.items()})
+
+# Parcacik tablosu (sabit tohum): her parcacik kapali bir yorunge uzerinde -> dongu bozulmaz
+_rng = np.random.RandomState(7)
+PARTICLES = []
+for _gy in range(5):                      # jitterli kafes: ekrana esit dagilim
+    for _gx in range(9):
+        PARTICLES.append((
+            -1.42 + _gx * 0.355 + float(_rng.uniform(-0.10, 0.10)),
+            -0.76 + _gy * 0.38 + float(_rng.uniform(-0.09, 0.09)),
+            float(_rng.uniform(0.10, 0.34)), float(_rng.uniform(0.07, 0.26)),
+            float(_rng.uniform(0, 1)), float(_rng.uniform(0.020, 0.050))))
+
+
+def grid_layer(Xr, Yr, phase):
+    """Kayan geometrik izgara: bir devirde tam 1 hucre oteler -> kusursuz dongu."""
+    u = Xr * 3.0 + phase
+    v = Yr * 4.2 - phase
+    fu = np.abs(np.sin(np.pi * u)) ** 40
+    fv = np.abs(np.sin(np.pi * v)) ** 40
+    return np.maximum(fu, fv) + 2.2 * fu * fv          # kesisimler parlar
+
+
+def ring_layer(X, Y, phase):
+    """Merkezden disari acilan halkalar: devirde tam 2 halka -> kusursuz dongu."""
+    R = np.sqrt(X * X + (Y * 1.7) ** 2)
+    band = np.abs(np.sin(np.pi * (R * 2.4 - 2.0 * phase))) ** 12
+    return band * np.clip(1.25 - R * 0.45, 0.15, 1.0)
+
+
+def particle_layer(phase):
+    """Yorungede donen parlak noktalar; yalnizca yerel pencerede hesaplanir."""
+    acc = np.zeros((H, W), dtype=np.float32)
+    for x0, y0, rx, ry, off, sz in PARTICLES:
+        a = 2.0 * math.pi * (phase + off)
+        cx, cy = x0 + rx * math.cos(a), y0 + ry * math.sin(a)
+        px = (cx + 1.6) / 3.2 * W
+        py = (cy + 0.9) / 1.8 * H
+        rad = int(sz / 3.2 * W * 4.5) + 3
+        xa, xb = max(0, int(px) - rad), min(W, int(px) + rad)
+        ya, yb = max(0, int(py) - rad), min(H, int(py) + rad)
+        if xa >= xb or ya >= yb:
+            continue
+        dx = (ax[xa:xb] - cx)[None, :]
+        dy = (ay[ya:yb] - cy)[:, None]
+        d2 = dx * dx + dy * dy
+        acc[ya:yb, xa:xb] += np.exp(-d2 / (sz * sz)) + 0.35 * np.exp(-d2 / (sz * sz * 9.0))
+    return acc
 
 
 def branch_scene(base, b):
-    """Ana bolumun uzerine eklenen varyant: ayni palet ailesi, farkli karakter."""
+    """Ana bolumun uzerine eklenen dal: her biri farkli bir yapisal katman getirir."""
     sc = copy.deepcopy(base)
     f1, f2, f3 = sc["f"]
-    if b == 0:                                   # AKIŞ — uzun akan filamanlar
-        sc["f"] = (f1 * 0.85, f2 * 0.85, f3 * 1.95)
-        sc["warp"] += 0.75
-        sc["fil"] = min(sc["fil"] + 0.28, 1.0)
-        sc["rot"] += 0.45
-        sc["blobs"] = [(x, y, r * 1.55, o, s * 0.9) for x, y, r, o, s in sc["blobs"]]
-    elif b == 1:                                 # IŞIK — parlak, hacimli
-        sc["gmix"] += 0.30
-        sc["stops"] = [tuple(c + (255 - c) * m for c in st)
-                       for st, m in zip(sc["stops"], (0.06, 0.14, 0.20, 0.30))]
-        sc["glow"] = tuple(min(255, c * 1.12 + 18) for c in sc["glow"])
-        sc["blobs"] = [(x, y, r * 0.7, o, s * 1.5) for x, y, r, o, s in sc["blobs"]]
-        sc["fil"] = max(sc["fil"] - 0.15, 0.1)
-        sc["rot"] -= 0.35
-    else:                                        # DOKU — ince, yogun desen
-        sc["f"] = (f1 * 2.05, f2 * 1.95, f3 * 1.1)
-        sc["fil"] = min(sc["fil"] + 0.42, 1.15)
-        sc["gmix"] = max(sc["gmix"] - 0.10, 0.05)
-        sc["warp"] = max(sc["warp"] - 0.35, 0.3)
-        sc["stops"] = [tuple(c * m for c in st)
-                       for st, m in zip(sc["stops"], (0.7, 0.8, 1.0, 1.1))]
-        sc["rot"] += 0.9
+    if b == 0:                                   # IZGARA — geometrik kafes
+        sc["grid"] = 1.0
+        sc["dim"] = 0.58
+        sc["tint"] = (0.80, 0.94, 1.20)
+        sc["f"] = (f1 * 0.65, f2 * 0.65, f3 * 0.65)
+        sc["warp"] = max(sc["warp"] - 0.5, 0.25)
+        sc["fil"] = max(sc["fil"] - 0.40, 0.04)
+        sc["gmix"] *= 0.65
+        sc["rot"] += 0.30
+    elif b == 1:                                 # PARÇACIK — yorungedeki isik noktalari
+        sc["parts"] = 1.0
+        sc["dim"] = 0.55
+        sc["tint"] = (1.15, 1.02, 0.80)
+        sc["fil"] = max(sc["fil"] - 0.35, 0.04)
+        sc["gmix"] *= 0.8
+        sc["warp"] += 0.55
+        sc["blobs"] = [(x, y, r * 1.3, o, s * 0.8) for x, y, r, o, s in sc["blobs"]]
+        sc["rot"] -= 0.55
+    else:                                        # HALKA — disari acilan halkalar
+        sc["rings"] = 1.0
+        sc["dim"] = 0.70
+        sc["tint"] = (1.10, 0.86, 1.12)
+        sc["f"] = (f1 * 1.45, f2 * 1.45, f3 * 0.7)
+        sc["fil"] = max(sc["fil"] - 0.25, 0.05)
+        sc["gmix"] += 0.06
+        sc["rot"] += 1.05
     sc["stops"] = [tuple(min(255.0, max(0.0, c)) for c in st) for st in sc["stops"]]
     return sc
 
@@ -177,6 +234,22 @@ def render(sc, phase, zoom=1.0, shift=0.0):
     fil = np.abs(np.sin(w * 2.35 + 3.0 * t)) ** 16
     fil *= (0.35 + 0.65 * v)
     rgb += fil[..., None] * np.asarray(sc["stops"][3], dtype=np.float32) * sc["fil"]
+
+    # --- dal katmanlari (ana sahnelerde katsayilar 0 -> hicbir etkisi yok) ---
+    rgb *= sc.get("dim", 1.0)
+    rgb *= np.asarray(sc.get("tint", (1.0, 1.0, 1.0)), dtype=np.float32)
+
+    top = np.asarray(sc["stops"][3], dtype=np.float32)
+    if sc.get("grid", 0) > 0.001:
+        col = top * 0.35 + np.float32(190.0)
+        rgb += grid_layer(Xr, Yr, phase)[..., None] * col * (0.55 * sc["grid"])
+    if sc.get("rings", 0) > 0.001:
+        col = top * 0.75 + np.asarray(sc["glow"], dtype=np.float32) * 0.45
+        rgb += ring_layer(X, Y, phase)[..., None] * col * (0.62 * sc["rings"])
+    if sc.get("parts", 0) > 0.001:
+        col = top * 0.55 + np.float32(150.0)
+        rgb += particle_layer(phase)[..., None] * col * (0.85 * sc["parts"])
+
     rgb *= VIGNETTE
     return np.clip(rgb, 0, 255).astype(np.uint8)
 
@@ -233,21 +306,33 @@ def reverse_clip(src, dst):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    for f in OUT.glob("*.mp4"): f.unlink()
-    for f in OUT.glob("*.webm"): f.unlink()
+    only_branches = "--branches-only" in sys.argv     # m/f/r kliplerine dokunma
+    keep = set()
+    if only_branches:
+        keep = {f"m{i}" for i in range(1, len(SECTIONS)+1)}
+        keep |= {f"f{i}" for i in range(1, len(SECTIONS))}
+        keep |= {f"r{i}" for i in range(1, len(SECTIONS))}
+    for f in list(OUT.glob("*.mp4")) + list(OUT.glob("*.webm")):
+        if f.stem not in keep: f.unlink()
 
     branches = [[branch_scene(s, b) for b in range(3)] for s in SECTIONS]
     names = []
 
-    print("ana dongular:", flush=True)
-    for i, s in enumerate(SECTIONS, 1):
-        encode(f"m{i}", loop_frames(s, MAIN_FRAMES)); names.append(f"m{i}")
+    if only_branches:
+        names += [f"m{i}" for i in range(1, len(SECTIONS)+1)]
+        for i in range(len(SECTIONS) - 1):
+            names += [f"f{i+1}", f"r{i+1}"]
+        print("ana dongu ve aks klipleri korundu", flush=True)
+    else:
+        print("ana dongular:", flush=True)
+        for i, s in enumerate(SECTIONS, 1):
+            encode(f"m{i}", loop_frames(s, MAIN_FRAMES)); names.append(f"m{i}")
 
-    print("aks gecisleri:", flush=True)
-    for i in range(len(SECTIONS) - 1):
-        encode(f"f{i+1}", trans_frames(SECTIONS[i], SECTIONS[i+1], AXIS_FRAMES, MAIN_FRAMES, MAIN_FRAMES))
-        reverse_clip(f"f{i+1}", f"r{i+1}")
-        names += [f"f{i+1}", f"r{i+1}"]
+        print("aks gecisleri:", flush=True)
+        for i in range(len(SECTIONS) - 1):
+            encode(f"f{i+1}", trans_frames(SECTIONS[i], SECTIONS[i+1], AXIS_FRAMES, MAIN_FRAMES, MAIN_FRAMES))
+            reverse_clip(f"f{i+1}", f"r{i+1}")
+            names += [f"f{i+1}", f"r{i+1}"]
 
     print("dallar:", flush=True)
     for k, s in enumerate(SECTIONS, 1):
@@ -272,9 +357,10 @@ def main():
     }
     (OUT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=1))
 
-    print(f"webm yedekleri ({len(names)} klip)...", flush=True)
+    todo = [n for n in names if not (OUT / f"{n}.webm").exists()]
+    print(f"webm yedekleri ({len(todo)} klip)...", flush=True)
     procs = []
-    for n in names:
+    for n in todo:
         procs.append(subprocess.Popen(
             [FFMPEG, "-y", "-loglevel", "error", "-i", str(OUT / f"{n}.mp4"), "-an",
              "-c:v", "libvpx-vp9", "-crf", WEBM_CRF, "-b:v", "0", "-row-mt", "1",

@@ -17,19 +17,19 @@
    "loop": "m1",
    "branches": [
     {
-     "name": "AKIŞ",
+     "name": "IZGARA",
      "enter": "e11",
      "loop": "b11",
      "exit": "x11"
     },
     {
-     "name": "IŞIK",
+     "name": "PARÇACIK",
      "enter": "e12",
      "loop": "b12",
      "exit": "x12"
     },
     {
-     "name": "DOKU",
+     "name": "HALKA",
      "enter": "e13",
      "loop": "b13",
      "exit": "x13"
@@ -42,19 +42,19 @@
    "loop": "m2",
    "branches": [
     {
-     "name": "AKIŞ",
+     "name": "IZGARA",
      "enter": "e21",
      "loop": "b21",
      "exit": "x21"
     },
     {
-     "name": "IŞIK",
+     "name": "PARÇACIK",
      "enter": "e22",
      "loop": "b22",
      "exit": "x22"
     },
     {
-     "name": "DOKU",
+     "name": "HALKA",
      "enter": "e23",
      "loop": "b23",
      "exit": "x23"
@@ -67,19 +67,19 @@
    "loop": "m3",
    "branches": [
     {
-     "name": "AKIŞ",
+     "name": "IZGARA",
      "enter": "e31",
      "loop": "b31",
      "exit": "x31"
     },
     {
-     "name": "IŞIK",
+     "name": "PARÇACIK",
      "enter": "e32",
      "loop": "b32",
      "exit": "x32"
     },
     {
-     "name": "DOKU",
+     "name": "HALKA",
      "enter": "e33",
      "loop": "b33",
      "exit": "x33"
@@ -92,19 +92,19 @@
    "loop": "m4",
    "branches": [
     {
-     "name": "AKIŞ",
+     "name": "IZGARA",
      "enter": "e41",
      "loop": "b41",
      "exit": "x41"
     },
     {
-     "name": "IŞIK",
+     "name": "PARÇACIK",
      "enter": "e42",
      "loop": "b42",
      "exit": "x42"
     },
     {
-     "name": "DOKU",
+     "name": "HALKA",
      "enter": "e43",
      "loop": "b43",
      "exit": "x43"
@@ -117,19 +117,19 @@
    "loop": "m5",
    "branches": [
     {
-     "name": "AKIŞ",
+     "name": "IZGARA",
      "enter": "e51",
      "loop": "b51",
      "exit": "x51"
     },
     {
-     "name": "IŞIK",
+     "name": "PARÇACIK",
      "enter": "e52",
      "loop": "b52",
      "exit": "x52"
     },
     {
-     "name": "DOKU",
+     "name": "HALKA",
      "enter": "e53",
      "loop": "b53",
      "exit": "x53"
@@ -142,19 +142,19 @@
    "loop": "m6",
    "branches": [
     {
-     "name": "AKIŞ",
+     "name": "IZGARA",
      "enter": "e61",
      "loop": "b61",
      "exit": "x61"
     },
     {
-     "name": "IŞIK",
+     "name": "PARÇACIK",
      "enter": "e62",
      "loop": "b62",
      "exit": "x62"
     },
     {
-     "name": "DOKU",
+     "name": "HALKA",
      "enter": "e63",
      "loop": "b63",
      "exit": "x63"
@@ -167,19 +167,19 @@
    "loop": "m7",
    "branches": [
     {
-     "name": "AKIŞ",
+     "name": "IZGARA",
      "enter": "e71",
      "loop": "b71",
      "exit": "x71"
     },
     {
-     "name": "IŞIK",
+     "name": "PARÇACIK",
      "enter": "e72",
      "loop": "b72",
      "exit": "x72"
     },
     {
-     "name": "DOKU",
+     "name": "HALKA",
      "enter": "e73",
      "loop": "b73",
      "exit": "x73"
