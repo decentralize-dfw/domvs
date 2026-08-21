@@ -50,8 +50,8 @@
 </head>
 <body>
 <div class="panel" id="head">
-  <h1>Köşe Parseli · 3B</h1>
-  <p>İki caddenin kesiştiği köşe; mansart çatılı apartmanlar, kaldırımlar, ağaçlar, park etmiş araçlar, yaya geçitleri ve bisiklet şeridi. Prosedürel olarak üretildi, GLB olarak dışa aktarıldı.</p>
+  <h1>Ana Bina · 3B</h1>
+  <p>Luxembourg köşe apartmanı — dış kabuk. Taş zemin kat, bej söveli pencereler, köşe pencereleri, balkonlar, çinko dormerli kırma çatı. Prosedürel üretildi, GLB olarak dışa aktarıldı.</p>
   <div class="stat">
     <div>Üçgen<b id="sTri">—</b></div>
     <div>Parça<b id="sNode">—</b></div>
@@ -120,10 +120,10 @@ fill.position.set(60, 40, -50);
 scene.add(fill);
 
 const VIEWS = {
-  izo:   { p:[74, 52, 78],  t:[2, 3, 6] },
-  kus:   { p:[10, 118, 34], t:[4, 0, 4] },
-  sokak: { p:[26, 6.5, 52], t:[14, 6, 16] },
-  kose:  { p:[46, 20, 46],  t:[16, 6, 14] },
+  izo:   { p:[26, 21, 30],   t:[0, 4.5, 0] },
+  kus:   { p:[4, 52, 14],    t:[0, 0, 0] },
+  sokak: { p:[-13, 2.2, 21], t:[1, 6, 0] },   // referans foto 2 açısı (ön-sol)
+  kose:  { p:[20, 5, 20],    t:[-1, 6, -1] }, // referans foto 1 açısı (köşe)
 };
 function goTo(k){
   const v = VIEWS[k];

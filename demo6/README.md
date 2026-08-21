@@ -1,60 +1,44 @@
-# demo6 — Köşe Parseli · 3B Sahne (GLB)
+# demo6 — Ana Bina · Luxembourg Köşe Apartmanı (GLB)
 
-Referans görseldeki köşe parselinin prosedürel 3B modeli. Tek bir Python betiği sahneyi
-kurar ve **`scene.glb`** olarak dışa aktarır; `index.html` ise modeli tarayıcıda gösteren
-üç boyutlu bir görüntüleyicidir (three.js yerel olarak `vendor/` içinde, CDN gerekmez).
+Referans fotoğraflardaki **köşe apartmanının dış kabuğu** — çevre binalar bilinçli olarak yok,
+yalnız ana bina ve arsası. İç mekân modellenmedi; dışarıdan birebir benzerlik hedeflendi.
+`tools/build_scene.py` sahneyi kurar ve **`scene.glb`** (glTF 2.0) olarak dışa aktarır;
+`index.html` yerel three.js ile tarayıcı görüntüleyicisidir.
 
-## Sahnede ne var
+## Referanstan modele geçen özellikler
 
-| grup | içerik |
-|---|---|
-| `zemin` | diorama kaidesi, asfalt, kaldırımlar, bordürler, yaya geçitleri, orta şeritler, yol oku, bisiklet şeridi, rögar kapakları, çim alanlar |
-| `bina_kose` | köşeyi dönen 4 katlı ana bina — güneydoğu köşesi pahlı, mansart çatı, 8 çatı penceresi, 4 ışıklık, 3 baca, balkonlar, girişte kanopi ve merdiven |
-| `bina_orta`, `bina_sol` | 4 katlı komşu apartmanlar (biri kanatlı L planlı) |
-| `bina_arka_sol`, `bina_arka_orta` | arka sıradaki 5 katlı kırma çatılı bloklar |
-| `bina_sag` | caddenin karşısındaki 5 katlı blok |
-| `ev_bati`, `ev_on_sol`, `ev_on_sag` | diorama kenarında kesilen 2 katlı evler |
-| `agaclar` | 30+ sokak ağacı + arka bahçedeki büyük ağaçlar |
-| `araclar` | 24 park etmiş araç (gövde, tavan, cam, 4 tekerlek, farlar) |
-| `bahce` | istinat duvarları, çitler, çalılar, tarhlar |
-| `mobilya` | sokak lambaları, trafik tabelaları, dubalar |
+* **Taş zemin kat** — rustik kesme taş kaplama, çevresini saran derz çizgileri; üstünde 2 kat beyaz sıva
+* **Bej söve çerçeveleri** — bütün sokak pencerelerinde çıkıntılı taş söve, koyu jaluzili cam
+* **Köşe pencereleri** — ön/sol köşede iki camın ince koyu dikmeyle köşede buluştuğu,
+  sövelerin köşeyi sardığı pencereler (3 katta da)
+* **Balkonlar** — yan cephede üst üste 3 balkon: açık döşeme + koyu dikey çubuklu korkuluk,
+  arkalarında genişletilmiş cam doğrama
+* **Çatı** — dik kırma (hip) çatı, tepesi düz; üzerinde **çinko (koyu metal) dormer kutuları**,
+  eğime oturan ışıklıklar ve çinko kaplı bacalar
+* **Giriş** — koyu metal düz saçak (kanopi), koyu kapı + yan cam kolonu, üstünde dar pencere dizisi
+* **Arsa** — taş istinat duvarları + harpuşta, yuvarlak budanmış şimşir topları, parke avlu,
+  ön-solda metal korkuluklu bodrum rampası, iki cadde ve kaldırım, park hâlinde araçlar
 
-Toplam **~82.000 üçgen**, **125 düğüm**, **34 PBR malzeme**, **1.5 MB** GLB.
-Ölçek 1 birim = 1 metre; sahne 92 × 68 m, Y yukarı (glTF standardı).
+Bina ölçüleri: 13.2 × 12.0 m taban, taş zemin + 2 kat (3.0 m), saçak 9.55 m, çatı tepesi ~15.2 m.
+~17.6k üçgen, 36 düğüm, 30 PBR malzeme, 0.34 MB.
 
-## Nasıl üretiliyor
-
-`tools/build_scene.py` içinde her şey parametrik:
-
-* `apartment(...)` — ayak izi çokgeni + kat sayısı + cephe tanımı alır; gövdeyi, taş soklu,
-  saçağı, mansart/kırma çatıyı, pencere/balkon dizilimini, girişi, çatı pencerelerini ve
-  bacaları üretir.
-* `ring_of()` — miter iç-ofset. Köşe sayısını birebir koruduğu için çatı bandı (`band()`)
-  bükülmeden kapanır; pahlı ve L planlı ayak izlerinde de doğru çalışır.
-* Cephe yönü ayak izinin saat yönünün tersine normalize edilmesiyle bulunur, böylece
-  pencereler her zaman dışa bakar.
-* Çatı pencereleri ve ışıklıklar `(kenar_indeksi, oran)` ile verilir; eğim üzerindeki
-  konumları otomatik hesaplanır.
-* Malzemeler `MATS` sözlüğünde tek yerde: renk + metallic + roughness.
+## Üretim / görüntüleme
 
 ```bash
 pip install trimesh shapely numpy scipy mapbox_earcut
 python3 tools/build_scene.py        # -> scene.glb + scene-info.json
+
+python3 -m http.server 8000         # görüntüleyici (file:// değil)
+# → http://localhost:8000/demo6/    # İzometrik / Kuş bakışı / Sokak / Köşe açıları
 ```
 
-## Görüntüleyici
+`Sokak` ve `Köşe` kamera ön ayarları, referans fotoğrafların çekildiği açılara denk gelir.
 
-```bash
-python3 -m http.server 8000     # file:// değil
-# → http://localhost:8000/demo6/
-```
+## GLB kullanımı
 
-İzometrik / kuş bakışı / sokak / köşe kamera açıları, otomatik döndürme, tel kafes,
-gölge açma-kapama, katman listesinden grup gizleme ve **GLB indir** düğmesi.
+`scene.glb` standarttır: Blender (İçe Aktar → glTF 2.0), three.js `GLTFLoader`, Unity/Unreal
+glTF eklentileri, Windows 3D Viewer vb. Düğüm adları `grup__malzeme` biçimindedir
+(`govde`, `cephe`, `cati`, `arsa`, `bitki`, `araclar`) — parçalar gruba göre seçilebilir.
 
-## GLB'yi başka yerde kullanmak
-
-`scene.glb` standart glTF 2.0 ikili dosyasıdır; Blender (`File → Import → glTF 2.0`),
-three.js `GLTFLoader`, Unity/Unreal glTF eklentileri, Windows 3D Viewer, macOS Preview
-ve <https://gltf-viewer.donmccurdy.com> ile açılır. Düğüm adları `grup__malzeme`
-biçimindedir, yani Blender'da parçalar gruplarına göre kolayca seçilebilir.
+Cepheler parametriktir: pencere aksları `sove_window(cephe, konum, kat)` çağrılarıyla tanımlı;
+söve ölçüsü, kat yüksekliği, çatı eğimi vb. dosyanın başındaki sabitlerden değişir.
