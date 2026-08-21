@@ -1,0 +1,69 @@
+{
+ "dugum": 125,
+ "ucgen": 81976,
+ "boyut_mb": 1.47,
+ "sinirlar": [
+  [
+   -46.42,
+   -1.7,
+   -32.0
+  ],
+  [
+   46.42,
+   19.94,
+   36.42
+  ]
+ ],
+ "gruplar": [
+  "agaclar",
+  "araclar",
+  "bahce",
+  "bina_arka_orta",
+  "bina_arka_sol",
+  "bina_kose",
+  "bina_orta",
+  "bina_sag",
+  "bina_sol",
+  "ev_bati",
+  "ev_on_sag",
+  "ev_on_sol",
+  "mobilya",
+  "zemin"
+ ],
+ "malzemeler": [
+  "arac_beyaz",
+  "arac_cam",
+  "arac_gri",
+  "arac_kirmizi",
+  "arac_lacivert",
+  "arac_siyah",
+  "asfalt",
+  "bisiklet_serit",
+  "bordur",
+  "cam",
+  "cati_arduvaz",
+  "cati_koyu",
+  "cerceve",
+  "cim",
+  "cit",
+  "cizgi_beyaz",
+  "duvar_bej",
+  "duvar_beyaz",
+  "duvar_gri",
+  "duvar_krem",
+  "govde",
+  "kaide",
+  "kaldirim",
+  "kaldirim_koyu",
+  "kapi",
+  "lastik",
+  "metal_acik",
+  "metal_koyu",
+  "plint_tas",
+  "saceg",
+  "tabela_beyaz",
+  "tabela_mavi",
+  "yaprak",
+  "yaprak_koyu"
+ ]
+}

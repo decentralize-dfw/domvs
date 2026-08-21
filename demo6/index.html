@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>demo6 — Köşe Parseli 3B Sahne</title>
+<style>
+  :root{ --ink:#12161b; --dim:#6b737d; --line:rgba(20,26,33,.12); --acc:#0f8f7a; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:radial-gradient(1200px 800px at 50% 20%, #ffffff 0%, #e9e9e6 60%, #d8d8d4 100%);
+    color:var(--ink);
+    font:400 14px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  canvas{display:block}
+  .panel{
+    position:fixed;background:rgba(255,255,255,.72);backdrop-filter:blur(16px);
+    border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px -18px rgba(0,0,0,.5);
+  }
+  #head{top:18px;left:18px;padding:14px 16px;max-width:330px}
+  #head h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+  #head p{font-size:12px;color:var(--dim);margin-top:5px}
+  #head .stat{display:flex;gap:14px;margin-top:9px;font-variant-numeric:tabular-nums}
+  #head .stat div{font-size:11px;color:var(--dim);letter-spacing:.04em}
+  #head .stat b{display:block;font-size:16px;color:var(--ink);font-weight:600}
+
+  #tools{bottom:18px;left:18px;right:18px;padding:10px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .chip{padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.6);
+    font-size:12px;cursor:pointer;user-select:none;transition:.15s;white-space:nowrap}
+  .chip:hover{background:#fff}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sep{flex:1}
+  a.dl{padding:8px 14px;border-radius:9px;background:var(--acc);color:#fff;text-decoration:none;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+  a.dl:hover{filter:brightness(1.07)}
+
+  #layers{top:18px;right:18px;padding:12px;width:196px;max-height:70vh;overflow:auto}
+  #layers h2{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+  #layers label{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0;cursor:pointer}
+  #layers input{accent-color:var(--acc)}
+  #load{position:fixed;inset:0;display:grid;place-items:center;background:#eeeeeb;transition:opacity .5s;z-index:9}
+  #load.gone{opacity:0;pointer-events:none}
+  #load div{text-align:center}
+  #load b{font:200 54px/1 ui-sans-serif,system-ui;letter-spacing:-.03em}
+  #load span{display:block;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:8px}
+  @media (max-width:820px){ #layers{display:none} #head{max-width:60vw} }
+</style>
+</head>
+<body>
+<div class="panel" id="head">
+  <h1>Köşe Parseli · 3B</h1>
+  <p>İki caddenin kesiştiği köşe; mansart çatılı apartmanlar, kaldırımlar, ağaçlar, park etmiş araçlar, yaya geçitleri ve bisiklet şeridi. Prosedürel olarak üretildi, GLB olarak dışa aktarıldı.</p>
+  <div class="stat">
+    <div>Üçgen<b id="sTri">—</b></div>
+    <div>Parça<b id="sNode">—</b></div>
+    <div>Boyut<b id="sSize">—</b></div>
+  </div>
+</div>
+
+<div class="panel" id="layers"><h2>Katmanlar</h2><div id="layerList"></div></div>
+
+<div class="panel" id="tools">
+  <span class="chip on" data-cam="izo">İzometrik</span>
+  <span class="chip" data-cam="kus">Kuş bakışı</span>
+  <span class="chip" data-cam="sokak">Sokak</span>
+  <span class="chip" data-cam="kose">Köşe</span>
+  <span class="chip" id="spin">Döndür</span>
+  <span class="chip" id="wire">Tel kafes</span>
+  <span class="chip on" id="shadow">Gölge</span>
+  <span class="sep"></span>
+  <a class="dl" href="scene.glb" download>GLB indir</a>
+</div>
+
+<div id="load"><div><b id="pct">0%</b><span>sahne yükleniyor</span></div></div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.82;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const camera = new THREE.PerspectiveCamera(38, innerWidth/innerHeight, 0.5, 900);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.target.set(6, 4, 6);
+
+const sun = new THREE.DirectionalLight(0xfff2dc, 1.35);
+sun.position.set(-58, 78, 52);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+const d = 78;
+Object.assign(sun.shadow.camera, { left:-d, right:d, top:d, bottom:-d, near:1, far:260 });
+sun.shadow.bias = -0.0006;
+sun.shadow.normalBias = 0.06;
+scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x7d7768, 0.42));
+const fill = new THREE.DirectionalLight(0xd2e0ff, 0.28);
+fill.position.set(60, 40, -50);
+scene.add(fill);
+
+const VIEWS = {
+  izo:   { p:[74, 52, 78],  t:[2, 3, 6] },
+  kus:   { p:[10, 118, 34], t:[4, 0, 4] },
+  sokak: { p:[26, 6.5, 52], t:[14, 6, 16] },
+  kose:  { p:[46, 20, 46],  t:[16, 6, 14] },
+};
+function goTo(k){
+  const v = VIEWS[k];
+  camera.position.set(...v.p);
+  controls.target.set(...v.t);
+  controls.update();
+}
+goTo('izo');
+
+const groups = new Map();
+const loader = new GLTFLoader();
+loader.load('scene.glb', gltf => {
+  const root = gltf.scene;
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    o.castShadow = true; o.receiveShadow = true;
+    if (o.material){
+      o.material.side = THREE.FrontSide;
+      o.material.envMapIntensity = 0.30;
+    }
+    const g = (o.name || 'diger').split('__')[0];
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(o);
+  });
+  scene.add(root);
+  buildLayerList();
+  fetch('scene-info.json').then(r => r.json()).then(i => {
+    sTri.textContent = i.ucgen.toLocaleString('tr-TR');
+    sNode.textContent = i.dugum;
+    sSize.textContent = i.boyut_mb + ' MB';
+  }).catch(()=>{});
+  document.getElementById('load').classList.add('gone');
+}, ev => {
+  if (ev.total) pct.textContent = Math.round(ev.loaded / ev.total * 100) + '%';
+}, err => { pct.textContent = 'hata'; console.error(err); });
+
+function buildLayerList(){
+  const box = document.getElementById('layerList');
+  [...groups.keys()].sort().forEach(g => {
+    const l = document.createElement('label');
+    l.innerHTML = `<input type="checkbox" checked> <span>${g}</span>`;
+    l.querySelector('input').addEventListener('change', e => {
+      groups.get(g).forEach(o => o.visible = e.target.checked);
+    });
+    box.appendChild(l);
+  });
+}
+
+document.querySelectorAll('[data-cam]').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('[data-cam]').forEach(o => o.classList.remove('on'));
+  c.classList.add('on'); goTo(c.dataset.cam);
+}));
+let spin = false;
+document.getElementById('spin').addEventListener('click', e => {
+  spin = !spin; e.target.classList.toggle('on', spin);
+  controls.autoRotate = spin; controls.autoRotateSpeed = 0.6;
+});
+document.getElementById('wire').addEventListener('click', e => {
+  const on = !e.target.classList.contains('on');
+  e.target.classList.toggle('on', on);
+  scene.traverse(o => { if (o.isMesh && o.material) o.material.wireframe = on; });
+});
+document.getElementById('shadow').addEventListener('click', e => {
+  const on = !e.target.classList.contains('on');
+  e.target.classList.toggle('on', on);
+  renderer.shadowMap.enabled = on;
+  scene.traverse(o => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+});
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+</script>
+</body>
+</html>
