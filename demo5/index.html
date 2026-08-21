@@ -6,14 +6,8 @@
 <title>demo5 — Akıllı Video Player</title>
 <style>
   :root{
-    --bg:#07090d;
-    --panel:rgba(255,255,255,.055);
-    --line:rgba(255,255,255,.10);
-    --txt:#eaf0f7;
-    --dim:#8b96a6;
-    --acc:#5ee0c8;
-    --acc2:#ff8f6b;
-    --r:18px;
+    --bg:#07090d; --panel:rgba(255,255,255,.055); --line:rgba(255,255,255,.10);
+    --txt:#eaf0f7; --dim:#8b96a6; --acc:#5ee0c8; --acc2:#ff8f6b; --r:18px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -24,144 +18,134 @@
       var(--bg);
     color:var(--txt);
     font:400 15px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-    display:flex;align-items:center;justify-content:center;
-    min-height:100%;padding:26px;overflow:hidden;
-    -webkit-font-smoothing:antialiased;
+    display:flex;align-items:center;justify-content:center;min-height:100%;
+    padding:24px;overflow:hidden;-webkit-font-smoothing:antialiased;
   }
-  .app{width:min(1180px,100%);display:flex;flex-direction:column;gap:16px}
+  .app{width:min(1180px,100%);display:flex;flex-direction:column;gap:14px}
 
-  /* ---------- ekran ---------- */
+  /* ---------------- ekran ---------------- */
   .screen{
-    position:relative;aspect-ratio:16/9;width:100%;
-    border-radius:var(--r);overflow:hidden;background:#000;
-    border:1px solid var(--line);
+    position:relative;aspect-ratio:16/9;width:100%;border-radius:var(--r);overflow:hidden;
+    background:#000;border:1px solid var(--line);
     box-shadow:0 40px 90px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.03) inset;
     isolation:isolate;
   }
   .screen video{
-    position:absolute;inset:0;width:100%;height:100%;
-    object-fit:cover;opacity:0;pointer-events:none;
-    transform:translateZ(0);backface-visibility:hidden;
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    opacity:0;pointer-events:none;transform:translateZ(0);backface-visibility:hidden;
   }
   .screen video.on{opacity:1}
 
-  /* ---------- hud ---------- */
   .hud{position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(to bottom,rgba(0,0,0,.42) 0%,transparent 24%,transparent 62%,rgba(0,0,0,.55) 100%)}
-  .hud .top{position:absolute;top:16px;left:18px;right:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .scene-name{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6)}
-  .scene-sub{font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.62);margin-top:4px}
-  .badge{
-    display:inline-flex;align-items:center;gap:7px;
-    padding:6px 11px;border-radius:999px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-    background:rgba(10,14,20,.55);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);
-    white-space:nowrap;
-  }
+    background:linear-gradient(to bottom,rgba(0,0,0,.42) 0%,transparent 22%,transparent 60%,rgba(0,0,0,.58) 100%)}
+  .top{position:absolute;top:16px;left:18px;right:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .scene-no{font:200 34px/1 ui-sans-serif,system-ui;letter-spacing:-.02em;opacity:.55}
+  .scene-name{font-size:13px;letter-spacing:.16em;text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+  .scene-sub{font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.6);margin-top:3px}
+  .badge{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;
+    background:rgba(10,14,20,.55);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px)}
   .badge i{width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
   .badge.trans i{background:var(--acc2);box-shadow:0 0 10px var(--acc2)}
   .badge.fast i{background:#ffd166;box-shadow:0 0 10px #ffd166;animation:pulse .5s infinite alternate}
-  @keyframes pulse{from{opacity:.35}to{opacity:1}}
+  @keyframes pulse{from{opacity:.3}to{opacity:1}}
 
   .clipbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.10)}
   .clipbar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#8ad6ff)}
   .clipbar.trans > i{background:linear-gradient(90deg,var(--acc2),#ffd166)}
 
-  .chain{position:absolute;left:18px;bottom:20px;display:flex;align-items:center;gap:8px}
-  .node{width:26px;height:5px;border-radius:3px;background:rgba(255,255,255,.22);transition:background .25s,width .25s}
-  .node.on{width:44px;background:#fff}
-  .node.trans{width:14px;background:rgba(255,255,255,.14)}
-  .node.trans.on{background:var(--acc2);width:22px}
+  /* zincir gostergesi */
+  .chain{position:absolute;left:18px;bottom:18px;display:flex;align-items:center;gap:0;pointer-events:auto}
+  .dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.24);cursor:pointer;
+    border:2px solid transparent;transition:.22s;flex:none}
+  .dot:hover{background:rgba(255,255,255,.6);transform:scale(1.18)}
+  .dot.on{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.16)}
+  .dot.done{background:rgba(255,255,255,.5)}
+  .link{width:26px;height:2px;background:rgba(255,255,255,.16);transition:.22s;flex:none}
+  .link.on{background:var(--acc2);box-shadow:0 0 10px var(--acc2)}
+  .link.done{background:rgba(255,255,255,.34)}
 
   .arrows{position:absolute;right:16px;bottom:16px;display:flex;gap:10px;pointer-events:auto}
-  .rbtn{
-    width:52px;height:52px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+  .rbtn{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
     background:rgba(12,16,22,.55);border:1px solid rgba(255,255,255,.16);color:#fff;
-    backdrop-filter:blur(12px);transition:transform .16s,background .16s,opacity .16s;
-  }
+    backdrop-filter:blur(12px);transition:transform .16s,background .16s,opacity .16s}
   .rbtn:hover{background:rgba(255,255,255,.16);transform:translateY(-2px)}
   .rbtn:active{transform:scale(.94)}
-  .rbtn[disabled]{opacity:.28;cursor:not-allowed;transform:none}
+  .rbtn[disabled]{opacity:.26;cursor:not-allowed;transform:none}
   .rbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .shake{animation:shake .32s}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
-  /* ---------- alt panel ---------- */
-  .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-    padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);backdrop-filter:blur(14px)}
-  .bar .t{font-size:12px;color:var(--dim);letter-spacing:.06em}
-  .bar .sep{flex:1}
-  .chip{
-    display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;cursor:pointer;
+  .dbg{position:absolute;left:18px;top:78px;font:11px/1.6 ui-monospace,monospace;color:rgba(255,255,255,.8);
+    background:rgba(0,0,0,.5);padding:9px 11px;border-radius:9px;display:none;white-space:pre}
+  .dbg.on{display:block}
+
+  /* ---------------- alt panel ---------------- */
+  .bar{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--line);
+    border-radius:14px;background:var(--panel);backdrop-filter:blur(14px)}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .row .sep{flex:1}
+  .t{font-size:12px;color:var(--dim);letter-spacing:.06em}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;cursor:pointer;
     background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;color:var(--txt);
-    letter-spacing:.05em;transition:.15s;user-select:none;
-  }
-  .chip:hover{background:rgba(255,255,255,.12)}
+    letter-spacing:.04em;transition:.15s;user-select:none;white-space:nowrap}
+  .chip:hover{background:rgba(255,255,255,.13)}
   .chip b{color:var(--acc);font-weight:600}
+  .chip.sc.on{background:rgba(94,224,200,.16);border-color:rgba(94,224,200,.5);color:#fff}
+  .chip.sc .n{opacity:.5;font-variant-numeric:tabular-nums}
   kbd{font:600 11px/1 ui-monospace,monospace;padding:4px 6px;border-radius:6px;
     background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--dim)}
 
-  /* ---------- yükleme ---------- */
-  .loader{position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.96);backdrop-filter:blur(16px);
+  /* ---------------- yukleme ---------------- */
+  .loader{position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.97);backdrop-filter:blur(16px);
     display:flex;align-items:center;justify-content:center;padding:26px;transition:opacity .5s}
   .loader.gone{opacity:0;pointer-events:none}
-  .lbox{width:min(520px,100%)}
+  .lbox{width:min(560px,100%)}
   .ltitle{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--dim)}
-  .lpct{font:200 68px/1.05 ui-sans-serif,system-ui;margin:10px 0 4px;letter-spacing:-.03em}
+  .lpct{font:200 68px/1.05 ui-sans-serif,system-ui;margin:8px 0 2px;letter-spacing:-.03em}
   .lstate{font-size:13px;color:var(--dim);min-height:20px}
-  .ltrack{height:4px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;margin:20px 0 18px}
+  .ltrack{height:4px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;margin:18px 0 16px}
   .ltrack > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#8ad6ff);transition:width .18s}
-  .files{display:grid;gap:7px}
-  .f{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--dim)}
-  .f .nm{width:72px;letter-spacing:.05em}
-  .f .tr{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden}
-  .f .tr > i{display:block;height:100%;width:0;background:rgba(255,255,255,.45);transition:width .15s}
-  .f.ok{color:var(--acc)}
-  .f.ok .tr > i{background:var(--acc)}
-  .f .pc{width:42px;text-align:right;font-variant-numeric:tabular-nums}
-  .start{margin-top:22px;width:100%;padding:14px;border-radius:12px;cursor:pointer;
-    background:var(--acc);color:#04120f;border:0;font:600 14px/1 inherit;letter-spacing:.1em;
-    text-transform:uppercase;opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .cell{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:rgba(255,255,255,.03)}
+  .cell .nm{font:600 10px/1.4 ui-monospace,monospace;letter-spacing:.04em;color:var(--dim);display:flex;justify-content:space-between}
+  .cell .tr{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:5px}
+  .cell .tr > i{display:block;height:100%;width:0;background:rgba(255,255,255,.45);transition:width .15s}
+  .cell.ok{border-color:rgba(94,224,200,.45);background:rgba(94,224,200,.08)}
+  .cell.ok .nm{color:var(--acc)}
+  .cell.ok .tr > i{background:var(--acc)}
+  .start{margin-top:20px;width:100%;padding:14px;border-radius:12px;cursor:pointer;background:var(--acc);
+    color:#04120f;border:0;font:600 14px/1 inherit;letter-spacing:.1em;text-transform:uppercase;
+    opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none}
   .start.show{opacity:1;transform:none;pointer-events:auto}
   .start:hover{filter:brightness(1.08)}
-  .dbg{position:absolute;left:18px;top:64px;font:11px/1.6 ui-monospace,monospace;color:rgba(255,255,255,.75);
-    background:rgba(0,0,0,.45);padding:8px 10px;border-radius:8px;display:none;white-space:pre}
-  .dbg.on{display:block}
-  @media (max-width:640px){.rbtn{width:44px;height:44px}.lpct{font-size:52px}}
+  .err{color:#ff8a8a;font-size:12px;margin-top:10px;white-space:pre-wrap}
+  @media (max-width:700px){.rbtn{width:44px;height:44px}.lpct{font-size:52px}.grid{grid-template-columns:repeat(2,1fr)}
+    .link{width:14px}.scene-no{display:none}}
 </style>
 </head>
 <body>
 
 <div class="app">
   <div class="screen" id="screen">
-    <!-- videolar: hepsi önceden yüklenir, 0. karede duraklatılmış bekler -->
-    <video id="v1"  muted playsinline preload="auto"></video>
-    <video id="v2"  muted playsinline preload="auto"></video>
-    <video id="v3"  muted playsinline preload="auto"></video>
-    <video id="v4"  muted playsinline preload="auto"></video>
-    <video id="v5"  muted playsinline preload="auto"></video>
-    <video id="v2r" muted playsinline preload="auto"></video>
-    <video id="v4r" muted playsinline preload="auto"></video>
-
     <div class="hud">
       <div class="top">
-        <div>
-          <div class="scene-name" id="sceneName">SAHNE 01 · OKYANUS</div>
-          <div class="scene-sub" id="sceneSub">kusursuz döngü</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="scene-no" id="sceneNo">01</div>
+          <div>
+            <div class="scene-name" id="sceneName">—</div>
+            <div class="scene-sub" id="sceneSub">—</div>
+          </div>
         </div>
         <div class="badge" id="badge"><i></i><span id="badgeTxt">LOOP</span></div>
       </div>
 
       <div class="dbg" id="dbg"></div>
-
       <div class="chain" id="chain"></div>
 
       <div class="arrows">
-        <button class="rbtn" id="prev" title="Geri (←)">
-          <svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg>
-        </button>
-        <button class="rbtn" id="next" title="İleri (→)">
-          <svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
-        </button>
+        <button class="rbtn" id="prev" title="Geri (←)"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
+        <button class="rbtn" id="next" title="İleri (→)"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
       </div>
 
       <div class="clipbar" id="clipbar"><i></i></div>
@@ -169,11 +153,14 @@
   </div>
 
   <div class="bar">
-    <span class="t">Akıllı geçiş motoru</span>
-    <span class="chip" id="rateChip">yakalama hızı <b id="rateVal">×3</b></span>
-    <span class="chip" id="dbgChip">teknik bilgi</span>
-    <span class="sep"></span>
-    <span class="t"><kbd>←</kbd> <kbd>→</kbd> gezin · <kbd>D</kbd> teknik bilgi</span>
+    <div class="row" id="sceneChips"></div>
+    <div class="row">
+      <span class="t">Akıllı geçiş motoru · 6 sahne / 16 klip</span>
+      <span class="chip" id="rateChip">yakalama hızı <b id="rateVal">×3</b></span>
+      <span class="chip" id="dbgChip">teknik bilgi</span>
+      <span class="sep"></span>
+      <span class="t"><kbd>←</kbd> <kbd>→</kbd> gezin · <kbd>1</kbd>–<kbd>6</kbd> sahneye atla · <kbd>D</kbd> teknik bilgi</span>
+    </div>
   </div>
 </div>
 
@@ -181,10 +168,11 @@
   <div class="lbox">
     <div class="ltitle">demo5 · akıllı video player</div>
     <div class="lpct" id="lpct">0%</div>
-    <div class="lstate" id="lstate">videolar indiriliyor…</div>
+    <div class="lstate" id="lstate">klipler indiriliyor…</div>
     <div class="ltrack"><i id="lbar"></i></div>
-    <div class="files" id="files"></div>
+    <div class="grid" id="grid"></div>
     <button class="start" id="startBtn">Başlat</button>
+    <div class="err" id="err"></div>
   </div>
 </div>
 
@@ -194,176 +182,190 @@
 
   const FPS = 30;
 
-  /* Zincir:
-     LOOP A  --(v2)-->  LOOP B  --(v4)-->  LOOP C
-             <--(v2r)--         <--(v4r)--
-     Her klibin "bir sonraki karesi" zincirdeki sonraki klibin 0. karesidir. */
-  const LOOPS = [
-    { id:'v1', name:'SAHNE 01 · OKYANUS', sub:'kusursuz döngü' },
-    { id:'v3', name:'SAHNE 02 · GÜN BATIMI', sub:'kusursuz döngü' },
-    { id:'v5', name:'SAHNE 03 · YEŞİM', sub:'kusursuz döngü' }
-  ];
-  const FWD = ['v2','v4'];    // LOOP i -> LOOP i+1
-  const BWD = ['v2r','v4r'];  // LOOP i+1 -> LOOP i
+  /* ------------------------------------------------------------------
+     Zincir:  L1 =fwd1=> L2 =fwd2=> L3 =fwd3=> L4 =fwd4=> L5 =fwd5=> L6
+                 <=rev1=     <=rev2=     <=rev3=     <=rev4=     <=rev5=
 
-  // Codec secimi: H.264/mp4 evrensel, VP9/webm yedek (H.264 desteklemeyen build'ler icin).
-  const probe = document.createElement('video');
-  const CAN_H264 = !!probe.canPlayType('video/mp4; codecs="avc1.42E01E"');
+     Kare sözleşmesi (generate_videos.py garanti eder):
+       fwd_k[0]          == loop_k[0]
+       fwd_k[son] + 1    == loop_{k+1}[0]   →  fwd_k[son] → fwd_{k+1}[0] de sürekli
+       rev_k[son]        == loop_k[0]
+     Bu yüzden zincirleme atlamada ara döngüyü hiç oynatmadan doğrudan
+     bir sonraki geçiş klibine girebiliyoruz; görüntü yine kesintisiz.
+  ------------------------------------------------------------------ */
+  const SCENES = [
+    { id:'loop1', name:'OKYANUS',    sub:'derin mavi döngü' },
+    { id:'loop2', name:'GÜN BATIMI', sub:'magenta / amber döngü' },
+    { id:'loop3', name:'YEŞİM',      sub:'yeşil / altın döngü' },
+    { id:'loop4', name:'NEBULA',     sub:'mor / indigo döngü' },
+    { id:'loop5', name:'BAKIR',      sub:'çöl tonları döngü' },
+    { id:'loop6', name:'BUZUL',      sub:'buz mavisi döngü' }
+  ];
+  const N   = SCENES.length;
+  const FWD = Array.from({length:N-1}, (_,i) => `fwd${i+1}`);
+  const REV = Array.from({length:N-1}, (_,i) => `rev${i+1}`);
+  const IDS = [...SCENES.map(s => s.id), ...FWD, ...REV];
+
+  // codec seçimi: H.264/mp4 evrensel, VP9/webm yedek
+  const CAN_H264 = !!document.createElement('video').canPlayType('video/mp4; codecs="avc1.42E01E"');
   const EXT  = CAN_H264 ? 'mp4' : 'webm';
   const MIME = CAN_H264 ? 'video/mp4' : 'video/webm';
-  const IDS = ['v1','v2','v3','v4','v5','v2r','v4r'];
-  const FILES = IDS.map(id => [id, `media/${id}.${EXT}`]);
 
   const $ = s => document.querySelector(s);
-  const els = {};
-  FILES.forEach(([id]) => els[id] = document.getElementById(id));
+  const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
 
-  let curLoop = 0;
-  let activeId = null;
-  let busy = false;
+  /* ---------------- video elemanları ---------------- */
+  const els = {};
+  const screen = $('#screen'), hud = $('.hud');
+  IDS.forEach(id => {
+    const v = document.createElement('video');
+    v.id = id; v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.setAttribute('muted',''); v.setAttribute('playsinline','');
+    screen.insertBefore(v, hud);
+    els[id] = v;
+  });
+
+  /* ---------------- durum ---------------- */
+  let cur = 0;            // ekrandaki sahne
+  let target = 0;         // gidilmek istenen sahne
+  let activeId = null;    // ekrandaki klip
+  let running = false;    // zincir çalışıyor mu
+  let started = false;
   let catchRate = 3;
   const RATES = [2,3,5];
 
-  /* ================= YÜKLEME ================= */
-  const filesBox = $('#files'), rows = {};
-  FILES.forEach(([id]) => {
-    const el = document.createElement('div');
-    el.className = 'f';
-    el.innerHTML = `<span class="nm">${id}.${EXT}</span><span class="tr"><i></i></span><span class="pc">0%</span>`;
-    filesBox.appendChild(el);
-    rows[id] = { el, bar: el.querySelector('i'), pc: el.querySelector('.pc') };
+  /* ---------------- yükleme ---------------- */
+  const grid = $('#grid'), cells = {};
+  IDS.forEach(id => {
+    const c = document.createElement('div');
+    c.className = 'cell';
+    c.innerHTML = `<div class="nm"><span>${id}</span><span class="p">0%</span></div><div class="tr"><i></i></div>`;
+    grid.appendChild(c);
+    cells[id] = { c, bar:c.querySelector('i'), p:c.querySelector('.p') };
   });
 
-  const dl = {}, prime = {};
-  FILES.forEach(([id]) => { dl[id] = 0; prime[id] = 0; });
+  const dl = {}, ready = {};
+  IDS.forEach(id => { dl[id] = 0; ready[id] = 0; });
 
-  function paintProgress(){
-    let d = 0, p = 0;
-    FILES.forEach(([id]) => {
-      d += dl[id]; p += prime[id];
-      const v = Math.round(dl[id]*100);
-      rows[id].bar.style.width = v + '%';
-      rows[id].pc.textContent = v + '%';
-      rows[id].el.classList.toggle('ok', prime[id] === 1);
-      if (prime[id] === 1) rows[id].pc.textContent = 'hazır';
+  function paint(){
+    let d = 0, r = 0;
+    IDS.forEach(id => {
+      d += dl[id]; r += ready[id];
+      const pc = Math.round(dl[id]*100);
+      cells[id].bar.style.width = pc + '%';
+      cells[id].p.textContent = ready[id] ? 'hazır' : pc + '%';
+      cells[id].c.classList.toggle('ok', ready[id] === 1);
     });
-    const total = (d/FILES.length)*0.82 + (p/FILES.length)*0.18;
-    const pct = Math.round(total*100);
+    const pct = Math.round(((d/IDS.length)*0.82 + (r/IDS.length)*0.18) * 100);
     $('#lpct').textContent = pct + '%';
     $('#lbar').style.width = pct + '%';
+    $('#lstate').textContent = r < IDS.length
+      ? `${Math.round(r)}/${IDS.length} klip hazır · tamamı belleğe alınıyor`
+      : 'tüm klipler bellekte';
   }
 
-  async function download(id, url){
-    const res = await fetch(url, { cache:'force-cache' });
-    if (!res.ok) throw new Error(url + ' → ' + res.status);
+  async function download(id){
+    const res = await fetch(`media/${id}.${EXT}`, { cache:'force-cache' });
+    if (!res.ok) throw new Error(`${id}.${EXT} → HTTP ${res.status}`);
     const total = +res.headers.get('content-length') || 0;
-    if (!res.body || !total){                       // stream yoksa düz indir
-      const b = await res.blob(); dl[id] = 1; paintProgress(); return b;
+    if (!res.body || !total){
+      const b = await res.blob(); dl[id] = 1; paint(); return b;
     }
-    const reader = res.body.getReader();
-    const chunks = []; let got = 0;
+    const reader = res.body.getReader(); const chunks = []; let got = 0;
     for(;;){
       const { done, value } = await reader.read();
       if (done) break;
       chunks.push(value); got += value.length;
-      dl[id] = Math.min(got/total, 1); paintProgress();
+      dl[id] = Math.min(got/total, 1); paint();
     }
-    dl[id] = 1; paintProgress();
+    dl[id] = 1; paint();
     return new Blob(chunks, { type: MIME });
   }
 
-  /* Video gerçekten oynatmaya hazır mı: tüm bayt tamponda + 0. kare boyanmış. */
+  // "gerçekten hazır" = tüm bayt bellekte + metadata çözüldü + 0. kare boyandı
   function attach(id, blob){
     const v = els[id];
     v.src = URL.createObjectURL(blob);
     return new Promise((resolve, reject) => {
       let settled = false;
-      const done = () => { if (settled) return; settled = true; prime[id] = 1; paintProgress(); resolve(); };
-      const ready = () => {
-        // ilk kareyi zorla boyat → gizli element bile 0. kareyi hazır tutar
+      const done = () => { if (settled) return; settled = true; ready[id] = 1; paint(); resolve(); };
+      const primeFrame = () => {
         if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => done());
         v.addEventListener('seeked', () => setTimeout(done, 20), { once:true });
         try { v.currentTime = 0.0001; } catch(e){ done(); }
         setTimeout(done, 4000);
       };
       v.addEventListener('error', () => {
-        if (settled) return;
-        settled = true;
-        const c = v.error ? v.error.code : '?';
-        reject(new Error(`${id}.${EXT} çözülemedi (kod ${c})`));
+        if (settled) return; settled = true;
+        reject(new Error(`${id}.${EXT} çözülemedi (kod ${v.error ? v.error.code : '?'})`));
       }, { once:true });
-      if (v.readyState >= 4) ready();
+      if (v.readyState >= 4) primeFrame();
       else {
-        v.addEventListener('canplaythrough', ready, { once:true });
-        v.addEventListener('loadeddata', () => { if (!settled) setTimeout(ready, 400); }, { once:true });
-        setTimeout(() => { if (!settled) ready(); }, 15000);   // asla sonsuza kilitlenme
+        v.addEventListener('canplaythrough', primeFrame, { once:true });
+        v.addEventListener('loadeddata', () => { if (!settled) setTimeout(primeFrame, 400); }, { once:true });
+        setTimeout(() => { if (!settled) primeFrame(); }, 20000);   // asla sonsuza kilitlenme
       }
       v.load();
     });
   }
 
   async function boot(){
+    buildChain(); buildChips(); syncUI();
     try{
-      await Promise.all(FILES.map(async ([id,url]) => attach(id, await download(id,url))));
+      await Promise.all(IDS.map(async id => attach(id, await download(id))));
     }catch(err){
-      $('#lstate').textContent = 'yükleme hatası: ' + err.message;
+      $('#lstate').textContent = 'yükleme başarısız';
+      $('#err').textContent = err.message + '\n(sayfayı http:// üzerinden açtığınızdan emin olun)';
       return;
     }
-    // güvenlik: tüm klipler tam tamponlanmış mı
-    const allBuffered = FILES.every(([id]) => {
+    const notBuffered = IDS.filter(id => {
       const v = els[id];
-      return v.duration > 0 && v.buffered.length > 0 &&
-             v.buffered.end(v.buffered.length-1) >= v.duration - 0.05;
+      return !(v.duration > 0 && v.buffered.length && v.buffered.end(v.buffered.length-1) >= v.duration - 0.05);
     });
-    $('#lstate').textContent = allBuffered
-      ? 'tüm klipler bellekte · geçişler kare hassasiyetinde hazır'
-      : 'klipler hazır';
-    buildChain();
+    $('#lstate').textContent = notBuffered.length
+      ? `${IDS.length - notBuffered.length}/${IDS.length} klip tamponda`
+      : `${IDS.length} klip bellekte · geçişler kare hassasiyetinde hazır`;
     $('#startBtn').classList.add('show');
-    // otomatik başlatmayı dene (sessiz video → izinli), olmazsa buton bekler
-    start().catch(()=>{});
+    start().catch(()=>{});                 // sessiz video: otomatik başlar; olmazsa buton
   }
 
-  $('#startBtn').addEventListener('click', () => start().catch(()=>{}));
-
-  let started = false;
   async function start(){
     if (started) return;
-    const v = els[LOOPS[0].id];
-    v.loop = true; v.playbackRate = 1; v.currentTime = 0;
+    const v = els[SCENES[0].id];
+    v.loop = true; v.playbackRate = 1;
+    try { v.currentTime = 0; } catch(e){}
     show(v);
     await v.play();
-    started = true; activeId = LOOPS[0].id;
+    started = true; activeId = SCENES[0].id;
     $('#loader').classList.add('gone');
-    setBadge('loop');
-    tick();
+    setBadge('loop'); updateChain(); syncUI(); tick();
   }
+  $('#startBtn').addEventListener('click', () => start().catch(e => {
+    $('#err').textContent = 'oynatma engellendi: ' + e.message;
+  }));
 
-  /* ================= MOTOR ================= */
-  function show(el){
-    for (const id in els) els[id].classList.toggle('on', els[id] === el);
-  }
+  /* ---------------- motor ---------------- */
+  function show(el){ IDS.forEach(id => els[id].classList.toggle('on', els[id] === el)); }
 
-  // Bir sonraki klip 0. karesinde duraklatılmış ve boyanmış durumda beklediği için
-  // katman değişimi tek karede olur → görüntüde sıçrama yok.
-  // Hiz rampasi: yakalama hizindan 1x'e yumusak inis (goruntude ani fren olmaz).
   let ramp = 0;
   function rampRate(v, from, to, ms){
     cancelAnimationFrame(ramp);
     const t0 = performance.now();
     v.playbackRate = from;
     const step = () => {
-      const k = Math.min((performance.now() - t0) / ms, 1);
-      const e = 1 - Math.pow(1 - k, 3);
-      v.playbackRate = from + (to - from) * e;
+      const k = Math.min((performance.now() - t0)/ms, 1);
+      v.playbackRate = from + (to - from) * (1 - Math.pow(1-k, 3));
       if (k < 1) ramp = requestAnimationFrame(step);
     };
     ramp = requestAnimationFrame(step);
   }
 
+  // Sonraki klip 0. karesinde duraklatılmış ve boyanmış beklediği için
+  // katman değişimi tek karede olur → siyah kare / donma yok.
   function swapTo(id, { rate = 1, loop = false } = {}){
-    const prevId = activeId;
-    const next = els[id];
+    cancelAnimationFrame(ramp);
+    const prevId = activeId, next = els[id];
+    if (next.currentTime > 0.25) { try { next.currentTime = 0; } catch(e){} }  // güvenlik
     next.loop = loop;
     next.playbackRate = rate;
     show(next);
@@ -373,13 +375,14 @@
     if (prevId && prevId !== id){
       const prev = els[prevId];
       requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (activeId === prevId) return;
         prev.pause(); prev.loop = false; prev.playbackRate = 1;
         try { prev.currentTime = 0.0001; } catch(e){}
       }));
     }
   }
 
-  // Klibin son karesine varmadan ~1 ekran karesi önce haber verir (donma olmaz).
+  // Klibin son karesine ~1 ekran karesi kala haber verir (donma olmadan devir teslim).
   let watcher = null;
   function cancelWatch(){ if (watcher){ watcher(); watcher = null; } }
   function onClipEnd(v, cb){
@@ -388,109 +391,155 @@
     const fire = () => { if (fired) return; fired = true; cancelWatch(); cb(); };
     const ended = () => fire();
     v.addEventListener('ended', ended);
-    const tickEnd = () => {
+    const loopTick = () => {
       const d = v.duration || 0;
-      const lead = Math.max(v.playbackRate, 1) / 60 * 1.15;   // 1 ekran karesi payı
+      const lead = Math.max(v.playbackRate, 1)/60 * 1.15;
       if (d && d - v.currentTime <= lead) return fire();
-      raf = requestAnimationFrame(tickEnd);
+      raf = requestAnimationFrame(loopTick);
     };
-    raf = requestAnimationFrame(tickEnd);
+    raf = requestAnimationFrame(loopTick);
     watcher = () => { v.removeEventListener('ended', ended); cancelAnimationFrame(raf); };
   }
 
-  function go(dir){
+  function requestScene(i){
     if (!started) return;
-    const target = curLoop + dir;
-    if (busy || target < 0 || target >= LOOPS.length){
-      const b = dir > 0 ? $('#next') : $('#prev');
-      b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
-      return;
-    }
-    busy = true;
-    const loopEl = els[LOOPS[curLoop].id];
-    const transId = dir > 0 ? FWD[curLoop] : BWD[curLoop-1];
-
-    // 1) Döngü videosunun kalanını hızlandırarak son kareye yetiş.
-    loopEl.loop = false;
-    loopEl.playbackRate = catchRate;
-    setBadge('fast');
-    setChain(curLoop, dir);
-
-    onClipEnd(loopEl, () => {
-      // 2) Geçiş klibi tam olarak o karenin devamından başlar; hız 1×'e yumuşak iner.
-      swapTo(transId, { rate:catchRate, loop:false });
-      rampRate(els[transId], catchRate, 1, 420);
-      setBadge('trans');
-      onClipEnd(els[transId], () => {
-        // 3) Hedef döngüye kilitlen.
-        curLoop = target;
-        swapTo(LOOPS[curLoop].id, { rate:1, loop:true });
-        setBadge('loop');
-        setChain(curLoop, 0);
-        busy = false;
-        syncUI();
-      });
-    });
+    i = clamp(i, 0, N-1);
+    if (i === target && i === cur && !running){ bump(i > cur ? 1 : -1); return; }
+    if (i === cur && !running){ bump(0); return; }
+    target = i;
+    updateChain(); syncUI();
+    if (!running){ running = true; runChain(); }
+  }
+  function bump(dir){
+    const b = dir < 0 ? $('#prev') : $('#next');
+    b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
   }
 
-  /* ================= ARAYÜZ ================= */
+  function runChain(){
+    if (cur === target){ finish(); return; }
+    const dir = target > cur ? 1 : -1;
+    const transId = dir > 0 ? FWD[cur] : REV[cur-1];
+
+    const playTransition = () => {
+      const isLast = (cur + dir === target);
+      swapTo(transId, { rate: catchRate, loop:false });
+      if (isLast) rampRate(els[transId], catchRate, 1, 420);   // son geçişte 1×'e yumuşak iniş
+      setBadge('trans', dir);
+      updateChain(dir);
+      onClipEnd(els[transId], () => {
+        cur += dir;
+        if (cur === target){
+          swapTo(SCENES[cur].id, { rate:1, loop:true });
+          finish();
+        } else {
+          runChain();          // ara döngüyü atla, doğrudan sonraki geçişe gir
+        }
+      });
+    };
+
+    if (activeId === SCENES[cur].id){
+      // döngüdeyiz: kalan süreyi hızlandırıp son kareye yetiş
+      const lp = els[activeId];
+      lp.loop = false;
+      lp.playbackRate = catchRate;
+      setBadge('fast', dir);
+      updateChain(dir);
+      onClipEnd(lp, playTransition);
+    } else {
+      playTransition();        // zincir sürüyor: doğrudan geçişe
+    }
+  }
+
+  function finish(){
+    running = false; target = cur;
+    setBadge('loop'); updateChain(); syncUI();
+  }
+
+  /* ---------------- arayüz ---------------- */
   function buildChain(){
     const c = $('#chain'); c.innerHTML = '';
-    LOOPS.forEach((_, i) => {
-      const n = document.createElement('div'); n.className = 'node'; n.dataset.k = 'L'+i; c.appendChild(n);
-      if (i < LOOPS.length-1){
-        const t = document.createElement('div'); t.className = 'node trans'; t.dataset.k = 'T'+i; c.appendChild(t);
+    for (let i = 0; i < N; i++){
+      const d = document.createElement('div');
+      d.className = 'dot'; d.dataset.i = i; d.title = `${i+1}. sahne: ${SCENES[i].name}`;
+      d.addEventListener('click', () => requestScene(i));
+      c.appendChild(d);
+      if (i < N-1){
+        const l = document.createElement('div');
+        l.className = 'link'; l.dataset.l = i; c.appendChild(l);
       }
+    }
+  }
+  function buildChips(){
+    const box = $('#sceneChips'); box.innerHTML = '';
+    SCENES.forEach((s,i) => {
+      const el = document.createElement('span');
+      el.className = 'chip sc'; el.dataset.i = i;
+      el.innerHTML = `<span class="n">0${i+1}</span> ${s.name}`;
+      el.addEventListener('click', () => requestScene(i));
+      box.appendChild(el);
     });
-    setChain(0,0);
   }
-  function setChain(i, dir){
-    document.querySelectorAll('.node').forEach(n => n.classList.remove('on'));
-    const key = dir === 0 ? 'L'+i : 'T'+(dir > 0 ? i : i-1);
-    const el = document.querySelector(`.node[data-k="${key}"]`);
-    if (el) el.classList.add('on');
+  function updateChain(dir){
+    document.querySelectorAll('.dot').forEach(d => {
+      const i = +d.dataset.i;
+      d.classList.toggle('on', i === cur && !dir);
+      d.classList.toggle('done', i === cur && !!dir);
+    });
+    document.querySelectorAll('.link').forEach(l => {
+      const i = +l.dataset.l;
+      const live = dir ? (dir > 0 ? i === cur : i === cur-1) : false;
+      l.classList.toggle('on', live);
+      l.classList.toggle('done', !live && ((i < cur) || (running && i < target)));
+    });
+    document.querySelectorAll('.chip.sc').forEach(c => c.classList.toggle('on', +c.dataset.i === cur));
   }
-  function setBadge(mode){
-    const b = $('#badge'), t = $('#badgeTxt');
+  function setBadge(mode, dir){
+    const b = $('#badge'), t = $('#badgeTxt'), s = SCENES[cur];
     b.className = 'badge' + (mode === 'loop' ? '' : ' ' + mode);
+    const steps = Math.abs(target - cur);
     t.textContent = mode === 'loop' ? 'LOOP'
-                  : mode === 'fast' ? '×' + catchRate + ' SON KAREYE YETİŞİYOR'
-                  : 'GEÇİŞ KLİBİ';
+      : mode === 'fast' ? '×' + catchRate + ' SON KAREYE YETİŞİYOR'
+      : (steps > 1 ? `GEÇİŞ ZİNCİRİ · ${steps} ADIM` : 'GEÇİŞ KLİBİ');
     $('#clipbar').classList.toggle('trans', mode !== 'loop');
-    const s = LOOPS[curLoop];
-    $('#sceneName').textContent = s.name;
+    $('#sceneNo').textContent = String(cur+1).padStart(2,'0');
+    $('#sceneName').textContent = `SAHNE ${String(cur+1).padStart(2,'0')} · ${s.name}`;
     $('#sceneSub').textContent = mode === 'loop' ? s.sub
-                    : mode === 'fast' ? 'kalan süre ×' + catchRate + ' hızda tamamlanıyor'
-                    : 'ara klip oynuyor · sahneler bağlanıyor';
+      : mode === 'fast' ? `kalan süre ×${catchRate} hızda tamamlanıyor`
+      : (dir > 0 ? `${SCENES[cur].name} → ${SCENES[clamp(cur+1,0,N-1)].name} ara klibi`
+                 : `${SCENES[cur].name} → ${SCENES[clamp(cur-1,0,N-1)].name} ara klibi`);
   }
   function syncUI(){
-    $('#prev').disabled = curLoop === 0;
-    $('#next').disabled = curLoop === LOOPS.length-1;
+    $('#prev').disabled = cur === 0 && target === 0;
+    $('#next').disabled = cur === N-1 && target === N-1;
   }
 
   function tick(){
     const v = els[activeId];
     if (v && v.duration){
-      $('#clipbar').firstElementChild.style.width = (v.currentTime / v.duration * 100) + '%';
+      $('#clipbar').firstElementChild.style.width = (v.currentTime/v.duration*100) + '%';
       if ($('#dbg').classList.contains('on')){
         $('#dbg').textContent =
-          `klip     : ${activeId}\n` +
-          `kare     : ${Math.floor(v.currentTime*FPS)} / ${Math.round(v.duration*FPS)}\n` +
-          `hız      : ×${v.playbackRate.toFixed(2)}\n` +
-          `loop     : ${v.loop}\n` +
-          `durum    : ${busy ? 'geçiş zinciri' : 'döngü'}\n` +
-          `tampon   : ${v.buffered.length ? Math.round(v.buffered.end(0)/v.duration*100) : 0}%`;
+          `klip    : ${activeId}\n` +
+          `kare    : ${Math.floor(v.currentTime*FPS)} / ${Math.round(v.duration*FPS)}\n` +
+          `hız     : ×${v.playbackRate.toFixed(2)}\n` +
+          `loop    : ${v.loop}\n` +
+          `sahne   : ${cur+1} → ${target+1}${running ? ' (zincir)' : ''}\n` +
+          `tampon  : ${v.buffered.length ? Math.round(v.buffered.end(v.buffered.length-1)/v.duration*100) : 0}%`;
       }
     }
     requestAnimationFrame(tick);
   }
 
-  $('#next').addEventListener('click', () => go(1));
-  $('#prev').addEventListener('click', () => go(-1));
+  $('#next').addEventListener('click', () => requestScene((running ? target : cur) + 1));
+  $('#prev').addEventListener('click', () => requestScene((running ? target : cur) - 1));
   addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
-    else if (e.key.toLowerCase() === 'd') $('#dbg').classList.toggle('on');
+    const k = e.key;
+    if (k === 'ArrowRight'){ e.preventDefault(); requestScene((running ? target : cur) + 1); }
+    else if (k === 'ArrowLeft'){ e.preventDefault(); requestScene((running ? target : cur) - 1); }
+    else if (k === 'Home'){ e.preventDefault(); requestScene(0); }
+    else if (k === 'End'){ e.preventDefault(); requestScene(N-1); }
+    else if (k >= '1' && k <= String(N)) requestScene(+k - 1);
+    else if (k.toLowerCase() === 'd') $('#dbg').classList.toggle('on');
   });
   $('#dbgChip').addEventListener('click', () => $('#dbg').classList.toggle('on'));
   $('#rateChip').addEventListener('click', () => {
@@ -498,7 +547,6 @@
     $('#rateVal').textContent = '×' + catchRate;
   });
 
-  syncUI();
   boot();
 })();
 </script>
