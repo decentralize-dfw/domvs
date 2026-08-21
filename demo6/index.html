@@ -198,6 +198,7 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
+window.__cam = (pos,tgt)=>{ camera.position.set(...pos); controls.target.set(...tgt); controls.update(); };
 (function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
 </script>
 </body>

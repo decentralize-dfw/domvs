@@ -1,17 +1,17 @@
 {
- "dugum": 37,
- "ucgen": 18780,
- "boyut_mb": 0.36,
+ "dugum": 46,
+ "ucgen": 16536,
+ "boyut_mb": 0.32,
  "sinirlar": [
   [
-   -14.8,
+   -15.4,
    -1.3,
-   -15.4
+   -14.0
   ],
   [
-   23.6,
-   17.96,
-   20.2
+   21.6,
+   15.3,
+   19.4
   ]
  ],
  "gruplar": [
@@ -24,18 +24,24 @@
  ],
  "malzemeler": [
   "arac_cam",
+  "arac_gri",
   "arac_koyu",
   "asfalt",
   "avlu_tas",
   "balkon_dosem",
+  "bordur",
   "cali",
+  "cali_acik",
   "cam",
   "cati_arduvaz",
   "cati_duz",
   "cim",
   "cinko",
+  "cit_metal",
   "derz",
   "dograma",
+  "duz_teras",
+  "garaj",
   "govde",
   "harpusta",
   "kaide",
@@ -50,6 +56,7 @@
   "siva_beyaz",
   "siva_ic",
   "sove_bej",
+  "sus_otu",
   "tas_istinat",
   "tas_rustik",
   "yaprak",
