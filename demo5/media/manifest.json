@@ -1,0 +1,300 @@
+{
+ "fps": 30,
+ "size": [
+  960,
+  540
+ ],
+ "durations": {
+  "main": 4.0,
+  "axis": 2.0,
+  "branch": 2.5,
+  "enter": 1.2
+ },
+ "sections": [
+  {
+   "name": "OKYANUS",
+   "sub": "derin mavi",
+   "loop": "m1",
+   "branches": [
+    {
+     "name": "AKIŞ",
+     "enter": "e11",
+     "loop": "b11",
+     "exit": "x11"
+    },
+    {
+     "name": "IŞIK",
+     "enter": "e12",
+     "loop": "b12",
+     "exit": "x12"
+    },
+    {
+     "name": "DOKU",
+     "enter": "e13",
+     "loop": "b13",
+     "exit": "x13"
+    }
+   ]
+  },
+  {
+   "name": "GÜN BATIMI",
+   "sub": "magenta / amber",
+   "loop": "m2",
+   "branches": [
+    {
+     "name": "AKIŞ",
+     "enter": "e21",
+     "loop": "b21",
+     "exit": "x21"
+    },
+    {
+     "name": "IŞIK",
+     "enter": "e22",
+     "loop": "b22",
+     "exit": "x22"
+    },
+    {
+     "name": "DOKU",
+     "enter": "e23",
+     "loop": "b23",
+     "exit": "x23"
+    }
+   ]
+  },
+  {
+   "name": "YEŞİM",
+   "sub": "yeşil / altın",
+   "loop": "m3",
+   "branches": [
+    {
+     "name": "AKIŞ",
+     "enter": "e31",
+     "loop": "b31",
+     "exit": "x31"
+    },
+    {
+     "name": "IŞIK",
+     "enter": "e32",
+     "loop": "b32",
+     "exit": "x32"
+    },
+    {
+     "name": "DOKU",
+     "enter": "e33",
+     "loop": "b33",
+     "exit": "x33"
+    }
+   ]
+  },
+  {
+   "name": "NEBULA",
+   "sub": "mor / indigo",
+   "loop": "m4",
+   "branches": [
+    {
+     "name": "AKIŞ",
+     "enter": "e41",
+     "loop": "b41",
+     "exit": "x41"
+    },
+    {
+     "name": "IŞIK",
+     "enter": "e42",
+     "loop": "b42",
+     "exit": "x42"
+    },
+    {
+     "name": "DOKU",
+     "enter": "e43",
+     "loop": "b43",
+     "exit": "x43"
+    }
+   ]
+  },
+  {
+   "name": "BAKIR",
+   "sub": "çöl tonları",
+   "loop": "m5",
+   "branches": [
+    {
+     "name": "AKIŞ",
+     "enter": "e51",
+     "loop": "b51",
+     "exit": "x51"
+    },
+    {
+     "name": "IŞIK",
+     "enter": "e52",
+     "loop": "b52",
+     "exit": "x52"
+    },
+    {
+     "name": "DOKU",
+     "enter": "e53",
+     "loop": "b53",
+     "exit": "x53"
+    }
+   ]
+  },
+  {
+   "name": "BUZUL",
+   "sub": "buz mavisi",
+   "loop": "m6",
+   "branches": [
+    {
+     "name": "AKIŞ",
+     "enter": "e61",
+     "loop": "b61",
+     "exit": "x61"
+    },
+    {
+     "name": "IŞIK",
+     "enter": "e62",
+     "loop": "b62",
+     "exit": "x62"
+    },
+    {
+     "name": "DOKU",
+     "enter": "e63",
+     "loop": "b63",
+     "exit": "x63"
+    }
+   ]
+  },
+  {
+   "name": "GÜL KUARTZ",
+   "sub": "pembe / sedef",
+   "loop": "m7",
+   "branches": [
+    {
+     "name": "AKIŞ",
+     "enter": "e71",
+     "loop": "b71",
+     "exit": "x71"
+    },
+    {
+     "name": "IŞIK",
+     "enter": "e72",
+     "loop": "b72",
+     "exit": "x72"
+    },
+    {
+     "name": "DOKU",
+     "enter": "e73",
+     "loop": "b73",
+     "exit": "x73"
+    }
+   ]
+  }
+ ],
+ "axis": [
+  {
+   "fwd": "f1",
+   "rev": "r1"
+  },
+  {
+   "fwd": "f2",
+   "rev": "r2"
+  },
+  {
+   "fwd": "f3",
+   "rev": "r3"
+  },
+  {
+   "fwd": "f4",
+   "rev": "r4"
+  },
+  {
+   "fwd": "f5",
+   "rev": "r5"
+  },
+  {
+   "fwd": "f6",
+   "rev": "r6"
+  }
+ ],
+ "clips": [
+  "m1",
+  "m2",
+  "m3",
+  "m4",
+  "m5",
+  "m6",
+  "m7",
+  "f1",
+  "r1",
+  "f2",
+  "r2",
+  "f3",
+  "r3",
+  "f4",
+  "r4",
+  "f5",
+  "r5",
+  "f6",
+  "r6",
+  "e11",
+  "x11",
+  "b11",
+  "e12",
+  "x12",
+  "b12",
+  "e13",
+  "x13",
+  "b13",
+  "e21",
+  "x21",
+  "b21",
+  "e22",
+  "x22",
+  "b22",
+  "e23",
+  "x23",
+  "b23",
+  "e31",
+  "x31",
+  "b31",
+  "e32",
+  "x32",
+  "b32",
+  "e33",
+  "x33",
+  "b33",
+  "e41",
+  "x41",
+  "b41",
+  "e42",
+  "x42",
+  "b42",
+  "e43",
+  "x43",
+  "b43",
+  "e51",
+  "x51",
+  "b51",
+  "e52",
+  "x52",
+  "b52",
+  "e53",
+  "x53",
+  "b53",
+  "e61",
+  "x61",
+  "b61",
+  "e62",
+  "x62",
+  "b62",
+  "e63",
+  "x63",
+  "b63",
+  "e71",
+  "x71",
+  "b71",
+  "e72",
+  "x72",
+  "b72",
+  "e73",
+  "x73",
+  "b73"
+ ]
+}

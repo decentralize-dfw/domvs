@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#07090d; --panel:rgba(255,255,255,.055); --line:rgba(255,255,255,.10);
-    --txt:#eaf0f7; --dim:#8b96a6; --acc:#5ee0c8; --acc2:#ff8f6b; --r:18px;
+    --txt:#eaf0f7; --dim:#8b96a6; --acc:#5ee0c8; --acc2:#ff8f6b; --br:#ffd166; --r:18px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -19,84 +19,89 @@
     color:var(--txt);
     font:400 15px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
     display:flex;align-items:center;justify-content:center;min-height:100%;
-    padding:24px;overflow:hidden;-webkit-font-smoothing:antialiased;
+    padding:22px;overflow:hidden;-webkit-font-smoothing:antialiased;
   }
-  .app{width:min(1180px,100%);display:flex;flex-direction:column;gap:14px}
+  .app{width:min(1200px,100%);display:flex;flex-direction:column;gap:12px}
 
-  /* ---------------- ekran ---------------- */
-  .screen{
-    position:relative;aspect-ratio:16/9;width:100%;border-radius:var(--r);overflow:hidden;
+  .screen{position:relative;aspect-ratio:16/9;width:100%;border-radius:var(--r);overflow:hidden;
     background:#000;border:1px solid var(--line);
-    box-shadow:0 40px 90px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.03) inset;
-    isolation:isolate;
-  }
-  .screen video{
-    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-    opacity:0;pointer-events:none;transform:translateZ(0);backface-visibility:hidden;
-  }
+    box-shadow:0 40px 90px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.03) inset;isolation:isolate}
+  .screen video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    opacity:0;pointer-events:none;transform:translateZ(0);backface-visibility:hidden}
   .screen video.on{opacity:1}
 
   .hud{position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(to bottom,rgba(0,0,0,.42) 0%,transparent 22%,transparent 60%,rgba(0,0,0,.58) 100%)}
-  .top{position:absolute;top:16px;left:18px;right:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-  .scene-no{font:200 34px/1 ui-sans-serif,system-ui;letter-spacing:-.02em;opacity:.55}
-  .scene-name{font-size:13px;letter-spacing:.16em;text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,.6)}
-  .scene-sub{font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.6);margin-top:3px}
+    background:linear-gradient(to bottom,rgba(0,0,0,.45) 0%,transparent 24%,transparent 60%,rgba(0,0,0,.55) 100%)}
+  .top{position:absolute;top:16px;left:76px;right:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .sec-no{font:200 32px/1 ui-sans-serif,system-ui;letter-spacing:-.02em;opacity:.5}
+  .sec-name{font-size:13px;letter-spacing:.16em;text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+  .sec-sub{font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.62);margin-top:3px}
+  .sec-sub b{color:var(--br);font-weight:600}
   .badge{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;
     font-size:11px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;
     background:rgba(10,14,20,.55);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px)}
   .badge i{width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)}
   .badge.trans i{background:var(--acc2);box-shadow:0 0 10px var(--acc2)}
-  .badge.fast i{background:#ffd166;box-shadow:0 0 10px #ffd166;animation:pulse .5s infinite alternate}
+  .badge.fast i{background:var(--br);box-shadow:0 0 10px var(--br);animation:pulse .5s infinite alternate}
   @keyframes pulse{from{opacity:.3}to{opacity:1}}
 
   .clipbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.10)}
   .clipbar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#8ad6ff)}
-  .clipbar.trans > i{background:linear-gradient(90deg,var(--acc2),#ffd166)}
+  .clipbar.trans > i{background:linear-gradient(90deg,var(--acc2),var(--br))}
 
-  /* zincir gostergesi */
-  .chain{position:absolute;left:18px;bottom:18px;display:flex;align-items:center;gap:0;pointer-events:auto}
-  .dot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.24);cursor:pointer;
-    border:2px solid transparent;transition:.22s;flex:none}
-  .dot:hover{background:rgba(255,255,255,.6);transform:scale(1.18)}
-  .dot.on{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.16)}
-  .dot.done{background:rgba(255,255,255,.5)}
-  .link{width:26px;height:2px;background:rgba(255,255,255,.16);transition:.22s;flex:none}
-  .link.on{background:var(--acc2);box-shadow:0 0 10px var(--acc2)}
-  .link.done{background:rgba(255,255,255,.34)}
+  /* --- dikey ağaç rayı --- */
+  .rail{position:absolute;left:18px;top:50%;transform:translateY(-50%);
+    display:flex;flex-direction:column;gap:2px;pointer-events:auto}
+  .rrow{display:flex;align-items:center;height:26px;gap:0}
+  .mdot{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.26);cursor:pointer;
+    transition:.2s;flex:none;position:relative}
+  .mdot:hover{background:rgba(255,255,255,.7);transform:scale(1.2)}
+  .rrow.on .mdot{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.15)}
+  .rrow.past .mdot{background:rgba(255,255,255,.5)}
+  .vline{position:absolute;left:5px;top:19px;height:16px;width:1px;background:rgba(255,255,255,.18);z-index:-1}
+  .twigs{display:flex;align-items:center;gap:0;overflow:hidden;max-width:0;opacity:0;transition:max-width .3s,opacity .25s}
+  .rrow.on .twigs{max-width:150px;opacity:1}
+  .tline{width:14px;height:1px;background:rgba(255,255,255,.28);flex:none}
+  .bdot{width:8px;height:8px;border-radius:2px;background:rgba(255,255,255,.22);cursor:pointer;
+    transition:.18s;flex:none;transform:rotate(45deg)}
+  .bdot:hover{background:var(--br);transform:rotate(45deg) scale(1.25)}
+  .bdot.on{background:var(--br);box-shadow:0 0 10px var(--br)}
 
-  .arrows{position:absolute;right:16px;bottom:16px;display:flex;gap:10px;pointer-events:auto}
-  .rbtn{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
+  .arrows{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+  .arrows .pair{display:flex;gap:8px}
+  .rbtn{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
     background:rgba(12,16,22,.55);border:1px solid rgba(255,255,255,.16);color:#fff;
     backdrop-filter:blur(12px);transition:transform .16s,background .16s,opacity .16s}
   .rbtn:hover{background:rgba(255,255,255,.16);transform:translateY(-2px)}
   .rbtn:active{transform:scale(.94)}
-  .rbtn[disabled]{opacity:.26;cursor:not-allowed;transform:none}
-  .rbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .rbtn[disabled]{opacity:.24;cursor:not-allowed;transform:none}
+  .rbtn.br{border-color:rgba(255,209,102,.45);color:var(--br)}
+  .rbtn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .shake{animation:shake .32s}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
-  .dbg{position:absolute;left:18px;top:78px;font:11px/1.6 ui-monospace,monospace;color:rgba(255,255,255,.8);
-    background:rgba(0,0,0,.5);padding:9px 11px;border-radius:9px;display:none;white-space:pre}
+  .dbg{position:absolute;right:18px;top:70px;font:11px/1.6 ui-monospace,monospace;color:rgba(255,255,255,.8);
+    background:rgba(0,0,0,.5);padding:9px 11px;border-radius:9px;display:none;white-space:pre;pointer-events:none}
   .dbg.on{display:block}
 
-  /* ---------------- alt panel ---------------- */
-  .bar{display:flex;flex-direction:column;gap:10px;padding:12px 14px;border:1px solid var(--line);
+  .bar{display:flex;flex-direction:column;gap:9px;padding:11px 13px;border:1px solid var(--line);
     border-radius:14px;background:var(--panel);backdrop-filter:blur(14px)}
-  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
   .row .sep{flex:1}
-  .t{font-size:12px;color:var(--dim);letter-spacing:.06em}
-  .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;cursor:pointer;
+  .t{font-size:12px;color:var(--dim);letter-spacing:.05em}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:10px;cursor:pointer;
     background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;color:var(--txt);
-    letter-spacing:.04em;transition:.15s;user-select:none;white-space:nowrap}
+    letter-spacing:.03em;transition:.15s;user-select:none;white-space:nowrap}
   .chip:hover{background:rgba(255,255,255,.13)}
   .chip b{color:var(--acc);font-weight:600}
-  .chip.sc.on{background:rgba(94,224,200,.16);border-color:rgba(94,224,200,.5);color:#fff}
-  .chip.sc .n{opacity:.5;font-variant-numeric:tabular-nums}
+  .chip .n{opacity:.45;font-variant-numeric:tabular-nums}
+  .chip.sec.on{background:rgba(94,224,200,.16);border-color:rgba(94,224,200,.5)}
+  .chip.br{border-color:rgba(255,209,102,.24)}
+  .chip.br.on{background:rgba(255,209,102,.18);border-color:rgba(255,209,102,.55)}
+  .chip.home.on{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.4)}
   kbd{font:600 11px/1 ui-monospace,monospace;padding:4px 6px;border-radius:6px;
     background:rgba(255,255,255,.08);border:1px solid var(--line);color:var(--dim)}
 
-  /* ---------------- yukleme ---------------- */
   .loader{position:fixed;inset:0;z-index:50;background:rgba(5,7,10,.97);backdrop-filter:blur(16px);
     display:flex;align-items:center;justify-content:center;padding:26px;transition:opacity .5s}
   .loader.gone{opacity:0;pointer-events:none}
@@ -106,22 +111,25 @@
   .lstate{font-size:13px;color:var(--dim);min-height:20px}
   .ltrack{height:4px;border-radius:3px;background:rgba(255,255,255,.09);overflow:hidden;margin:18px 0 16px}
   .ltrack > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),#8ad6ff);transition:width .18s}
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
-  .cell{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:rgba(255,255,255,.03)}
-  .cell .nm{font:600 10px/1.4 ui-monospace,monospace;letter-spacing:.04em;color:var(--dim);display:flex;justify-content:space-between}
-  .cell .tr{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:5px}
-  .cell .tr > i{display:block;height:100%;width:0;background:rgba(255,255,255,.45);transition:width .15s}
-  .cell.ok{border-color:rgba(94,224,200,.45);background:rgba(94,224,200,.08)}
-  .cell.ok .nm{color:var(--acc)}
-  .cell.ok .tr > i{background:var(--acc)}
+  .micro{display:flex;flex-wrap:wrap;gap:4px}
+  .mc{width:12px;height:12px;border-radius:3px;background:rgba(255,255,255,.09);transition:.2s}
+  .mc.dl{background:rgba(255,255,255,.34)}
+  .mc.ok{background:var(--acc);box-shadow:0 0 8px rgba(94,224,200,.5)}
   .start{margin-top:20px;width:100%;padding:14px;border-radius:12px;cursor:pointer;background:var(--acc);
     color:#04120f;border:0;font:600 14px/1 inherit;letter-spacing:.1em;text-transform:uppercase;
     opacity:0;transform:translateY(8px);transition:.3s;pointer-events:none}
   .start.show{opacity:1;transform:none;pointer-events:auto}
   .start:hover{filter:brightness(1.08)}
   .err{color:#ff8a8a;font-size:12px;margin-top:10px;white-space:pre-wrap}
-  @media (max-width:700px){.rbtn{width:44px;height:44px}.lpct{font-size:52px}.grid{grid-template-columns:repeat(2,1fr)}
-    .link{width:14px}.scene-no{display:none}}
+  @media (max-width:760px){
+    .rbtn{width:40px;height:40px}.lpct{font-size:52px}.mc{width:9px;height:9px}
+    .top{left:18px}.sec-no{display:none}
+    .rail{left:10px;top:auto;bottom:10px;transform:none}          /* dar ekranda ray alta iner */
+    .rrow{height:19px}.mdot{width:9px;height:9px}
+    .vline{top:14px;height:12px;left:4px}
+    .tline{width:10px}.bdot{width:7px;height:7px}
+    .rrow.on .twigs{max-width:90px}
+  }
 </style>
 </head>
 <body>
@@ -131,21 +139,27 @@
     <div class="hud">
       <div class="top">
         <div style="display:flex;gap:12px;align-items:center">
-          <div class="scene-no" id="sceneNo">01</div>
+          <div class="sec-no" id="secNo">01</div>
           <div>
-            <div class="scene-name" id="sceneName">—</div>
-            <div class="scene-sub" id="sceneSub">—</div>
+            <div class="sec-name" id="secName">—</div>
+            <div class="sec-sub" id="secSub">—</div>
           </div>
         </div>
         <div class="badge" id="badge"><i></i><span id="badgeTxt">LOOP</span></div>
       </div>
 
       <div class="dbg" id="dbg"></div>
-      <div class="chain" id="chain"></div>
+      <div class="rail" id="rail"></div>
 
       <div class="arrows">
-        <button class="rbtn" id="prev" title="Geri (←)"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
-        <button class="rbtn" id="next" title="İleri (→)"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
+        <div class="pair">
+          <button class="rbtn" id="up" title="Önceki bölüm (↑)"><svg viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></button>
+          <button class="rbtn br" id="out" title="Ana gövdeye dön (←)"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></button>
+        </div>
+        <div class="pair">
+          <button class="rbtn" id="down" title="Sonraki bölüm (↓)"><svg viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg></button>
+          <button class="rbtn br" id="into" title="Eklenti dalına gir (→)"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
+        </div>
       </div>
 
       <div class="clipbar" id="clipbar"><i></i></div>
@@ -153,24 +167,25 @@
   </div>
 
   <div class="bar">
-    <div class="row" id="sceneChips"></div>
+    <div class="row" id="secChips"></div>
+    <div class="row" id="brChips"></div>
     <div class="row">
-      <span class="t">Akıllı geçiş motoru · 6 sahne / 16 klip</span>
+      <span class="t" id="statLine">—</span>
       <span class="chip" id="rateChip">yakalama hızı <b id="rateVal">×3</b></span>
       <span class="chip" id="dbgChip">teknik bilgi</span>
       <span class="sep"></span>
-      <span class="t"><kbd>←</kbd> <kbd>→</kbd> gezin · <kbd>1</kbd>–<kbd>6</kbd> sahneye atla · <kbd>D</kbd> teknik bilgi</span>
+      <span class="t"><kbd>↑</kbd><kbd>↓</kbd> bölüm · <kbd>→</kbd><kbd>←</kbd> dal · <kbd>1</kbd>–<kbd>7</kbd> · <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> · <kbd>Esc</kbd> ana</span>
     </div>
   </div>
 </div>
 
 <div class="loader" id="loader">
   <div class="lbox">
-    <div class="ltitle">demo5 · akıllı video player</div>
+    <div class="ltitle">demo5 · ağaç yapılı video player</div>
     <div class="lpct" id="lpct">0%</div>
     <div class="lstate" id="lstate">klipler indiriliyor…</div>
     <div class="ltrack"><i id="lbar"></i></div>
-    <div class="grid" id="grid"></div>
+    <div class="micro" id="micro"></div>
     <button class="start" id="startBtn">Başlat</button>
     <div class="err" id="err"></div>
   </div>
@@ -180,209 +195,270 @@
 (() => {
   "use strict";
 
-  const FPS = 30;
-
-  /* ------------------------------------------------------------------
-     Zincir:  L1 =fwd1=> L2 =fwd2=> L3 =fwd3=> L4 =fwd4=> L5 =fwd5=> L6
-                 <=rev1=     <=rev2=     <=rev3=     <=rev4=     <=rev5=
+  /* ==================================================================
+     AĞAÇ
+       m1 ─f1/r1─ m2 ─f2/r2─ … ─ m7          (7 ana bölüm, dikey aks)
+        ├─e{k}1 / x{k}1─ b{k}1
+        ├─e{k}2 / x{k}2─ b{k}2               (her bölüme 3 eklenti dalı)
+        └─e{k}3 / x{k}3─ b{k}3
 
      Kare sözleşmesi (generate_videos.py garanti eder):
-       fwd_k[0]          == loop_k[0]
-       fwd_k[son] + 1    == loop_{k+1}[0]   →  fwd_k[son] → fwd_{k+1}[0] de sürekli
-       rev_k[son]        == loop_k[0]
-     Bu yüzden zincirleme atlamada ara döngüyü hiç oynatmadan doğrudan
-     bir sonraki geçiş klibine girebiliyoruz; görüntü yine kesintisiz.
-  ------------------------------------------------------------------ */
-  const SCENES = [
-    { id:'loop1', name:'OKYANUS',    sub:'derin mavi döngü' },
-    { id:'loop2', name:'GÜN BATIMI', sub:'magenta / amber döngü' },
-    { id:'loop3', name:'YEŞİM',      sub:'yeşil / altın döngü' },
-    { id:'loop4', name:'NEBULA',     sub:'mor / indigo döngü' },
-    { id:'loop5', name:'BAKIR',      sub:'çöl tonları döngü' },
-    { id:'loop6', name:'BUZUL',      sub:'buz mavisi döngü' }
-  ];
-  const N   = SCENES.length;
-  const FWD = Array.from({length:N-1}, (_,i) => `fwd${i+1}`);
-  const REV = Array.from({length:N-1}, (_,i) => `rev${i+1}`);
-  const IDS = [...SCENES.map(s => s.id), ...FWD, ...REV];
+       geçiş[0]       == kaynak döngünün 0. karesi
+       geçiş[son]+1   == hedef döngünün 0. karesi
+       ters[son]      == kaynak döngünün 0. karesi
+     Bu yüzden geçişler birbirine de zincirlenebilir: uzak bir düğüme
+     giderken ara döngüler hiç oynatılmadan geçişler arka arkaya bağlanır.
+  ================================================================== */
 
-  // codec seçimi: H.264/mp4 evrensel, VP9/webm yedek
+  const $ = s => document.querySelector(s);
+  const clamp = (v,a,b) => v<a?a:v>b?b:v;
   const CAN_H264 = !!document.createElement('video').canPlayType('video/mp4; codecs="avc1.42E01E"');
   const EXT  = CAN_H264 ? 'mp4' : 'webm';
   const MIME = CAN_H264 ? 'video/mp4' : 'video/webm';
+  const POOL_SIZE = 12;                 // dal klipleri için dinamik havuz
 
-  const $ = s => document.querySelector(s);
-  const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+  let MAN = null, SEC = [], AXIS = [], CLIPS = [], FPS = 30;
+  const url = {};                       // klip → blob url
+  const byClip = new Map();             // klip → video elemanı
+  const pinnedEls = [], poolEls = [];
+  let clock = 0, protectedIds = new Set();
 
-  /* ---------------- video elemanları ---------------- */
-  const els = {};
-  const screen = $('#screen'), hud = $('.hud');
-  IDS.forEach(id => {
-    const v = document.createElement('video');
-    v.id = id; v.muted = true; v.playsInline = true; v.preload = 'auto';
-    v.setAttribute('muted',''); v.setAttribute('playsinline','');
-    screen.insertBefore(v, hud);
-    els[id] = v;
-  });
-
-  /* ---------------- durum ---------------- */
-  let cur = 0;            // ekrandaki sahne
-  let target = 0;         // gidilmek istenen sahne
-  let activeId = null;    // ekrandaki klip
-  let running = false;    // zincir çalışıyor mu
-  let started = false;
-  let catchRate = 3;
+  let cur = { sec:0, branch:null };
+  let target = { sec:0, branch:null };
+  let activeId = null, running = false, started = false, catchRate = 3;
   const RATES = [2,3,5];
 
-  /* ---------------- yükleme ---------------- */
-  const grid = $('#grid'), cells = {};
-  IDS.forEach(id => {
-    const c = document.createElement('div');
-    c.className = 'cell';
-    c.innerHTML = `<div class="nm"><span>${id}</span><span class="p">0%</span></div><div class="tr"><i></i></div>`;
-    grid.appendChild(c);
-    cells[id] = { c, bar:c.querySelector('i'), p:c.querySelector('.p') };
-  });
+  const screen = $('#screen'), hud = $('.hud');
+  const mkVideo = () => {
+    const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.setAttribute('muted',''); v.setAttribute('playsinline','');
+    screen.insertBefore(v, hud);
+    return v;
+  };
 
-  const dl = {}, ready = {};
-  IDS.forEach(id => { dl[id] = 0; ready[id] = 0; });
+  /* ---------------- yükleme ---------------- */
+  const dl = {}, primed = {};
+  let microCells = {};
 
   function paint(){
     let d = 0, r = 0;
-    IDS.forEach(id => {
-      d += dl[id]; r += ready[id];
-      const pc = Math.round(dl[id]*100);
-      cells[id].bar.style.width = pc + '%';
-      cells[id].p.textContent = ready[id] ? 'hazır' : pc + '%';
-      cells[id].c.classList.toggle('ok', ready[id] === 1);
+    CLIPS.forEach(id => { d += dl[id] || 0; r += primed[id] ? 1 : 0; });
+    const done = CLIPS.filter(id => (dl[id]||0) >= 1).length;
+    CLIPS.forEach(id => {
+      const c = microCells[id]; if (!c) return;
+      c.classList.toggle('dl', (dl[id]||0) > 0 && (dl[id]||0) < 1);
+      c.classList.toggle('ok', (dl[id]||0) >= 1);
     });
-    const pct = Math.round(((d/IDS.length)*0.82 + (r/IDS.length)*0.18) * 100);
-    $('#lpct').textContent = pct + '%';
-    $('#lbar').style.width = pct + '%';
-    $('#lstate').textContent = r < IDS.length
-      ? `${Math.round(r)}/${IDS.length} klip hazır · tamamı belleğe alınıyor`
-      : 'tüm klipler bellekte';
+    const pct = Math.round(((d/CLIPS.length)*0.88 + (r/PRIME_COUNT)*0.12) * 100);
+    $('#lpct').textContent = clamp(pct,0,100) + '%';
+    $('#lbar').style.width = clamp(pct,0,100) + '%';
+    $('#lstate').textContent = `${done}/${CLIPS.length} klip bellekte` +
+      (bytes ? ` · ${(bytes/1048576).toFixed(1)} MB` : '');
   }
+  let bytes = 0, PRIME_COUNT = 1;
 
-  async function download(id){
+  async function fetchClip(id){
     const res = await fetch(`media/${id}.${EXT}`, { cache:'force-cache' });
     if (!res.ok) throw new Error(`${id}.${EXT} → HTTP ${res.status}`);
     const total = +res.headers.get('content-length') || 0;
+    let blob;
     if (!res.body || !total){
-      const b = await res.blob(); dl[id] = 1; paint(); return b;
+      blob = await res.blob(); bytes += blob.size;
+    } else {
+      const rd = res.body.getReader(); const chunks = []; let got = 0;
+      for(;;){
+        const { done, value } = await rd.read();
+        if (done) break;
+        chunks.push(value); got += value.length; bytes += value.length;
+        dl[id] = Math.min(got/total, 0.999); paint();
+      }
+      blob = new Blob(chunks, { type: MIME });
     }
-    const reader = res.body.getReader(); const chunks = []; let got = 0;
-    for(;;){
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value); got += value.length;
-      dl[id] = Math.min(got/total, 1); paint();
-    }
+    url[id] = URL.createObjectURL(blob);
     dl[id] = 1; paint();
-    return new Blob(chunks, { type: MIME });
   }
 
-  // "gerçekten hazır" = tüm bayt bellekte + metadata çözüldü + 0. kare boyandı
-  function attach(id, blob){
-    const v = els[id];
-    v.src = URL.createObjectURL(blob);
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const done = () => { if (settled) return; settled = true; ready[id] = 1; paint(); resolve(); };
-      const primeFrame = () => {
-        if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => done());
-        v.addEventListener('seeked', () => setTimeout(done, 20), { once:true });
-        try { v.currentTime = 0.0001; } catch(e){ done(); }
-        setTimeout(done, 4000);
+  async function pooled(items, limit, fn){
+    let i = 0;
+    await Promise.all(Array.from({length:limit}, async () => {
+      while (i < items.length){ const k = i++; await fn(items[k]); }
+    }));
+  }
+
+  /* ---------------- eleman havuzu ---------------- */
+  function primeEl(el, id){
+    el.dataset.clip = id;
+    el.dataset.used = ++clock;
+    el.loop = false; el.playbackRate = 1;
+    el.src = url[id];
+    return new Promise(resolve => {
+      let done = false;
+      const fin = () => { if (done) return; done = true; primed[id] = 1; paint(); resolve(el); };
+      const prime = () => {
+        if (el.requestVideoFrameCallback) el.requestVideoFrameCallback(() => fin());
+        el.addEventListener('seeked', () => setTimeout(fin, 15), { once:true });
+        try { el.currentTime = 0.0001; } catch(e){ fin(); }
+        setTimeout(fin, 3000);
       };
-      v.addEventListener('error', () => {
-        if (settled) return; settled = true;
-        reject(new Error(`${id}.${EXT} çözülemedi (kod ${v.error ? v.error.code : '?'})`));
-      }, { once:true });
-      if (v.readyState >= 4) primeFrame();
+      el.addEventListener('error', () => fin(), { once:true });
+      if (el.readyState >= 3) prime();
       else {
-        v.addEventListener('canplaythrough', primeFrame, { once:true });
-        v.addEventListener('loadeddata', () => { if (!settled) setTimeout(primeFrame, 400); }, { once:true });
-        setTimeout(() => { if (!settled) primeFrame(); }, 20000);   // asla sonsuza kilitlenme
+        el.addEventListener('canplaythrough', prime, { once:true });
+        el.addEventListener('loadeddata', () => { if (!done) setTimeout(prime, 200); }, { once:true });
+        setTimeout(() => { if (!done) prime(); }, 8000);
       }
-      v.load();
+      el.load();
     });
   }
 
+  const pending = new Map();
+  function ensure(id){
+    const el = byClip.get(id);
+    if (el){ el.dataset.used = ++clock; return pending.get(id) || Promise.resolve(el); }
+    const victim = pickVictim(id);
+    if (!victim) return Promise.reject(new Error('havuz dolu: ' + id));
+    if (victim.dataset.clip) byClip.delete(victim.dataset.clip);
+    byClip.set(id, victim);
+    const p = primeEl(victim, id).then(v => { pending.delete(id); return v; });
+    pending.set(id, p);
+    return p;
+  }
+  function pickVictim(want){
+    const free = poolEls.filter(e => !e.dataset.clip);
+    if (free.length) return free[0];
+    const act = elFor(activeId);
+    const cands = poolEls.filter(e => e !== act && !protectedIds.has(e.dataset.clip));
+    if (cands.length) return cands.sort((a,b) => (+a.dataset.used||0) - (+b.dataset.used||0))[0];
+    const any = poolEls.filter(e => e !== act);
+    return any.sort((a,b) => (+a.dataset.used||0) - (+b.dataset.used||0))[0] || null;
+  }
+  const elFor = id => byClip.get(id) || null;
+
+  function neighborhood(st){
+    const s = SEC[st.sec], out = [];
+    if (st.branch === null){
+      s.branches.forEach(b => out.push(b.enter));
+      s.branches.forEach(b => out.push(b.loop));
+      s.branches.forEach(b => out.push(b.exit));
+    } else {
+      const b = s.branches[st.branch];
+      out.push(b.exit, b.loop);
+      s.branches.forEach((o,i) => { if (i !== st.branch) out.push(o.enter, o.loop); });
+    }
+    return out;
+  }
+  let prefetchTok = 0;
+  async function prefetch(){
+    const my = ++prefetchTok;
+    const list = neighborhood(cur);
+    protectedIds = new Set(list);
+    for (const id of list){
+      if (my !== prefetchTok) return;
+      try { await ensure(id); } catch(e){}
+    }
+  }
+
+  /* ---------------- açılış ---------------- */
   async function boot(){
-    buildChain(); buildChips(); syncUI();
-    try{
-      await Promise.all(IDS.map(async id => attach(id, await download(id))));
-    }catch(err){
-      $('#lstate').textContent = 'yükleme başarısız';
-      $('#err').textContent = err.message + '\n(sayfayı http:// üzerinden açtığınızdan emin olun)';
+    try {
+      MAN = await (await fetch('media/manifest.json', { cache:'force-cache' })).json();
+    } catch(err){
+      $('#lstate').textContent = 'manifest okunamadı';
+      $('#err').textContent = err.message + '\n(sayfayı http:// üzerinden açın)';
       return;
     }
-    const notBuffered = IDS.filter(id => {
-      const v = els[id];
-      return !(v.duration > 0 && v.buffered.length && v.buffered.end(v.buffered.length-1) >= v.duration - 0.05);
+    SEC = MAN.sections; AXIS = MAN.axis; CLIPS = MAN.clips; FPS = MAN.fps || 30;
+    CLIPS.forEach(id => { dl[id] = 0; primed[id] = 0; });
+
+    const micro = $('#micro');
+    CLIPS.forEach(id => {
+      const c = document.createElement('div');
+      c.className = 'mc'; c.title = id; micro.appendChild(c); microCells[id] = c;
     });
-    $('#lstate').textContent = notBuffered.length
-      ? `${IDS.length - notBuffered.length}/${IDS.length} klip tamponda`
-      : `${IDS.length} klip bellekte · geçişler kare hassasiyetinde hazır`;
+    buildRail(); buildChips(); updateUI();
+
+    const pinnedIds = [...SEC.map(s => s.loop), ...AXIS.map(a => a.fwd), ...AXIS.map(a => a.rev)];
+    PRIME_COUNT = pinnedIds.length + 9;
+    pinnedIds.forEach(() => pinnedEls.push(mkVideo()));
+    for (let i = 0; i < POOL_SIZE; i++) poolEls.push(mkVideo());
+
+    try {
+      await pooled(CLIPS, 8, fetchClip);
+    } catch(err){
+      $('#lstate').textContent = 'indirme başarısız';
+      $('#err').textContent = err.message;
+      return;
+    }
+    $('#lstate').textContent = 'klipler çözülüyor…';
+
+    // sabit (aks) klipler kendi elemanlarına, dal klipleri havuza
+    await Promise.all(pinnedIds.map((id, i) => {
+      byClip.set(id, pinnedEls[i]);
+      return primeEl(pinnedEls[i], id);
+    }));
+    await prefetch();
+
+    $('#lstate').textContent = `${CLIPS.length} klip bellekte · ${(bytes/1048576).toFixed(1)} MB · geçişler kare hassasiyetinde hazır`;
     $('#startBtn').classList.add('show');
-    start().catch(()=>{});                 // sessiz video: otomatik başlar; olmazsa buton
+    start().catch(()=>{});
   }
 
   async function start(){
     if (started) return;
-    const v = els[SCENES[0].id];
-    v.loop = true; v.playbackRate = 1;
-    try { v.currentTime = 0; } catch(e){}
-    show(v);
-    await v.play();
-    started = true; activeId = SCENES[0].id;
+    const el = elFor(SEC[0].loop);
+    el.loop = true; el.playbackRate = 1;
+    try { el.currentTime = 0; } catch(e){}
+    show(el);
+    await el.play();
+    started = true; activeId = SEC[0].loop;
     $('#loader').classList.add('gone');
-    setBadge('loop'); updateChain(); syncUI(); tick();
+    setPhase('loop'); updateUI(); tick();
   }
   $('#startBtn').addEventListener('click', () => start().catch(e => {
     $('#err').textContent = 'oynatma engellendi: ' + e.message;
   }));
 
   /* ---------------- motor ---------------- */
-  function show(el){ IDS.forEach(id => els[id].classList.toggle('on', els[id] === el)); }
+  function show(el){
+    [...pinnedEls, ...poolEls].forEach(v => v.classList.toggle('on', v === el));
+  }
 
   let ramp = 0;
   function rampRate(v, from, to, ms){
     cancelAnimationFrame(ramp);
+    if (!v) return;
     const t0 = performance.now();
     v.playbackRate = from;
     const step = () => {
-      const k = Math.min((performance.now() - t0)/ms, 1);
-      v.playbackRate = from + (to - from) * (1 - Math.pow(1-k, 3));
+      const k = Math.min((performance.now()-t0)/ms, 1);
+      v.playbackRate = from + (to-from)*(1 - Math.pow(1-k, 3));
       if (k < 1) ramp = requestAnimationFrame(step);
     };
     ramp = requestAnimationFrame(step);
   }
 
-  // Sonraki klip 0. karesinde duraklatılmış ve boyanmış beklediği için
-  // katman değişimi tek karede olur → siyah kare / donma yok.
   function swapTo(id, { rate = 1, loop = false } = {}){
     cancelAnimationFrame(ramp);
-    const prevId = activeId, next = els[id];
-    if (next.currentTime > 0.25) { try { next.currentTime = 0; } catch(e){} }  // güvenlik
-    next.loop = loop;
-    next.playbackRate = rate;
+    const next = elFor(id);
+    if (!next) return false;
+    const prevId = activeId, prev = elFor(prevId);
+    if (next.currentTime > 0.25) { try { next.currentTime = 0; } catch(e){} }
+    next.loop = loop; next.playbackRate = rate;
+    next.dataset.used = ++clock;
     show(next);
     activeId = id;
-    const p = next.play();
-    if (p && p.catch) p.catch(()=>{});
-    if (prevId && prevId !== id){
-      const prev = els[prevId];
+    const pr = next.play(); if (pr && pr.catch) pr.catch(()=>{});
+    if (prev && prev !== next){
       requestAnimationFrame(() => requestAnimationFrame(() => {
         if (activeId === prevId) return;
         prev.pause(); prev.loop = false; prev.playbackRate = 1;
         try { prev.currentTime = 0.0001; } catch(e){}
       }));
     }
+    return true;
   }
 
-  // Klibin son karesine ~1 ekran karesi kala haber verir (donma olmadan devir teslim).
   let watcher = null;
   function cancelWatch(){ if (watcher){ watcher(); watcher = null; } }
   function onClipEnd(v, cb){
@@ -391,130 +467,211 @@
     const fire = () => { if (fired) return; fired = true; cancelWatch(); cb(); };
     const ended = () => fire();
     v.addEventListener('ended', ended);
-    const loopTick = () => {
+    const tk = () => {
       const d = v.duration || 0;
-      const lead = Math.max(v.playbackRate, 1)/60 * 1.15;
+      const lead = Math.max(v.playbackRate,1)/60 * 1.15;
       if (d && d - v.currentTime <= lead) return fire();
-      raf = requestAnimationFrame(loopTick);
+      raf = requestAnimationFrame(tk);
     };
-    raf = requestAnimationFrame(loopTick);
+    raf = requestAnimationFrame(tk);
     watcher = () => { v.removeEventListener('ended', ended); cancelAnimationFrame(raf); };
   }
 
-  function requestScene(i){
-    if (!started) return;
-    i = clamp(i, 0, N-1);
-    if (i === target && i === cur && !running){ bump(i > cur ? 1 : -1); return; }
-    if (i === cur && !running){ bump(0); return; }
-    target = i;
-    updateChain(); syncUI();
-    if (!running){ running = true; runChain(); }
-  }
-  function bump(dir){
-    const b = dir < 0 ? $('#prev') : $('#next');
-    b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+  const same = (a,b) => a.sec === b.sec && a.branch === b.branch;
+  const loopIdOf = st => st.branch === null ? SEC[st.sec].loop : SEC[st.sec].branches[st.branch].loop;
+
+  function nextStep(){
+    if (same(cur, target)) return null;
+    const s = SEC[cur.sec];
+    if (cur.branch !== null)                                  // önce ana gövdeye çık
+      return { clip: s.branches[cur.branch].exit, land:{ sec:cur.sec, branch:null }, kind:'out' };
+    if (target.sec !== cur.sec){                              // dikey aks adımı
+      const d = target.sec > cur.sec ? 1 : -1;
+      return { clip: d > 0 ? AXIS[cur.sec].fwd : AXIS[cur.sec-1].rev,
+               land:{ sec:cur.sec + d, branch:null }, kind:'axis' };
+    }
+    return { clip: s.branches[target.branch].enter,           // dala giriş
+             land:{ sec:cur.sec, branch:target.branch }, kind:'in' };
   }
 
-  function runChain(){
-    if (cur === target){ finish(); return; }
-    const dir = target > cur ? 1 : -1;
-    const transId = dir > 0 ? FWD[cur] : REV[cur-1];
+  async function runChain(){
+    const step = nextStep();
+    if (!step){ finish(); return; }
+    try {
+      await ensure(step.clip);
+      await ensure(loopIdOf(step.land));
+    } catch(e){}
+    const now = nextStep();                                   // bekleme sırasında hedef değişmiş olabilir
+    if (!now){ finish(); return; }
+    if (now.clip !== step.clip){ runChain(); return; }
 
     const playTransition = () => {
-      const isLast = (cur + dir === target);
-      swapTo(transId, { rate: catchRate, loop:false });
-      if (isLast) rampRate(els[transId], catchRate, 1, 420);   // son geçişte 1×'e yumuşak iniş
-      setBadge('trans', dir);
-      updateChain(dir);
-      onClipEnd(els[transId], () => {
-        cur += dir;
-        if (cur === target){
-          swapTo(SCENES[cur].id, { rate:1, loop:true });
+      const isLast = same(step.land, target);
+      if (!swapTo(step.clip, { rate: catchRate })){ finish(); return; }
+      if (isLast) rampRate(elFor(step.clip), catchRate, 1, 380);
+      setPhase('trans', step.kind);
+      updateUI();
+      onClipEnd(elFor(step.clip), () => {
+        cur = step.land;
+        if (same(cur, target)){
+          swapTo(loopIdOf(cur), { rate:1, loop:true });
           finish();
-        } else {
-          runChain();          // ara döngüyü atla, doğrudan sonraki geçişe gir
-        }
+          prefetch();
+        } else runChain();                                    // ara döngüyü atla
       });
     };
 
-    if (activeId === SCENES[cur].id){
-      // döngüdeyiz: kalan süreyi hızlandırıp son kareye yetiş
-      const lp = els[activeId];
-      lp.loop = false;
-      lp.playbackRate = catchRate;
-      setBadge('fast', dir);
-      updateChain(dir);
-      onClipEnd(lp, playTransition);
-    } else {
-      playTransition();        // zincir sürüyor: doğrudan geçişe
-    }
+    const curLoopId = loopIdOf(cur);
+    if (activeId === curLoopId){
+      const el = elFor(curLoopId);
+      el.loop = false; el.playbackRate = catchRate;
+      setPhase('fast', step.kind);
+      updateUI();
+      onClipEnd(el, playTransition);
+    } else playTransition();
   }
 
   function finish(){
-    running = false; target = cur;
-    setBadge('loop'); updateChain(); syncUI();
+    running = false; target = { ...cur };
+    setPhase('loop'); updateUI();
   }
 
-  /* ---------------- arayüz ---------------- */
-  function buildChain(){
-    const c = $('#chain'); c.innerHTML = '';
-    for (let i = 0; i < N; i++){
-      const d = document.createElement('div');
-      d.className = 'dot'; d.dataset.i = i; d.title = `${i+1}. sahne: ${SCENES[i].name}`;
-      d.addEventListener('click', () => requestScene(i));
-      c.appendChild(d);
-      if (i < N-1){
-        const l = document.createElement('div');
-        l.className = 'link'; l.dataset.l = i; c.appendChild(l);
-      }
+  // Hedefe giden yoldaki klipleri sirayla verir (ara donguler haric).
+  function pathTo(t){
+    const out = []; let st = { ...cur };
+    for (let guard = 0; !same(st, t) && guard < 40; guard++){
+      const s = SEC[st.sec];
+      if (st.branch !== null){ out.push(s.branches[st.branch].exit); st = { sec:st.sec, branch:null }; }
+      else if (t.sec !== st.sec){
+        const d = t.sec > st.sec ? 1 : -1;
+        out.push(d > 0 ? AXIS[st.sec].fwd : AXIS[st.sec-1].rev);
+        st = { sec:st.sec + d, branch:null };
+      } else { out.push(s.branches[t.branch].enter); st = { sec:st.sec, branch:t.branch }; }
     }
+    out.push(loopIdOf(t));
+    return out;
+  }
+  async function ensurePath(t){
+    const list = pathTo(t);
+    protectedIds = new Set([...list, activeId]);
+    prefetchTok++;                                  // komsu ön-yüklemesini durdur
+    for (const id of list){ try { await ensure(id); } catch(e){} }
+  }
+
+  async function request(sec, branch){
+    if (!started) return;
+    sec = clamp(sec, 0, SEC.length-1);
+    if (branch !== null) branch = clamp(branch, 0, SEC[sec].branches.length-1);
+    const t = { sec, branch };
+    if (same(cur, t) && !running){ bump(); return; }
+    target = t; updateUI();
+    if (running){ ensurePath(t); return; }          // çalışan zincir yeni hedefi kendi alır
+    running = true; updateUI();
+    await ensurePath(t);
+    if (!running) return;
+    runChain();
+  }
+  function bump(){
+    const b = $('#screen');
+    b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+  }
+  const here = () => running ? target : cur;
+
+  /* ---------------- arayüz ---------------- */
+  function buildRail(){
+    const rail = $('#rail'); rail.innerHTML = '';
+    SEC.forEach((s,i) => {
+      const row = document.createElement('div');
+      row.className = 'rrow'; row.dataset.i = i;
+      const dot = document.createElement('div');
+      dot.className = 'mdot'; dot.title = `${i+1}. bölüm · ${s.name}`;
+      dot.addEventListener('click', () => request(i, null));
+      row.appendChild(dot);
+      const tw = document.createElement('div');
+      tw.className = 'twigs';
+      s.branches.forEach((b,bi) => {
+        const l = document.createElement('div'); l.className = 'tline'; tw.appendChild(l);
+        const d = document.createElement('div');
+        d.className = 'bdot'; d.dataset.b = bi; d.title = `+ ${b.name}`;
+        d.addEventListener('click', () => request(i, bi));
+        tw.appendChild(d);
+      });
+      row.appendChild(tw);
+      if (i < SEC.length-1){
+        const v = document.createElement('div');
+        v.className = 'vline';
+        row.appendChild(v);
+      }
+      rail.appendChild(row);
+    });
   }
   function buildChips(){
-    const box = $('#sceneChips'); box.innerHTML = '';
-    SCENES.forEach((s,i) => {
+    const sc = $('#secChips'); sc.innerHTML = '';
+    SEC.forEach((s,i) => {
       const el = document.createElement('span');
-      el.className = 'chip sc'; el.dataset.i = i;
+      el.className = 'chip sec'; el.dataset.i = i;
       el.innerHTML = `<span class="n">0${i+1}</span> ${s.name}`;
-      el.addEventListener('click', () => requestScene(i));
-      box.appendChild(el);
+      el.addEventListener('click', () => request(i, null));
+      sc.appendChild(el);
     });
+    const bc = $('#brChips'); bc.innerHTML = '';
+    const home = document.createElement('span');
+    home.className = 'chip home'; home.id = 'homeChip'; home.textContent = 'ANA GÖVDE';
+    home.addEventListener('click', () => request(here().sec, null));
+    bc.appendChild(home);
+    for (let bi = 0; bi < 3; bi++){
+      const el = document.createElement('span');
+      el.className = 'chip br'; el.dataset.b = bi;
+      el.addEventListener('click', () => request(here().sec, bi));
+      bc.appendChild(el);
+    }
   }
-  function updateChain(dir){
-    document.querySelectorAll('.dot').forEach(d => {
-      const i = +d.dataset.i;
-      d.classList.toggle('on', i === cur && !dir);
-      d.classList.toggle('done', i === cur && !!dir);
+
+  function updateUI(){
+    const h = here(), s = SEC[cur.sec];
+    screen.dataset.busy = running ? '1' : '0';
+    document.querySelectorAll('.rrow').forEach(r => {
+      const i = +r.dataset.i;
+      r.classList.toggle('on', i === cur.sec);
+      r.classList.toggle('past', i < cur.sec);
+      r.querySelectorAll('.bdot').forEach(d =>
+        d.classList.toggle('on', i === cur.sec && cur.branch === +d.dataset.b));
     });
-    document.querySelectorAll('.link').forEach(l => {
-      const i = +l.dataset.l;
-      const live = dir ? (dir > 0 ? i === cur : i === cur-1) : false;
-      l.classList.toggle('on', live);
-      l.classList.toggle('done', !live && ((i < cur) || (running && i < target)));
+    document.querySelectorAll('.chip.sec').forEach(c => c.classList.toggle('on', +c.dataset.i === cur.sec));
+    document.querySelectorAll('.chip.br').forEach(c => {
+      const bi = +c.dataset.b, b = s.branches[bi];
+      c.innerHTML = `<span class="n">+</span> ${b.name}`;
+      c.classList.toggle('on', cur.branch === bi);
     });
-    document.querySelectorAll('.chip.sc').forEach(c => c.classList.toggle('on', +c.dataset.i === cur));
+    $('#homeChip').classList.toggle('on', cur.branch === null);
+    $('#up').disabled   = cur.sec === 0 && cur.branch === null && !running;
+    $('#down').disabled = cur.sec === SEC.length-1 && cur.branch === null && !running;
+    $('#out').disabled  = cur.branch === null && !running;
+    $('#into').disabled = false;
+    $('#statLine').textContent =
+      `${SEC.length} bölüm × 3 eklenti · ${CLIPS.length} klip` +
+      (bytes ? ` · ${(bytes/1048576).toFixed(1)} MB bellekte` : '');
   }
-  function setBadge(mode, dir){
-    const b = $('#badge'), t = $('#badgeTxt'), s = SCENES[cur];
+
+  function setPhase(mode, kind){
+    const b = $('#badge'), t = $('#badgeTxt'), s = SEC[cur.sec];
     b.className = 'badge' + (mode === 'loop' ? '' : ' ' + mode);
-    const steps = Math.abs(target - cur);
-    t.textContent = mode === 'loop' ? 'LOOP'
+    const dist = Math.abs(target.sec - cur.sec) + (target.branch !== cur.branch ? 1 : 0);
+    t.textContent = mode === 'loop' ? (cur.branch === null ? 'ANA DÖNGÜ' : 'EKLENTİ DÖNGÜSÜ')
       : mode === 'fast' ? '×' + catchRate + ' SON KAREYE YETİŞİYOR'
-      : (steps > 1 ? `GEÇİŞ ZİNCİRİ · ${steps} ADIM` : 'GEÇİŞ KLİBİ');
+      : kind === 'in'  ? 'DALA GİRİŞ'
+      : kind === 'out' ? 'ANA GÖVDEYE DÖNÜŞ'
+      : (dist > 1 ? `GEÇİŞ ZİNCİRİ · ${dist} ADIM` : 'AKS GEÇİŞİ');
     $('#clipbar').classList.toggle('trans', mode !== 'loop');
-    $('#sceneNo').textContent = String(cur+1).padStart(2,'0');
-    $('#sceneName').textContent = `SAHNE ${String(cur+1).padStart(2,'0')} · ${s.name}`;
-    $('#sceneSub').textContent = mode === 'loop' ? s.sub
-      : mode === 'fast' ? `kalan süre ×${catchRate} hızda tamamlanıyor`
-      : (dir > 0 ? `${SCENES[cur].name} → ${SCENES[clamp(cur+1,0,N-1)].name} ara klibi`
-                 : `${SCENES[cur].name} → ${SCENES[clamp(cur-1,0,N-1)].name} ara klibi`);
-  }
-  function syncUI(){
-    $('#prev').disabled = cur === 0 && target === 0;
-    $('#next').disabled = cur === N-1 && target === N-1;
+    $('#secNo').textContent = String(cur.sec+1).padStart(2,'0');
+    $('#secName').textContent = `BÖLÜM ${String(cur.sec+1).padStart(2,'0')} · ${s.name}`;
+    $('#secSub').innerHTML = cur.branch === null
+      ? s.sub + ' · ana gövde'
+      : `${s.sub} · <b>+ ${s.branches[cur.branch].name}</b> eklentisi`;
   }
 
   function tick(){
-    const v = els[activeId];
+    const v = elFor(activeId);
     if (v && v.duration){
       $('#clipbar').firstElementChild.style.width = (v.currentTime/v.duration*100) + '%';
       if ($('#dbg').classList.contains('on')){
@@ -523,28 +680,43 @@
           `kare    : ${Math.floor(v.currentTime*FPS)} / ${Math.round(v.duration*FPS)}\n` +
           `hız     : ×${v.playbackRate.toFixed(2)}\n` +
           `loop    : ${v.loop}\n` +
-          `sahne   : ${cur+1} → ${target+1}${running ? ' (zincir)' : ''}\n` +
+          `konum   : ${cur.sec+1}${cur.branch===null?' (ana)':'.'+(cur.branch+1)}` +
+          ` → ${target.sec+1}${target.branch===null?' (ana)':'.'+(target.branch+1)}` +
+          `${running?' [zincir]':''}\n` +
+          `eleman  : ${pinnedEls.length} sabit + ${poolEls.filter(e=>e.dataset.clip).length}/${POOL_SIZE} havuz\n` +
           `tampon  : ${v.buffered.length ? Math.round(v.buffered.end(v.buffered.length-1)/v.duration*100) : 0}%`;
       }
     }
     requestAnimationFrame(tick);
   }
 
-  $('#next').addEventListener('click', () => requestScene((running ? target : cur) + 1));
-  $('#prev').addEventListener('click', () => requestScene((running ? target : cur) - 1));
-  addEventListener('keydown', e => {
-    const k = e.key;
-    if (k === 'ArrowRight'){ e.preventDefault(); requestScene((running ? target : cur) + 1); }
-    else if (k === 'ArrowLeft'){ e.preventDefault(); requestScene((running ? target : cur) - 1); }
-    else if (k === 'Home'){ e.preventDefault(); requestScene(0); }
-    else if (k === 'End'){ e.preventDefault(); requestScene(N-1); }
-    else if (k >= '1' && k <= String(N)) requestScene(+k - 1);
-    else if (k.toLowerCase() === 'd') $('#dbg').classList.toggle('on');
-  });
+  /* ---------------- girdi ---------------- */
+  const goAxis = d => { const h = here(); request(h.sec + d, null); };
+  const goIn   = () => { const h = here(); request(h.sec, h.branch === null ? 0 : Math.min(h.branch+1, 2)); };
+  const goOut  = () => { const h = here(); request(h.sec, h.branch === null || h.branch === 0 ? null : h.branch-1); };
+
+  $('#up').addEventListener('click',   () => goAxis(-1));
+  $('#down').addEventListener('click', () => goAxis(1));
+  $('#into').addEventListener('click', goIn);
+  $('#out').addEventListener('click',  goOut);
   $('#dbgChip').addEventListener('click', () => $('#dbg').classList.toggle('on'));
   $('#rateChip').addEventListener('click', () => {
     catchRate = RATES[(RATES.indexOf(catchRate)+1) % RATES.length];
     $('#rateVal').textContent = '×' + catchRate;
+  });
+
+  addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === 'ArrowUp'){ e.preventDefault(); goAxis(-1); }
+    else if (k === 'ArrowDown'){ e.preventDefault(); goAxis(1); }
+    else if (k === 'ArrowRight'){ e.preventDefault(); goIn(); }
+    else if (k === 'ArrowLeft'){ e.preventDefault(); goOut(); }
+    else if (k === 'Escape' || k === '0'){ request(here().sec, null); }
+    else if (k === 'Home'){ request(0, null); }
+    else if (k === 'End'){ request(SEC.length-1, null); }
+    else if (k >= '1' && k <= String(Math.min(9, SEC.length))) request(+k-1, here().branch);
+    else if ('qwe'.includes(k.toLowerCase()) && k.length === 1) request(here().sec, 'qwe'.indexOf(k.toLowerCase()));
+    else if (k.toLowerCase() === 'd') $('#dbg').classList.toggle('on');
   });
 
   boot();
