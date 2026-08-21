@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Ana bina — Luxembourg kose apartmani, dis kabuk modeli.
+Ana bina — Luxembourg kose apartmani, dis kabuk. BIREBIR kutle sadakati:
 
-Referanslar (fotograflardan okunan):
-  * zemin kat: rustik kesme tas kaplama; ustunde 2 kat beyaz siva
-  * tum sokak pencerelerinde cikintili BEJ SOVE cerceveleri, koyu jaluzili cam
-  * sokaga bakan koselerde KOSE PENCERELERI (iki cam ince koyu dikmeyle kosede bulusur,
-    soveler koseyi sarar)
-  * yan cephede ust uste balkonlar (koyu dikey cubuklu korkuluk, acik doseme)
-  * belirgin beyaz kat/sacak bantlari; dik arduvaz cati, tepesi duz
-  * catida genis KOYU METAL (cinko) dormer kutulari, cinko kaplamali bacalar
-  * giris: koyu metal duz sacak (kanopi), koyu kapi, yanlarda dar pencere kolonu
-  * arsa: tas istinat duvarlari, yuvarlak budanmis simsir toplari, parke avlu,
-    on-solda metal korkuluklu bodrum rampasi
-Ic mekan yok — yalnizca dis kabuk. 1 birim = 1 m, Y yukari (glTF).
+  * ON cephede CIKMA: kose pencereli hacim ~0.55 m one tasar (sol yarim)
+  * giris korunagi bu cikmanin sagindaki GERI planda (ana duzlem)
+  * SOL cephede GERI CEKILME: arka bolum ~0.45 m iceri
+  * sacak / beyaz kornis bandi bu kirikliklari AYNEN takip eder
+  * cati egimi ise butun kutlenin uzerinde tek parca (gercekte oldugu gibi:
+    geri cekilen duvarin ustunde cati daha fazla sarkar)
+  * cati kutulari (cinko dormer) CEPHE AKSLARINA HIZALI:
+      - on solda: cikma hacminin ustunde
+      - on sagda: sag pencere aksinin ustunde
+      - sag (balkon) cephede: balkon aksinin ustunde
+      - solda: genis pencere aksinin ustunde
+  1 birim = 1 m, Y yukari.
 """
 import json
 import math
@@ -31,9 +31,9 @@ MATS = {
     "siva_golge":   ("#DCD7CD", 0.0, 0.9),
     "sove_bej":     ("#D8C7A5", 0.0, 0.85),
     "tas_zemin":    ("#A2947A", 0.0, 0.93),
+    "derz":         ("#7C7160", 0.0, 0.93),
     "tas_sokl":     ("#9E9789", 0.0, 0.92),
-    "tas_duvar":    ("#9F947F", 0.0, 0.93)
-    ,"derz":         ("#7C7160", 0.0, 0.93),
+    "tas_duvar":    ("#9F947F", 0.0, 0.93),
     "harpusta":     ("#8F887B", 0.0, 0.9),
     "cati_arduvaz": ("#394047", 0.0, 0.8),
     "cati_mahya":   ("#2C3238", 0.0, 0.78),
@@ -70,11 +70,10 @@ def hexf(h):
 class Builder:
     def __init__(self):
         self.parts = {}
-        self.group = "bina"
 
-    def add(self, mesh, mat, group=None):
+    def add(self, mesh, mat, group="bina"):
         if mesh is not None:
-            self.parts.setdefault((group or self.group, mat), []).append(mesh)
+            self.parts.setdefault((group, mat), []).append(mesh)
 
     def scene(self):
         sc = trimesh.Scene()
@@ -94,7 +93,7 @@ class Builder:
 B = Builder()
 
 
-# ---------------------------------------------------------------- ilkeller
+# ------------------------------------------------------------------ ilkeller
 def bx(size, pos, ry=0.0, rx=0.0):
     m = trimesh.creation.box(extents=size)
     if rx:
@@ -168,8 +167,6 @@ def ring_of(poly, inset):
             return None
         out.append((poly[i][0] + inset * (n1[0] + n2[0]) / k,
                     poly[i][1] + inset * (n1[1] + n2[1]) / k))
-    if inset > 0 and (not Polygon(out).is_valid or Polygon(out).area < 0.4):
-        return None
     return out
 
 
@@ -188,51 +185,36 @@ def band(outer, inner, y0, y1):
                            faces=np.array(F), process=False), list(inner)
 
 
-# ---------------------------------------------------------------- olculer
-W, D = 13.2, 12.0
-X0, X1 = -W / 2, W / 2
-Z0, Z1 = -D / 2, D / 2
-FOOT = [(X0, Z0), (X1, Z0), (X1, Z1), (X0, Z1)]
-BASE = 0.55            # bahce kotu (istinat duvari icindeki zemin)
+# ------------------------------------------------------------------ kutle
+X0, X1 = -6.6, 6.6            # toplam genislik 13.2
+Z0, Z1 = -6.0, 6.0            # ana on duzlem
+PROJ = 0.55                   # on cikma derinligi
+ZP = Z1 + PROJ                # cikma on duzlemi  = 6.55
+XP = X0 + 4.8                 # cikmanin sag siniri = -1.8
+XR = X0 + 0.45                # sol arka geri cekilmis duzlem = -6.15
+ZR = -0.4                     # sol cephedeki kirilma noktasi
+
+FOOT = [(X0, ZP), (XP, ZP), (XP, Z1), (X1, Z1),
+        (X1, Z0), (XR, Z0), (XR, ZR), (X0, ZR)]
+
+BASE = 0.55
 FH = 3.0
-FLOORS = 3             # zemin (tas) + 2 kat (siva)
-GF_TOP = BASE + FH     # tas kaplamanin ustu
-EAVE = BASE + FLOORS * FH          # 9.55
-ROOF_INSET = 4.2
-ROOF_H = 5.1
+FLOORS = 3
+GF_TOP = BASE + FH
+EAVE = BASE + FLOORS * FH     # 9.55
+CORNICE_T = EAVE + 0.52
+
+# cati: tum kutleyi orten tek kirma egim (dikdortgen hull)
+RM = 0.30                     # cati sacak payi (hull disina)
+RECT = [(X0 - RM, Z0 - RM), (X1 + RM, Z0 - RM), (X1 + RM, ZP + RM), (X0 - RM, ZP + RM)]
+ROOF_INSET = 4.3
+ROOF_H = 5.0
 SLOPE = math.atan2(ROOF_H, ROOF_INSET)
-
-# cepheler: ON = +Z (giris, sokak 1) · SAG = +X (balkonlar, sokak 2)
-#           SOL = -X (genis pencereler + kose penceresi) · ARKA = -Z
+ROOF_Y0 = CORNICE_T
 
 
-def face_info(face):
-    if face == "on":
-        return 0.0, (0.0, 1.0)
-    if face == "arka":
-        return math.pi, (0.0, -1.0)
-    if face == "sag":
-        return math.pi / 2, (1.0, 0.0)
-    return -math.pi / 2, (-1.0, 0.0)
-
-
-def face_point(face, t, out=0.0):
-    """t: cepheye soldan saga (disaridan bakinca) 0..1"""
-    ry, (nx, nz) = face_info(face)
-    if face == "on":
-        x, z = X0 + t * W, Z1
-    elif face == "arka":
-        x, z = X1 - t * W, Z0
-    elif face == "sag":
-        x, z = X1, Z1 - t * D
-    else:
-        x, z = X0, Z0 + t * D
-    return x + nx * out, z + nz * out, ry, nx, nz
-
-
-# ---------------------------------------------------------------- cephe ogeleri
-def glazing(cx, y, cz, ry, w, h, grp):
-    """koyu cam + ince koyu dograma"""
+# ------------------------------------------------------------------ cephe ogeleri
+def glazing(cx, y, cz, ry, w, h, grp="cephe"):
     nx, nz = math.sin(ry), math.cos(ry)
     B.add(bx((w, h, 0.06), (cx, y, cz), ry), "cam", grp)
     t = 0.07
@@ -245,44 +227,36 @@ def glazing(cx, y, cz, ry, w, h, grp):
         B.add(bx((t, h, 0.1), (cx + dx + fx, y, cz + dz + fz), ry), "dograma", grp)
 
 
-def sove_window(face, t_c, y, w=2.1, h=1.6, grp="cephe", sove=True, sove_mat="sove_bej"):
-    """Cikintili bej soveli pencere (referanstaki ana pencere tipi)."""
-    cx, cz, ry, nx, nz = face_point(face, t_c, out=0.10)
-    glazing(cx, y, cz, ry, w, h, grp)
+def sove_window(cx, cz, ry, y, w=1.7, h=1.6, sove=True, grp="cephe"):
+    """(cx,cz) duvar duzleminde; normal yonunde disari tasar."""
+    nx, nz = math.sin(ry), math.cos(ry)
+    gx, gz = cx + nx * 0.10, cz + nz * 0.10
+    glazing(gx, y, gz, ry, w, h, grp)
     if not sove:
         return
-    s = 0.20          # sove bant genisligi
-    p = 0.16          # cikinti
-    fx, fz = nx * 0.05, nz * 0.05
-    B.add(bx((w + 2 * s, s, p), (cx + fx, y + h / 2 + s / 2, cz + fz), ry), sove_mat, grp)
-    B.add(bx((w + 2 * s, s, p), (cx + fx, y - h / 2 - s / 2, cz + fz), ry), sove_mat, grp)
+    s, p = 0.20, 0.16
+    fx, fz = gx + nx * 0.05, gz + nz * 0.05
+    B.add(bx((w + 2 * s, s, p), (fx, y + h / 2 + s / 2, fz), ry), "sove_bej", grp)
+    B.add(bx((w + 2 * s, s, p), (fx, y - h / 2 - s / 2, fz), ry), "sove_bej", grp)
     for sgn in (-1, 1):
         dx = math.cos(ry) * sgn * (w / 2 + s / 2)
         dz = -math.sin(ry) * sgn * (w / 2 + s / 2)
-        B.add(bx((s, h + 2 * s, p), (cx + dx + fx, y, cz + dz + fz), ry), sove_mat, grp)
+        B.add(bx((s, h + 2 * s, p), (fx + dx, y, fz + dz), ry), "sove_bej", grp)
 
 
 def corner_window(y, w=1.75, h=1.6, grp="cephe"):
-    """ON-SOL kosesini (X0, Z1) saran kose penceresi: iki cam ince koyu dikmede bulusur,
-    bej soveler koseyi doner."""
+    """Cikma hacminin (X0, ZP) kosesini saran pencere."""
     g = 0.02
-    # cam ON yuzunde (normal +Z)
-    cxa = X0 + g + w / 2
-    glazing(cxa, y, Z1 + 0.10, 0.0, w, h, grp)
-    # cam SOL yuzunde (normal -X)
-    cza = Z1 - g - w / 2
-    glazing(X0 - 0.10, y, cza, -math.pi / 2, w, h, grp)
-    # kose dikmesi
-    B.add(bx((0.14, h, 0.14), (X0 + 0.02, y, Z1 - 0.02)), "dograma", grp)
+    glazing(X0 + g + w / 2, y, ZP + 0.10, 0.0, w, h, grp)
+    glazing(X0 - 0.10, y, ZP - g - w / 2, -math.pi / 2, w, h, grp)
+    B.add(bx((0.14, h, 0.14), (X0 + 0.02, y, ZP - 0.02)), "dograma", grp)
     s, p = 0.20, 0.16
-    # ust/alt soveler — koseyi sarar
     for yy in (y + h / 2 + s / 2, y - h / 2 - s / 2):
-        B.add(bx((w + g + s + 0.1, s, p), (X0 + (w + g + 0.1 - s) / 2 + 0.0, yy, Z1 + 0.11)), sove := "sove_bej", grp)
-        B.add(bx((p, s, w + g + s + 0.1), (X0 - 0.11, yy, Z1 - (w + g + 0.1 - s) / 2)), sove, grp)
-        B.add(bx((p + 0.06, s, p + 0.06), (X0 - 0.02, yy, Z1 + 0.02)), sove, grp)
-    # dis dusey soveler
-    B.add(bx((s, h + 2 * s, p), (X0 + g + w + s / 2, y, Z1 + 0.11)), "sove_bej", grp)
-    B.add(bx((p, h + 2 * s, s), (X0 - 0.11, y, Z1 - g - w - s / 2)), "sove_bej", grp)
+        B.add(bx((w + g + s + 0.1, s, p), (X0 + (w + g + 0.1 - s) / 2, yy, ZP + 0.11)), "sove_bej", grp)
+        B.add(bx((p, s, w + g + s + 0.1), (X0 - 0.11, yy, ZP - (w + g + 0.1 - s) / 2)), "sove_bej", grp)
+        B.add(bx((p + 0.06, s, p + 0.06), (X0 - 0.02, yy, ZP + 0.02)), "sove_bej", grp)
+    B.add(bx((s, h + 2 * s, p), (X0 + g + w + s / 2, y, ZP + 0.11)), "sove_bej", grp)
+    B.add(bx((p, h + 2 * s, s), (X0 - 0.11, y, ZP - g - w - s / 2)), "sove_bej", grp)
 
 
 def railing(cx, y, cz, ry, w, h=1.05, grp="cephe"):
@@ -295,40 +269,36 @@ def railing(cx, y, cz, ry, w, h=1.05, grp="cephe"):
         B.add(bx((0.028, h, 0.028), (cx + dx, y + h / 2, cz + dz), ry), "korkuluk", grp)
 
 
-def balcony(face, t_c, y_slab, w=3.9, d=1.4, grp="cephe"):
-    cx, cz, ry, nx, nz = face_point(face, t_c, out=0.0)
+def balcony(cx, cz, ry, y_slab, w=4.3, d=1.4, grp="cephe"):
+    nx, nz = math.sin(ry), math.cos(ry)
     mx, mz = cx + nx * d / 2, cz + nz * d / 2
     B.add(bx((w, 0.18, d), (mx, y_slab, mz), ry), "balkon_dosem", grp)
-    ex, ez = cx + nx * d, cz + nz * d
-    railing(ex, y_slab + 0.09, ez, ry, w, grp=grp)
+    railing(cx + nx * d, y_slab + 0.09, cz + nz * d, ry, w, grp=grp)
     for s in (-1, 1):
         px = mx + math.cos(ry) * s * w / 2
         pz = mz - math.sin(ry) * s * w / 2
         railing(px, y_slab + 0.09, pz, ry + math.pi / 2, d, grp=grp)
 
 
-def dormer(face, t, w=4.4, h=2.6, depth=2.4, wins=2, grp="cati"):
-    cx, cz, ry, nx, nz = face_point(face, t, out=0.0)
-    inset = 1.3
-    cx, cz = cx - nx * inset, cz - nz * inset
-    y0 = EAVE + 0.75
+def dormer(cx, cz, ry, w=3.4, h=2.55, depth=2.3, wins=2, grp="cati"):
+    """(cx,cz) = kutu merkezi. Sacaktan hemen yukarida, cepheye hizali cinko kutu."""
+    nx, nz = math.sin(ry), math.cos(ry)
+    y0 = ROOF_Y0 + 0.55
     B.add(bx((w, h, depth), (cx, y0 + h / 2, cz), ry), "dormer_metal", grp)
     B.add(bx((w + 0.26, 0.18, depth + 0.26), (cx, y0 + h + 0.07, cz), ry), "dormer_metal", grp)
     fx, fz = cx + nx * depth / 2, cz + nz * depth / 2
     for k in range(wins):
         tt = (k + 0.5) / wins - 0.5
-        wx = fx + math.cos(ry) * tt * (w * 0.82)
-        wz = fz - math.sin(ry) * tt * (w * 0.82)
-        glazing(wx + nx * 0.02, y0 + h / 2, wz + nz * 0.02, ry,
-                min(1.6, w / wins - 0.6), h - 1.0, grp)
+        wx = fx + math.cos(ry) * tt * (w * 0.78)
+        wz = fz - math.sin(ry) * tt * (w * 0.78)
+        glazing(wx + nx * 0.02, y0 + h * 0.52, wz + nz * 0.02, ry,
+                min(1.5, w / wins - 0.7), h - 1.15, grp)
 
 
-def skylight(face, t, inset=2.7, w=0.95, h=1.25, grp="cati"):
-    cx, cz, ry, nx, nz = face_point(face, t, out=0.0)
-    cx, cz = cx - nx * inset, cz - nz * inset
-    y = EAVE + 0.4 + (inset - 0.42) * math.tan(SLOPE)
-    for size, mat, dy in (((w + 0.14, 0.10, h + 0.14), "dormer_metal", 0.0),
-                          ((w, 0.14, h), "cam", 0.05)):
+def skylight(cx, cz, ry, w=0.95, hh=1.25, up=1.9, grp="cati"):
+    y = ROOF_Y0 + up * math.tan(SLOPE) * 0.72 + 0.35
+    for size, mat, dy in (((w + 0.14, 0.10, hh + 0.14), "dormer_metal", 0.0),
+                          ((w, 0.14, hh), "cam", 0.05)):
         m = trimesh.creation.box(extents=size)
         m.apply_transform(rotation_matrix(-SLOPE, [1, 0, 0]))
         m.apply_transform(rotation_matrix(ry, [0, 1, 0]))
@@ -336,9 +306,9 @@ def skylight(face, t, inset=2.7, w=0.95, h=1.25, grp="cati"):
         B.add(m, mat, grp)
 
 
-def chimney(cx, cz, w=1.0, d=1.6, top=None, grp="cati"):
-    top = top or (EAVE + ROOF_H + 1.0)
-    y0 = EAVE + 1.2
+def chimney(cx, cz, w=1.0, d=1.5, top=None, grp="cati"):
+    top = top or (ROOF_Y0 + ROOF_H + 0.9)
+    y0 = ROOF_Y0 + 1.0
     B.add(bx((w, top - y0, d), (cx, (y0 + top) / 2, cz)), "dormer_metal", grp)
     B.add(bx((w + 0.18, 0.15, d + 0.18), (cx, top + 0.07, cz)), "cati_mahya", grp)
 
@@ -369,106 +339,106 @@ def car(x, z, ry, grp="araclar"):
             B.add(cyl(0.33, 0.22, (x + dx, 0.33, z + dz), axis="x", sections=12, ry=ry), "lastik", grp)
 
 
-# ---------------------------------------------------------------- bina
+# ------------------------------------------------------------------ bina
+RY_ON, RY_ARKA = 0.0, math.pi
+RY_SAG, RY_SOL = math.pi / 2, -math.pi / 2
+
+
 def building():
     g = "govde"
-    # tas zemin kat (govdeden 5 cm tasar) + altta yari bodrum
+    # tas zemin kat + sokl (kutleyi aynen takip eder)
     B.add(prism(ring_of(FOOT, -0.05), -1.6, GF_TOP), "tas_zemin", g)
     B.add(prism(ring_of(FOOT, -0.09), -1.6, BASE - 0.02), "tas_sokl", g)
-    # tas derz cizgileri (zemin kati saran ince cikintili seritler)
     yy = BASE + 0.42
     while yy < GF_TOP - 0.25:
         B.add(prism(ring_of(FOOT, -0.065), yy, yy + 0.035), "derz", g)
         yy += 0.44
-    # dusey derzler yerine köşe taşları hissi: sokl üstü ince bant yeterli
-    # zemin/1. kat ayrimi: ince bej bant
     B.add(prism(ring_of(FOOT, -0.08), GF_TOP - 0.06, GF_TOP + 0.10), "sove_bej", g)
-    # ust govde (beyaz siva)
+    # ust govde
     B.add(prism(FOOT, GF_TOP, EAVE), "siva_beyaz", g)
-    # belirgin beyaz sacak bandi
-    B.add(prism(ring_of(FOOT, -0.34), EAVE - 0.10, EAVE + 0.52), "saceg", g)
+    # kornis: kutlenin kirikliklarini takip eden beyaz bant
+    B.add(prism(ring_of(FOOT, -0.34), EAVE - 0.10, CORNICE_T), "saceg", g)
 
-    # cati
-    outer = ring_of(FOOT, -0.34)
-    top_ring = ring_of(outer, ROOF_INSET)
-    res = band(outer, top_ring, EAVE + 0.52, EAVE + 0.52 + ROOF_H)
-    if res:
-        m, inner = res
-        B.add(m, "cati_arduvaz", "cati")
-        B.add(prism(inner, EAVE + 0.46 + ROOF_H, EAVE + 0.58 + ROOF_H), "cati_mahya", "cati")
+    # cati: dikdortgen hull uzerinde tek kirma egim + duz tepe
+    top_ring = ring_of(RECT, ROOF_INSET)
+    res = band(RECT, top_ring, ROOF_Y0, ROOF_Y0 + ROOF_H)
+    m, inner = res
+    B.add(m, "cati_arduvaz", "cati")
+    B.add(prism(inner, ROOF_Y0 + ROOF_H - 0.06, ROOF_Y0 + ROOF_H + 0.06), "cati_mahya", "cati")
+    # sacak alti kapama (hull ile kornis arasi)
+    B.add(prism(RECT, ROOF_Y0 - 0.14, ROOF_Y0 + 0.02), "saceg", "cati")
 
-    # ---------------- ON cephe (+Z, giris sokagi) ----------------
-    for fl in range(FLOORS):
-        y = BASE + fl * FH + FH * 0.52
-        corner_window(y)                                   # ON-SOL kosesi
-        sove_window("on", 0.42, y, w=1.35, h=1.6)          # orta aks
-        sove_window("on", 0.60, y, w=0.85, h=1.6)          # giris ustu dar kolon
-        sove_window("on", 0.82, y, w=1.7, h=1.6)           # sag aks
-    # giris (zemin, t=0.60 civari)
-    cx, cz, ry, nx, nz = face_point("on", 0.62, out=0.0)
-    B.add(bx((2.6, 2.5, 0.24), (cx - nx * 0.06, BASE + 1.28, cz - nz * 0.06), ry), "siva_golge", "cephe")
-    B.add(bx((1.35, 2.25, 0.12), (cx + nx * 0.05, BASE + 1.15, cz + nz * 0.05), ry), "kapi", "cephe")
-    B.add(bx((0.55, 2.25, 0.10), (cx + math.cos(ry) * 0.98 + nx * 0.05, BASE + 1.15,
-                                  cz - math.sin(ry) * 0.98 + nz * 0.05), ry), "cam", "cephe")
-    B.add(bx((3.0, 0.16, 1.35), (cx + nx * 0.62, BASE + 2.62, cz + nz * 0.62), ry), "kanopi", "cephe")
-    B.add(bx((0.30, 0.4, 0.06), (cx + math.cos(ry) * 1.6 + nx * 0.08, BASE + 1.55,
-                                 cz - math.sin(ry) * 1.6 + nz * 0.08), ry), "metal_acik", "cephe")
+    fl_y = [BASE + f * FH + FH * 0.52 for f in range(FLOORS)]
 
-    # ---------------- SOL cephe (-X, genis pencereler) ----------------
-    for fl in range(FLOORS):
-        y = BASE + fl * FH + FH * 0.52
-        sove_window("sol", 0.30, y, w=2.5, h=1.6)
-        sove_window("sol", 0.62, y, w=2.1, h=1.6)
-        # kose penceresi bu cephenin sag ucunda (corner_window ile geldi)
+    # ---------------- ON — cikma hacmi (z = ZP duzlemi) ----------------
+    for y in fl_y:
+        corner_window(y)                       # kose penceresi cikmanin kosesinde
+        sove_window(X0 + 3.6, ZP, RY_ON, y, w=1.35)   # cikmanin sag aksi
 
-    # ---------------- SAG cephe (+X, balkonlar) ----------------
-    for fl in range(FLOORS):
-        y = BASE + fl * FH + FH * 0.52
-        y_slab = BASE + fl * FH + 0.10
-        # balkon arkasi genis dograma
-        cx, cz, ry, nx, nz = face_point("sag", 0.30, out=0.06)
-        B.add(bx((4.1, 2.4, 0.06), (cx, y + 0.1, cz), ry), "siva_golge", "cephe")
-        glazing(cx - math.cos(ry) * 1.0 + nx * 0.03, y, cz + math.sin(ry) * 1.0 + nz * 0.03, ry, 1.6, 2.1, "cephe")
-        glazing(cx + math.cos(ry) * 1.0 + nx * 0.03, y, cz - math.sin(ry) * 1.0 + nz * 0.03, ry, 1.6, 2.1, "cephe")
-        balcony("sag", 0.30, y_slab, w=4.3, d=1.4)
-        sove_window("sag", 0.68, y, w=1.5, h=1.6)
-        sove_window("sag", 0.88, y, w=1.0, h=1.6)
+    # ---------------- ON — geri plan (z = Z1) ----------------
+    # giris aksi x=-0.4 · pencere akslari x=1.9, x=4.6
+    for fi, y in enumerate(fl_y):
+        if fi > 0:
+            sove_window(-0.4, Z1, RY_ON, y, w=0.85)   # giris ustu dar kolon
+        sove_window(1.9, Z1, RY_ON, y, w=1.35)
+        sove_window(4.6, Z1, RY_ON, y, w=1.7)
+    # giris
+    B.add(bx((2.6, 2.5, 0.24), (-0.4, BASE + 1.28, Z1 - 0.07), RY_ON), "siva_golge", "cephe")
+    B.add(bx((1.35, 2.25, 0.12), (-0.75, BASE + 1.15, Z1 + 0.05), RY_ON), "kapi", "cephe")
+    B.add(bx((0.55, 2.25, 0.10), (0.35, BASE + 1.15, Z1 + 0.05), RY_ON), "cam", "cephe")
+    B.add(bx((3.0, 0.16, 1.30), (-0.4, BASE + 2.62, Z1 + 0.58), RY_ON), "kanopi", "cephe")
+    B.add(bx((0.30, 0.4, 0.06), (0.95, BASE + 1.55, Z1 + 0.08), RY_ON), "metal_acik", "cephe")
 
-    # ---------------- ARKA cephe (-Z) ----------------
-    for fl in range(FLOORS):
-        y = BASE + fl * FH + FH * 0.52
-        for t, w in ((0.16, 1.5), (0.42, 1.9), (0.72, 1.5), (0.9, 0.9)):
-            sove_window("arka", t, y, w=w, h=1.55, sove=(fl > 0))
+    # ---------------- SOL — on plan (x = X0, z in [ZR, ZP]) ----------------
+    for y in fl_y:
+        sove_window(X0, 2.9, RY_SOL, y, w=2.5)
+    # ---------------- SOL — geri cekilmis plan (x = XR) ----------------
+    for y in fl_y:
+        sove_window(XR, -2.0, RY_SOL, y, w=1.9)
+        sove_window(XR, -4.6, RY_SOL, y, w=1.3)
 
-    # bodrum pencereleri (tas icinde, sove yok) — on ve sol
-    for t in (0.2, 0.42):
-        cx, cz, ry, nx, nz = face_point("on", t, out=0.08)
-        glazing(cx, BASE - 0.55, cz, ry, 0.95, 0.5, "cephe")
-    for t in (0.3, 0.62):
-        cx, cz, ry, nx, nz = face_point("sol", t, out=0.08)
-        glazing(cx, BASE - 0.55, cz, ry, 0.95, 0.5, "cephe")
+    # ---------------- SAG (+X): balkon aksi z=3.1 · pencereler z=-1.6, -4.3 ----
+    for fi, y in enumerate(fl_y):
+        y_slab = BASE + fi * FH + 0.10
+        B.add(bx((4.1, 2.4, 0.06), (X1 + 0.06, y + 0.1, 3.1), RY_SAG), "siva_golge", "cephe")
+        glazing(X1 + 0.09, y, 3.1 - 1.0, RY_SAG, 1.6, 2.1)
+        glazing(X1 + 0.09, y, 3.1 + 1.0, RY_SAG, 1.6, 2.1)
+        balcony(X1, 3.1, RY_SAG, y_slab)
+        sove_window(X1, -1.6, RY_SAG, y, w=1.5)
+        sove_window(X1, -4.3, RY_SAG, y, w=1.0)
 
-    # ---------------- cati ustu ----------------
-    dormer("on", 0.30, w=4.6, h=2.6, wins=2)     # fotograftaki sol buyuk cinko kutu
-    dormer("on", 0.78, w=2.4, h=2.5, wins=1)
-    dormer("sag", 0.32, w=4.8, h=2.7, wins=2)    # balkon cephesindeki genis kutu
-    dormer("sol", 0.45, w=3.2, h=2.5, wins=1)
-    dormer("arka", 0.4, w=3.8, h=2.5, wins=2)
-    skylight("on", 0.55)
-    skylight("sol", 0.8)
-    skylight("sag", 0.75)
-    skylight("arka", 0.75)
-    chimney(X1 - 2.6, Z0 + 2.2)                  # buyuk cinko baca
-    chimney(X0 + 2.2, Z0 + 3.4, w=0.85, d=1.2, top=EAVE + ROOF_H + 0.7)
+    # ---------------- ARKA (-Z) ----------------
+    for fi, y in enumerate(fl_y):
+        for xx, w in ((-4.6, 1.5), (-1.6, 1.9), (1.6, 1.5), (4.4, 0.9)):
+            sove_window(xx, Z0, RY_ARKA, y, w=w, sove=(fi > 0))
 
-    # yagmur inisleri
-    for cx, cz in ((X0 + 0.1, Z1 + 0.12), (X1 - 0.1, Z1 + 0.12), (X1 + 0.12, Z0 + 0.1)):
+    # bodrum pencereleri
+    for xx in (1.9, 4.6):
+        glazing(xx, BASE - 0.55, Z1 + 0.08, RY_ON, 0.95, 0.5)
+    glazing(X0 - 0.08, BASE - 0.55, 2.9, RY_SOL, 0.95, 0.5)
+    glazing(XR - 0.08, BASE - 0.55, -2.0, RY_SOL, 0.95, 0.5)
+
+    # ---------------- cati ustu: akslara hizali ----------------
+    dormer(X0 + 2.6, ZP + RM - 1.15, RY_ON, w=3.0, wins=2)   # cikma hacmi ustu
+    dormer(4.35, ZP + RM - 1.15, RY_ON, w=2.4, wins=1)       # sag on aks ustu
+    skylight(-0.4, ZP + RM - 2.4, RY_ON)                     # giris aksi ustu
+    dormer(X1 + RM - 1.15, 3.1, RY_SAG, w=4.4, wins=2)       # balkon aksi ustu
+    skylight(X1 + RM - 2.4, -1.6, RY_SAG)                    # sag pencere aksi ustu
+    dormer(X0 - RM + 1.15, 2.9, RY_SOL, w=2.8, wins=1)       # sol genis aks ustu
+    skylight(X0 - RM + 2.4, -2.0, RY_SOL)                    # sol arka aks ustu
+    dormer(-1.6, Z0 - RM + 1.15, RY_ARKA, w=3.6, wins=2)     # arka orta aks ustu
+    skylight(3.0, Z0 - RM + 2.4, RY_ARKA)
+    chimney(4.4, -3.6)
+    chimney(-4.2, -2.6, w=0.85, d=1.15, top=ROOF_Y0 + ROOF_H + 0.5)
+
+    # yagmur inisleri (kutle koselerinde)
+    for cx, cz in ((XP - 0.1, ZP + 0.12), (X1 - 0.1, Z1 + 0.12), (X1 + 0.12, Z0 + 0.1), (X0 + 0.12, ZR - 0.1)):
         B.add(cyl(0.06, EAVE, (cx, EAVE / 2 + 0.3, cz), sections=8), "oluk", g)
 
 
-# ---------------------------------------------------------------- arsa
+# ------------------------------------------------------------------ arsa
 PX0, PX1 = -11.5, 11.8
-PZ0, PZ1 = -10.2, 10.6
+PZ0, PZ1 = -10.2, 11.0
 PLOT = [(PX0, PZ0), (PX1, PZ0), (PX1, PZ1), (PX0, PZ1)]
 
 
@@ -476,24 +446,19 @@ def plot():
     g = "arsa"
     B.add(prism(PLOT, -1.4, -0.16), "kaide", g)
     B.add(prism(PLOT, -0.16, 0.02), "kaldirim", g)
-    # istinat duvari (tas) + harpusta — bahce kotu BASE'e kadar dolu
     B.add(prism(PLOT, 0.0, 0.78), "tas_duvar", g)
     B.add(prism(PLOT, 0.78, 0.88), "harpusta", g)
-    B.add(prism(ring_of(PLOT, 0.5), 0.0, BASE + 0.35), "cim", g)   # duvar ici dolgu+cim
+    B.add(prism(ring_of(PLOT, 0.5), 0.0, BASE + 0.35), "cim", g)
 
-    # avlu (SAG cephe onu, parke)
     court = [(X1 + 0.3, -6.0), (PX1 - 0.5, -6.0), (PX1 - 0.5, 8.2), (X1 + 0.3, 8.2)]
     B.add(prism(court, BASE - 0.02, BASE + 0.10), "parke", g)
-    # on bahce yolu (giris)
-    B.add(prism([(0.2, Z1), (2.6, Z1), (2.6, PZ1 - 0.5), (0.2, PZ1 - 0.5)], BASE - 0.02, BASE + 0.08),
+    B.add(prism([(-1.6, Z1), (0.8, Z1), (0.8, PZ1 - 0.5), (-1.6, PZ1 - 0.5)], BASE - 0.02, BASE + 0.08),
           "parke_koyu", g)
-    # bodrum rampasi (on-sol) + metal korkuluk
-    ramp = [(X0 + 0.6, Z1 + 0.2), (0.0, Z1 + 0.2), (0.0, PZ1 - 0.6), (X0 + 0.6, PZ1 - 0.6)]
+    ramp = [(X0 + 0.4, ZP + 0.2), (-2.0, ZP + 0.2), (-2.0, PZ1 - 0.6), (X0 + 0.4, PZ1 - 0.6)]
     B.add(prism(ramp, -0.3, -0.12), "parke_koyu", g)
-    railing(-3.1, 0.4, PZ1 - 0.6, 0.0, 6.0, h=0.9, grp=g)
-    railing(X0 + 0.6, 0.4, (Z1 + PZ1) / 2, math.pi / 2, 3.6, h=0.9, grp=g)
+    railing(-4.2, 0.4, PZ1 - 0.6, 0.0, 4.4, h=0.9, grp=g)
+    railing(X0 + 0.4, 0.4, (ZP + PZ1) / 2, math.pi / 2, 3.2, h=0.9, grp=g)
 
-    # sokaklar: ON (+Z) ve SAG (+X)
     B.add(bx((PX1 - PX0 + 14, 0.14, 3.4), ((PX0 + PX1) / 2 + 3, 0.07, PZ1 + 1.8)), "kaldirim", g)
     B.add(bx((PX1 - PX0 + 14, 0.12, 7.0), ((PX0 + PX1) / 2 + 3, 0.06, PZ1 + 6.9)), "asfalt", g)
     B.add(bx((3.4, 0.14, PZ1 - PZ0 + 10), (PX1 + 1.8, 0.07, 1.0)), "kaldirim", g)
@@ -501,25 +466,24 @@ def plot():
 
 
 def planting():
-    # yuvarlak budanmis simsirler (fotograftaki toplar) — on bahce
-    for x, z, r in ((3.6, 9.2, 0.85), (5.2, 8.6, 0.6), (6.6, 9.3, 0.75), (8.4, 8.8, 0.55),
-                    (-6.4, 9.4, 0.7), (-8.6, 9.0, 0.55), (-10.2, 9.5, 0.6)):
+    for x, z, r in ((2.6, 9.6, 0.85), (4.2, 9.0, 0.6), (5.6, 9.7, 0.75), (8.4, 9.2, 0.55),
+                    (-7.4, 9.8, 0.7), (-9.6, 9.4, 0.55), (-10.6, 9.9, 0.6)):
         bush(x, z, r)
-    # sag avlu kenari
     for z in (-8.0, -5.2, -2.6, 0.4, 3.2):
         bush(10.6, z, 0.6)
-    # arka bahce
     for x in (-9.0, -6.0, -3.0, 1.0, 5.0, 8.0):
         bush(x, -9.2, 0.65)
-    bush(-10.4, 5.0, 0.7); bush(-10.4, 1.0, 0.6); bush(-10.4, -3.0, 0.7)
+    bush(-10.4, 5.0, 0.7)
+    bush(-10.4, 1.0, 0.6)
+    bush(-10.4, -3.0, 0.7)
     tree(-8.6, -7.4, h=6.5, r=2.1)
     tree(9.8, -8.6, h=5.2, r=1.7)
 
 
 def cars():
-    car(-6.5, 14.6, 0.0, "araclar")
-    car(-1.5, 14.6, 0.0, "araclar")
-    car(16.2, -4.0, math.pi / 2, "araclar")
+    car(-6.5, 15.0, 0.0)
+    car(-1.5, 15.0, 0.0)
+    car(16.2, -4.0, math.pi / 2)
 
 
 def main():
@@ -531,19 +495,19 @@ def main():
     p = OUT / "scene.glb"
     sc.export(p)
     info = {
-        "konu": "Luxembourg kose apartmani — dis kabuk (referans fotograflardan)",
+        "konu": "Luxembourg kose apartmani — artikulasyonlu kutle (cikma + geri cekilme)",
         "dugum": len(sc.geometry),
         "ucgen": int(tri),
         "boyut_mb": round(p.stat().st_size / 1048576, 2),
-        "bina": {"genislik": W, "derinlik": D, "kat": "tas zemin + 2 siva + cati",
-                 "sacak_kotu": round(EAVE, 2), "cati_tepe": round(EAVE + 0.52 + ROOF_H, 2)},
+        "kutle": {"on_cikma_m": PROJ, "sol_geri_cekilme_m": round(XR - X0, 2),
+                  "sacak": round(EAVE, 2), "cati_tepe": round(ROOF_Y0 + ROOF_H, 2)},
         "sinirlar": [[round(float(v), 2) for v in sc.bounds[0]],
                      [round(float(v), 2) for v in sc.bounds[1]]],
         "gruplar": sorted({k.split("__")[0] for k in sc.geometry}),
         "malzemeler": sorted({k.split("__")[1] for k in sc.geometry}),
     }
     (OUT / "scene-info.json").write_text(json.dumps(info, ensure_ascii=False, indent=1))
-    print(json.dumps({k: info[k] for k in ("dugum", "ucgen", "boyut_mb", "bina", "sinirlar")},
+    print(json.dumps({k: info[k] for k in ("dugum", "ucgen", "boyut_mb", "kutle")},
                      ensure_ascii=False, indent=1))
 
 

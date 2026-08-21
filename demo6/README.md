@@ -5,6 +5,17 @@ yalnız ana bina ve arsası. İç mekân modellenmedi; dışarıdan birebir benz
 `tools/build_scene.py` sahneyi kurar ve **`scene.glb`** (glTF 2.0) olarak dışa aktarır;
 `index.html` yerel three.js ile tarayıcı görüntüleyicisidir.
 
+## Kütle artikülasyonu (birebir)
+
+* **Ön cephede çıkma** — köşe pencereli hacim ana düzlemden 0.55 m öne taşar;
+  giriş bu çıkmanın sağındaki geri planda kalır
+* **Sol cephede geri çekilme** — arka bölüm 0.45 m içeridedir
+* Taş zemin kat, derz çizgileri ve beyaz **korniş bandı bu kırıklıkları aynen takip eder**
+* Çatı eğimi kütlenin tamamını örten tek kırma parçadır (geri çekilen duvarın
+  üstünde saçak gerçekte olduğu gibi daha fazla sarkar)
+* **Çatı kutuları cephe akslarına hizalı**: çıkma hacminin üstünde, sağ ön aksın
+  üstünde, balkon aksının üstünde, sol geniş aksın üstünde; ışıklıklar ara akslarda
+
 ## Referanstan modele geçen özellikler
 
 * **Taş zemin kat** — rustik kesme taş kaplama, çevresini saran derz çizgileri; üstünde 2 kat beyaz sıva

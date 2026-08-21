@@ -1,25 +1,24 @@
 {
- "konu": "Luxembourg kose apartmani — dis kabuk (referans fotograflardan)",
- "dugum": 36,
- "ucgen": 17616,
- "boyut_mb": 0.34,
- "bina": {
-  "genislik": 13.2,
-  "derinlik": 12.0,
-  "kat": "tas zemin + 2 siva + cati",
-  "sacak_kotu": 9.55,
-  "cati_tepe": 15.17
+ "konu": "Luxembourg kose apartmani — artikulasyonlu kutle (cikma + geri cekilme)",
+ "dugum": 37,
+ "ucgen": 18184,
+ "boyut_mb": 0.35,
+ "kutle": {
+  "on_cikma_m": 0.55,
+  "sol_geri_cekilme_m": 0.45,
+  "sacak": 9.55,
+  "cati_tepe": 15.07
  },
  "sinirlar": [
   [
    -15.5,
    -1.6,
-   -14.4
+   -14.6
   ],
   [
    22.2,
-   15.79,
-   21.0
+   16.11,
+   21.4
   ]
  ],
  "gruplar": [
