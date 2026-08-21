@@ -1,24 +1,17 @@
 {
- "konu": "Luxembourg kose apartmani — artikulasyonlu kutle (cikma + geri cekilme)",
  "dugum": 37,
- "ucgen": 18184,
- "boyut_mb": 0.35,
- "kutle": {
-  "on_cikma_m": 0.55,
-  "sol_geri_cekilme_m": 0.45,
-  "sacak": 9.55,
-  "cati_tepe": 15.07
- },
+ "ucgen": 18780,
+ "boyut_mb": 0.36,
  "sinirlar": [
   [
-   -15.5,
-   -1.6,
-   -14.6
+   -14.8,
+   -1.3,
+   -15.4
   ],
   [
-   22.2,
-   16.11,
-   21.4
+   23.6,
+   17.96,
+   20.2
   ]
  ],
  "gruplar": [
@@ -33,15 +26,16 @@
   "arac_cam",
   "arac_koyu",
   "asfalt",
+  "avlu_tas",
   "balkon_dosem",
+  "cali",
   "cam",
   "cati_arduvaz",
-  "cati_mahya",
+  "cati_duz",
   "cim",
-  "cit",
+  "cinko",
   "derz",
   "dograma",
-  "dormer_metal",
   "govde",
   "harpusta",
   "kaide",
@@ -50,17 +44,15 @@
   "kapi",
   "korkuluk",
   "lastik",
-  "metal_acik",
   "oluk",
-  "parke",
-  "parke_koyu",
+  "panjur",
   "saceg",
   "siva_beyaz",
-  "siva_golge",
+  "siva_ic",
   "sove_bej",
-  "tas_duvar",
-  "tas_sokl",
-  "tas_zemin",
-  "yaprak"
+  "tas_istinat",
+  "tas_rustik",
+  "yaprak",
+  "yol_tasi"
  ]
 }
