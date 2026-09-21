@@ -6,20 +6,21 @@
 <title>MERGVS · Fiyatlandırma</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#2E3D28;          /* MERGVS tema rengi — derin zeytin yeşili */
-    --ink-deep:#1E2917;     /* daha koyu yeşil (başlık/fill) */
-    --paper:#F3EFE6;        /* sıcak krem zemin */
-    --surface:#FBFAF5;      /* kart yüzeyi */
-    --line:#DCD6C6;         /* ince sıcak ayraç */
-    --line-soft:#E7E2D5;
-    --muted:#6E7363;        /* yeşilimsi gri ikincil metin */
-    --brass:#A98B5D;        /* pirinç vurgu — az kullanılır */
-    --brass-soft:#C9B083;
-    --serif:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --ink:#EDEAE1;              /* kemik — ana metin */
+    --ink-deep:#FFFFFF;         /* en yüksek kontrast */
+    --paper:#0A0C0B;            /* mürekkep zemin */
+    --surface:#0E1110;          /* kart yüzeyi */
+    --line:rgba(237,234,225,.12);
+    --line-soft:rgba(237,234,225,.07);
+    --muted:#7C807A;
+    --brass:#C2A26A;            /* pirinç vurgu */
+    --brass-soft:#8A7448;
+    --serif:'Instrument Serif', Georgia, 'Times New Roman', serif;
     --sans:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
   }
 
   *{ box-sizing:border-box; }
@@ -116,7 +117,7 @@
     padding:14px 44px 14px 16px;
   }
   .num-input .cur{ position:absolute; right:16px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:15px; }
-  input:focus{ outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(46,61,40,.10); }
+  input:focus{ outline:none; border-color:var(--brass); box-shadow:0 0 0 3px rgba(194,162,106,.16); }
 
   .presets{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
   .preset{
@@ -147,7 +148,7 @@
   .chip input:checked ~ .box{ background:var(--ink); border-color:var(--ink); }
   .chip input:checked ~ .box svg{ opacity:1; }
   .chip input:checked ~ .label{ color:var(--ink); }
-  .chip:has(input:checked){ border-color:var(--ink); background:#EFEDE3; }
+  .chip:has(input:checked){ border-color:var(--brass); background:rgba(194,162,106,.12); color:var(--ink-deep); }
   .chip input:focus-visible ~ .box{ outline:2px solid var(--ink); outline-offset:2px; }
   .chip-price{ font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; margin-left:2px; }
   .chip input:checked ~ .chip-price{ color:var(--ink); }
@@ -161,7 +162,7 @@
     width:46px; height:48px; font-size:20px; color:var(--ink); line-height:1;
     transition:background .15s;
   }
-  .stepper button:hover{ background:#EFEDE3; }
+  .stepper button:hover{ background:rgba(237,234,225,.08); }
   .stepper button:focus-visible{ outline:2px solid var(--ink); outline-offset:-2px; }
   .stepper .val{ min-width:54px; text-align:center; font-size:17px; font-variant-numeric:tabular-nums; }
   .stepper button + .val, .stepper .val + button{ border-left:1px solid var(--line); }
@@ -193,8 +194,8 @@
 
   .notice{
     margin-top:18px; padding:13px 15px; border:1px solid var(--brass-soft);
-    background:rgba(169,139,93,.08); border-radius:3px;
-    font-size:13px; color:#7a5f33; line-height:1.5;
+    background:rgba(194,162,106,.08); border-radius:3px;
+    font-size:13px; color:var(--brass); line-height:1.5;
   }
 
   /* ---------- Footer ---------- */
@@ -219,6 +220,32 @@
   @media (prefers-reduced-motion: reduce){
     *{ animation:none !important; transition:none !important; }
   }
+
+  /* ── koyu tema uyumu ── */
+  body{ background:var(--paper); }
+  ::selection{ background:var(--brass); color:var(--paper); }
+  .wordmark{ letter-spacing:.3em; }
+  .eyebrow,.block-label,.label,.r-eyebrow{ font-family:var(--mono); font-weight:300; }
+  .hint,.note,.head-sub,.try-line{ font-family:var(--sans); }
+  .panel,.result,.box{ background:var(--surface); }
+  input,select,.num-input{ background:transparent; color:var(--ink); border-color:var(--line); }
+  input::placeholder{ color:var(--muted); }
+  .bar{ background:var(--line); }
+  .bar > i,.bar > span{ background:var(--brass); }
+  .tab.active{ color:var(--ink-deep); border-color:var(--brass); }
+  .preset,.seg,.chip{ background:rgba(20,24,22,.55); }
+  .preset:hover,.seg:hover,.chip:hover{ border-color:var(--brass-soft); }
+  .preset.active,.seg button.active,.seg .active{
+    background:var(--brass)!important; color:var(--paper)!important; border-color:var(--brass)!important; }
+  .seg button{ background:rgba(20,24,22,.55); color:var(--ink); border-color:var(--line); }
+  .seg button:hover{ border-color:var(--brass-soft); }
+  .figure,.rate,.num{ color:var(--brass); }
+  .result .figure{ color:var(--ink-deep); }
+  input[type=range]{ accent-color:var(--brass); }
+  .box{ border-color:var(--line); }
+  .box svg path{ stroke:var(--paper); }
+  .chip:has(input:checked) .box{ background:var(--brass); border-color:var(--brass); }
+  a{ color:var(--brass); }
 </style>
 </head>
 <body>
@@ -289,7 +316,7 @@
             <div class="chips">
               <label class="chip">
                 <input type="checkbox" id="mobilyaChk">
-                <span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9 10 2.8" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="box"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9 10 2.8" stroke="#0A0C0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                 <span class="label">Mobilya düzenleme motoru</span>
               </label>
             </div>
@@ -403,7 +430,7 @@ const tryf = n => '₺' + nf.format(Math.round(n));
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
-const CHECK_SVG = '<svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9 10 2.8" stroke="#F3EFE6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHECK_SVG = '<svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9 10 2.8" stroke="#0A0C0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* ---------- chip üret ---------- */
 // konut tipleri — her birinin kendi fiyatı, etikette gösterilir

@@ -1,112 +1,144 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="https://www.w3.org/1999/xhtml">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-  <!-- Homepage -->
   <url>
     <loc>https://mergvs.com/</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/"/>
   </url>
-
-  <!-- Core Pages -->
   <url>
     <loc>https://mergvs.com/services</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/services"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/services"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/services"/>
   </url>
   <url>
     <loc>https://mergvs.com/agents</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/agents"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/agents"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/agents"/>
   </url>
   <url>
     <loc>https://mergvs.com/about</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- Turkish Pages (TR) -->
-  <url>
-    <loc>https://mergvs.com/tr/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://mergvs.com/tr/services</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/about"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/about"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/about"/>
   </url>
-  <url>
-    <loc>https://mergvs.com/tr/agents</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://mergvs.com/tr/about</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- City Landing Pages -->
   <url>
     <loc>https://mergvs.com/luxembourg</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://mergvs.com/milan</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>https://mergvs.com/istanbul</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-
-  <!-- Journal (Blog) -->
-  <url>
-    <loc>https://mergvs.com/blog</loc>
-    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://mergvs.com/blog/the-bosphorus-premium</loc>
-    <changefreq>never</changefreq>
+    <loc>https://mergvs.com/istanbul</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://mergvs.com/blog</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://mergvs.com/blog/the-bosphorus-premium</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://mergvs.com/blog/brera-navigli-isola</loc>
-    <changefreq>never</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://mergvs.com/blog/luxembourg-quiet-supremacy</loc>
-    <changefreq>never</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://mergvs.com/blog/psychology-luxury-property-presentation</loc>
-    <changefreq>never</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://mergvs.com/blog/meridian-triangle</loc>
-    <changefreq>never</changefreq>
-    <priority>0.7</priority>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
   </url>
-
-  <!-- Legal -->
   <url>
     <loc>https://mergvs.com/privacy</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.2</priority>
+    <priority>0.3</priority>
   </url>
   <url>
     <loc>https://mergvs.com/terms</loc>
+    <lastmod>2026-09-21</lastmod>
     <changefreq>yearly</changefreq>
-    <priority>0.2</priority>
+    <priority>0.3</priority>
   </url>
 
+  <url>
+    <loc>https://mergvs.com/tr/</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/"/>
+  </url>
+  <url>
+    <loc>https://mergvs.com/tr/services</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/services"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/services"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/services"/>
+  </url>
+  <url>
+    <loc>https://mergvs.com/tr/agents</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/agents"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/agents"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/agents"/>
+  </url>
+  <url>
+    <loc>https://mergvs.com/tr/about</loc>
+    <lastmod>2026-09-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="en" href="https://mergvs.com/about"/>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://mergvs.com/tr/about"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://mergvs.com/about"/>
+  </url>
 </urlset>

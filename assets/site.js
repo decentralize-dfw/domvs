@@ -34,6 +34,18 @@
     });
   }
 
+  /* ── reading progress (article pages) ── */
+  var bar = document.getElementById('progress');
+  if (bar) {
+    var tick = function () {
+      var h = document.documentElement.scrollHeight - innerHeight;
+      bar.style.width = (h > 0 ? Math.min(1, scrollY / h) * 100 : 0) + '%';
+    };
+    addEventListener('scroll', tick, { passive: true });
+    addEventListener('resize', tick);
+    tick();
+  }
+
   var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
   if (!panels.length) return;          /* article page — nothing else to do */
 
