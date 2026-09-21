@@ -1,5 +1,11 @@
 User-agent: *
 Allow: /
 Disallow: /v0/
+Disallow: /sunum.html
+Disallow: /sunum2.html
+Disallow: /sunum-animasyon.html
+Disallow: /presentation/
+Disallow: /*.xlsx$
+Disallow: /*.docx$
 
 Sitemap: https://mergvs.com/sitemap.xml

@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="icon" type="image/png" href="/mergvs-son.png">
+<link rel="apple-touch-icon" href="/mergvs-son.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<title>About — Architects and Spatial Computing Engineers | MERGVS</title>
-<meta name="description" content="MERGVS is a studio of architects trained at the Politecnico di Milano and spatial computing engineers, founded by Yiğit Özen and Deniz Ağaoğlu. Luxembourg, Milan, Istanbul.">
-<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<title>About MERGVS · Architects Who Build 3D Property Tours</title>
+<meta name="description" content="A studio of architects from the Politecnico di Milano and real-time graphics engineers, founded by Yiğit Özen and Deniz Ağaoğlu. Luxembourg, Milan, Istanbul.">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <meta name="author" content="MERGVS">
 <meta name="theme-color" content="#0A0C0B">
 <link rel="canonical" href="https://mergvs.com/about">
@@ -17,16 +18,20 @@
 <link rel="alternate" hreflang="x-default" href="https://mergvs.com/about">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="MERGVS">
-<meta property="og:title" content="About — Architects and Spatial Computing Engineers">
-<meta property="og:description" content="MERGVS is a studio of architects trained at the Politecnico di Milano and spatial computing engineers, founded by Yiğit Özen and Deniz Ağaoğlu. Luxembourg, Milan, Istanbul.">
+<meta property="og:locale" content="en_GB">
+<meta property="og:title" content="About MERGVS · Architects Who Build 3D Property Tours">
+<meta property="og:description" content="A studio of architects from the Politecnico di Milano and real-time graphics engineers, founded by Yiğit Özen and Deniz Ağaoğlu. Luxembourg, Milan, Istanbul.">
 <meta property="og:url" content="https://mergvs.com/about">
-<meta property="og:image" content="https://mergvs.com/mergvs-son.png">
+<meta property="og:image" content="https://mergvs.com/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="MERGVS — 3D virtual tours for luxury real estate">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="About — Architects and Spatial Computing Engineers">
-<meta name="twitter:description" content="MERGVS is a studio of architects trained at the Politecnico di Milano and spatial computing engineers, founded by Yiğit Özen and Deniz Ağaoğlu. Luxembourg, Milan, Istanbul.">
-<meta name="twitter:image" content="https://mergvs.com/mergvs-son.png">
+<meta name="twitter:title" content="About MERGVS · Architects Who Build 3D Property Tours">
+<meta name="twitter:description" content="A studio of architects from the Politecnico di Milano and real-time graphics engineers, founded by Yiğit Özen and Deniz Ağaoğlu. Luxembourg, Milan, Istanbul.">
+<meta name="twitter:image" content="https://mergvs.com/assets/og.png">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://mergvs.com/#organization","name":"MERGVS","url":"https://mergvs.com","email":"hello@mergvs.com","logo":{"@type":"ImageObject","url":"https://mergvs.com/mergvs-son.png"}},{"@type":"AboutPage","url":"https://mergvs.com/about"}]}
+{"@context":"https://schema.org","@graph":[{"@type":["Organization","ProfessionalService"],"@id":"https://mergvs.com/#organization","name":"MERGVS","alternateName":"MERGVS 3D Property Marketing","url":"https://mergvs.com","logo":{"@type":"ImageObject","url":"https://mergvs.com/mergvs-son.png","width":646,"height":721},"image":"https://mergvs.com/assets/og.png","email":"hello@mergvs.com","foundingDate":"2026","description":"MERGVS builds real-time 3D virtual tours, cinematic property video and dedicated property websites for luxury real estate in Luxembourg, Milan and Istanbul. Commission-only for estate agents.","slogan":"Every exceptional property deserves its own world.","knowsAbout":["3D virtual tours","virtual property tours","real estate 3D tours","luxury real estate marketing","WebXR property tours","virtual staging","real estate video production","architectural visualisation","property microsites","matterport alternative","interactive floor plans"],"areaServed":[{"@type":"Country","name":"Luxembourg"},{"@type":"Country","name":"Italy"},{"@type":"Country","name":"Türkiye"},{"@type":"Place","name":"Europe"}],"founder":[{"@type":"Person","name":"Yiğit Özen"},{"@type":"Person","name":"Deniz Ağaoğlu"}],"contactPoint":{"@type":"ContactPoint","email":"hello@mergvs.com","contactType":"sales","availableLanguage":["English","Turkish","Italian","French"]},"priceRange":"€€€€"},{"@type":"WebSite","@id":"https://mergvs.com/#website","url":"https://mergvs.com","name":"MERGVS","publisher":{"@id":"https://mergvs.com/#organization"},"inLanguage":["en-GB","tr-TR"]},{"@type":"AboutPage","url":"https://mergvs.com/about","mainEntity":{"@id":"https://mergvs.com/#organization"}},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://mergvs.com/"},{"@type":"ListItem","position":2,"name":"About","item":"https://mergvs.com/about"}]}]}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/site.css">
@@ -35,132 +40,144 @@
 <body>
 
 <a class="skip" href="#deck">Skip to content</a>
-<div class="scrim"></div>
+<div class="mesh"></div>
 <div class="vig"></div>
 <div class="grain"></div>
 <div class="hz" style="top:var(--bar-top)"></div>
 <div class="hz" style="bottom:var(--bar-bot)"></div>
-
-<canvas id="stage3d" aria-hidden="true"></canvas>
 
 <header class="topbar">
   <a class="brand" href="/" aria-label="MERGVS">
     <img src="/mergvs-son.png" alt="" width="30" height="34">
     <span class="brand-txt">
       <span class="brand-main">MERGVS</span>
-      <span class="brand-sub">Immersive Property</span>
+      <span class="brand-sub">3D property marketing</span>
     </span>
   </a>
-  <nav class="tnav" aria-label="Primary">
+  <nav class="tnav" aria-label="Main">
     <a class="tl" href="/services">Services</a>
-    <a class="tl" href="/agents">For Agents</a>
+    <a class="tl" href="/agents">For agents</a>
     <a class="tl" href="/about" aria-current="page">About</a>
     <a class="tl" href="/blog">Journal</a>
-    <span class="lang"><a class="cur" href="/">EN</a>/<a href="/tr/">TR</a></span>
-    <a class="tcta" href="#" data-mgv-open><span>Request a live demo</span></a>
+    <span class="lang"><a class="cur" href="/" hreflang="en">EN</a>/<a href="/tr/" hreflang="tr">TR</a></span>
+    <a class="tcta" href="#" data-mgv-open><span>Request a demo</span></a>
   </nav>
   <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false"><i></i><i></i></button>
 </header>
 
-<nav class="rail" id="rail" aria-label="Chapters"></nav>
+<nav class="rail" id="rail" aria-label="Sections"></nav>
 
 <main id="deck">
 
-<section class="panel" data-hash="" data-label="Overture" data-rail="Overture" tabindex="-1" aria-label="Overture">
+<section class="panel" data-hash="" data-label="Opening" data-rail="Opening" tabindex="-1" aria-label="Opening">
   <div class="pin">
-    <p class="eyebrow rise" style="--d:0"><em>About</em> — architecture + spatial code</p>
+    <div class="open">
+      <div>
+    <p class="eyebrow rise" style="--d:0"><em>About</em> · architects who write code</p>
     <h1 class="rise" style="--d:1">Architects who build<br><em>worlds,</em> not walls.</h1>
-    <p class="lead rise" style="--d:2">MERGVS is a studio of architects and spatial computing engineers. We have no interest in listings, negotiations or closing tactics — what we have is an obsessive understanding of how buildings are perceived, how space is experienced, and how architecture can be communicated well enough to move people.</p>
+    <p class="lead rise" style="--d:2">MERGVS is a small studio of architects and graphics engineers. We are not an estate agency and we have no interest in listings or negotiations. What we know is how buildings read: how a room feels at a given ceiling height, where the light falls in March, and how to put that on a screen so it survives the translation.</p>
     <div class="acts rise" style="--d:3">
-      <a class="btn" href="#" data-mgv-open><s>Request a live demo</s></a>
-      <a class="btn btn-ghost" href="/services">What we build <span class="arr">→</span></a>
+      <a class="btn" href="#" data-mgv-open><s>Request a demo</s></a>
+      <a class="btn btn-ghost" href="/services">What we make <span class="arr">→</span></a>
+    </div>
+      </div>
+    <div class="facts rise" style="--d:4">
+      <div><span>Founded</span><b><em>2026</em></b></div>
+      <div><span>Cities</span><b>LU &middot; IT &middot; TR</b></div>
+      <div><span>Trained at</span><b>Politecnico</b></div>
+      <div><span>Built with</span><b>Three.js</b></div>
+      <div><span>Codebases</span><b><em>one</em></b></div>
+    </div>
     </div>
   </div>
 </section>
 
-<section class="panel" data-hash="origin" data-label="Origin" data-rail="Origin" tabindex="-1" aria-label="Origin">
+<section class="panel" data-hash="origin" data-label="Where we came from" data-rail="Origin" tabindex="-1" aria-label="Where we came from">
   <div class="pin">
-    <p class="eyebrow rise" style="--d:0"><em>01</em> — Origin</p>
-    <h2 class="rise" style="--d:1">Born from architecture.<br>Forged in <em>technology.</em></h2>
-    <p class="lead rise" style="--d:2">Both founders trained as architects at the Politecnico di Milano — one of Europe’s most rigorous schools of architecture and design. That is where the foundation comes from: spatial thinking, material sensitivity, and the discipline of building things that endure. The other half is code — Three.js, WebXR and the spatial web, written from a single codebase that runs on a phone, a laptop and a headset alike.</p>
+    <p class="eyebrow rise" style="--d:0"><em>01</em> Where we came from</p>
+    <h2 class="rise" style="--d:1">Trained in architecture.<br>Working in <em>code.</em></h2>
+    <p class="lead rise" style="--d:2">Both founders studied architecture at the Politecnico di Milano. That is where the proportion, the material sense and the habit of drawing before building come from. The other half of the studio is software: Three.js, WebXR and the browser graphics stack, written once and running on a phone, a laptop and a headset without a separate build for each.</p>
     <div class="stats rise" style="--d:3;--n:4">
-      <div class="stat"><b>2026</b><p>Established — spatial computing and WebXR studio.</p><cite>MERGVS</cite></div>
-      <div class="stat"><b>3</b><p>Cities headquartered — Luxembourg, Milan, Istanbul.</p><cite>Worldwide case-by-case</cite></div>
-      <div class="stat"><b>1</b><p>Codebase for every device — mobile, desktop and VR.</p><cite>One URL, no app</cite></div>
-      <div class="stat"><b>50%</b><p>of luxury listings are marketed with substandard photography.</p><cite>VHT Studios · Matterport 2024</cite></div>
+      <div class="stat"><b>2026</b><p>Studio founded.</p><cite>Real-time 3D and WebXR</cite></div>
+      <div class="stat"><b>3</b><p>Cities: Luxembourg, Milan, Istanbul.</p><cite>Elsewhere case by case</cite></div>
+      <div class="stat"><b>1</b><p>Codebase across phone, desktop and headset.</p><cite>One URL, no app</cite></div>
+      <div class="stat"><b>50%</b><p>of luxury listings still use substandard photography.</p><cite>VHT Studios and Matterport, 2024</cite></div>
     </div>
   </div>
 </section>
 
 <section class="panel" data-hash="name" data-label="The name" data-rail="Name" tabindex="-1" aria-label="The name">
   <div class="pin">
-    <p class="eyebrow rise" style="--d:0"><em>02</em> — The name</p>
-    <h2 class="rise" style="--d:1">Mergus.<br>The bird that <em>dives.</em></h2>
+    <p class="eyebrow rise" style="--d:0"><em>02</em> The name</p>
+    <h2 class="rise" style="--d:1">Mergus,<br>the bird that <em>dives.</em></h2>
     <div class="pull rise" style="--d:2">
-      <blockquote>We don’t decorate the surface — we dive beneath it, into the architecture, the light, the atmosphere, and bring back the <em>hidden story.</em></blockquote>
-      <cite>— The MERGVS philosophy</cite>
+      <blockquote>Everything worth knowing about a house is <em>below the surface</em> of the photograph.</blockquote>
+      <cite>How we work</cite>
     </div>
-    <p class="lead rise" style="--d:3">MERGVS comes from <em style="font-style:normal;color:var(--brass)">Mergus</em>, the diving bird that plunges past the reflections to find what others cannot see. The word “immersive” shares the same Latin root — <em style="font-style:normal;color:var(--brass)">mergere</em>, to dive, to submerge. The meaning is already there, waiting inside every house. We simply reveal it.</p>
+    <p class="lead rise" style="--d:3">MERGVS comes from <em>Mergus</em>, the Latin name of the diving duck. The word "immersive" shares its root, <em>mergere</em>, meaning to dip or to sink. The name was chosen because the job is to go past the elevation and the estate agent photograph and come back with the thing that actually sells the house.</p>
   </div>
 </section>
 
-<section class="panel" data-hash="founders" data-label="Founders" data-rail="Founders" tabindex="-1" aria-label="Founders">
+<section class="panel" data-hash="founders" data-label="Who we are" data-rail="Founders" tabindex="-1" aria-label="Who we are">
   <div class="pin">
-    <p class="eyebrow rise" style="--d:0"><em>03</em> — Founders</p>
-    <h2 class="rise" style="--d:1">Two architects.<br>One <em>codebase.</em></h2>
+    <p class="eyebrow rise" style="--d:0"><em>03</em> Who we are</p>
+    <h2 class="rise" style="--d:1">Two architects,<br>one <em>codebase.</em></h2>
     <div class="people rise" style="--d:2;--n:2">
       <div class="person">
         <div class="pn">Yiğit Özen</div>
         <div class="pr">Co-founder</div>
-        <p>Architecture at Istanbul Bilgi University and the Politecnico di Milano, then close to a decade building in spaces that did not yet exist: virtual environments, decentralized systems, immersive browser-based worlds. Founder of <em>decentralize</em>, a spatial web design studio in Milan, and <em>Virtually Ever After</em>, an architectural visualization platform in Luxembourg.</p>
-        <q>Space isn’t just seen — it’s experienced.</q>
+        <p>Architecture at Istanbul Bilgi University and the Politecnico di Milano, then close to a decade building things in spaces that did not exist yet: virtual environments, decentralized systems and browser-based worlds. He founded <em>decentralize</em>, a spatial web studio in Milan, and <em>Virtually Ever After</em>, an architectural visualisation platform in Luxembourg.</p>
+        <q>A space is not only seen. It is occupied.</q>
       </div>
       <div class="person">
         <div class="pn">Deniz Ağaoğlu</div>
         <div class="pr">Co-founder</div>
-        <p>Architecture at Istanbul Bilgi University and the Politecnico di Milano, then a career across Milan and Luxembourg in architectural practice before founding <em>Virtually Ever After</em> in 2025. Her work sits where architecture, digital design and immersive storytelling meet.</p>
-        <q>Exceptional spaces deserve to be felt before they are visited.</q>
+        <p>Architecture at Istanbul Bilgi University and the Politecnico di Milano, then practice in Milan and Luxembourg before founding <em>Virtually Ever After</em> in 2025. Her work sits between architecture, digital design and the question of how a building is described to someone who is not standing in it.</p>
+        <q>A good house should be felt before it is visited.</q>
       </div>
     </div>
   </div>
 </section>
 
-<section class="panel" data-hash="expertise" data-label="Expertise" data-rail="Expertise" tabindex="-1" aria-label="Expertise">
+<section class="panel" data-hash="expertise" data-label="What we do well" data-rail="Practice" tabindex="-1" aria-label="What we do well">
   <div class="pin">
-    <p class="eyebrow rise" style="--d:0"><em>04</em> — Expertise</p>
-    <h2 class="rise" style="--d:1">Where design<br>meets <em>code.</em></h2>
+    <p class="eyebrow rise" style="--d:0"><em>04</em> What we do well</p>
+    <h2 class="rise" style="--d:1">Six things the studio<br>is <em>built on.</em></h2>
     <div class="rise" style="--d:2">
       <ul class="caps" style="--n:2">
-        <li><i>01</i><em>Architecture</em> — proportion, light, materiality, the emotional language of space</li>
-        <li><i>02</i><em>Spatial computing</em> — Three.js and WebXR, real-time rendering, spatial audio</li>
-        <li><i>03</i><em>Cross-platform</em> — one URL on mobile, desktop, tablet and headset</li>
-        <li><i>04</i><em>Cinematic craft</em> — every frame, transition and camera move designed</li>
-        <li><i>05</i><em>International reach</em> — Milan, Luxembourg, Istanbul; markets and their nuances</li>
-        <li><i>06</i><em>Bespoke development</em> — no platforms, no plugins, hand-coded per property</li>
+        <li><i>01</i><em>Architecture</em> · proportion, light, material, and how a plan reads in three dimensions</li>
+        <li><i>02</i><em>Real-time graphics</em> · Three.js and WebXR, rendering, spatial audio</li>
+        <li><i>03</i><em>One build, every device</em> · phone, tablet, desktop and headset from one URL</li>
+        <li><i>04</i><em>Film</em> · camera moves, cuts and pacing, rendered from the model rather than shot</li>
+        <li><i>05</i><em>Three markets</em> · Milan, Luxembourg and Istanbul, and how each of them buys</li>
+        <li><i>06</i><em>Written from scratch</em> · no platform, no plugin, no template between us and the house</li>
       </ul>
     </div>
     <div class="pull rise" style="--d:3;max-width:44ch;margin-top:2rem">
-      <cite>Among 1,788 wealthy investors aged 18–35 surveyed globally, nearly half would spend a windfall on experiences rather than possessions. Among luxury assets, real estate ranks first. — Knight Frank Wealth Report 2025</cite>
+      <cite>Of 1,788 investors aged 18 to 35 surveyed worldwide, close to half said they would spend a windfall on experience rather than possessions. Among luxury assets, property came first. Knight Frank Wealth Report, 2025.</cite>
     </div>
   </div>
 </section>
 
-<section class="panel" data-hash="begin" data-label="Begin" data-rail="Begin" tabindex="-1" aria-label="Begin">
+<section class="panel" data-hash="begin" data-label="Get in touch" data-rail="Contact" tabindex="-1" aria-label="Get in touch">
   <div class="pin">
-    <p class="eyebrow rise" style="--d:0"><em>05</em> — Begin</p>
-    <h2 class="rise" style="--d:1">Every property has<br>a hidden story. <em>We reveal it.</em></h2>
-    <p class="lead rise" style="--d:2">Architects by training, storytellers by nature. Send us a property and we will show you what its world could look like — no obligation, no template.</p>
+    <p class="eyebrow rise" style="--d:0"><em>05</em> Get in touch</p>
+    <h2 class="rise" style="--d:1">Send us a house<br>and we will <em>show you.</em></h2>
+    <p class="lead rise" style="--d:2">Describe the property and we will come back with what its page could look like. Written, within 24 hours, at no cost.</p>
     <div class="acts rise" style="--d:3">
-      <a class="btn" href="#" data-mgv-open><s>Request a live demo</s></a>
+      <a class="btn" href="#" data-mgv-open><s>Request a demo</s></a>
     </div>
     <div class="contact rise" style="--d:4">
       <a class="mail" href="mailto:hello@mergvs.com">hello@mergvs.com</a>
     </div>
     <div class="foot rise" style="--d:5">
       <a href="/services">Services</a>
-      <a href="/agents">For Agents</a>
+      <a href="/agents">For agents</a>
       <a href="/about">About</a>
       <a href="/blog">Journal</a>
+      <a href="/luxembourg">Luxembourg</a>
+      <a href="/milan">Milan</a>
+      <a href="/istanbul">Istanbul</a>
       <a href="/tr/">Türkçe</a>
       <span class="sp"></span>
       <a href="/privacy">Privacy</a>
@@ -173,8 +190,8 @@
 </main>
 
 <footer class="status">
-  <span class="live"><span class="dot"></span><span id="stLeft">Initialising</span></span>
-  <span class="mid" id="stMid">Overture</span>
+  <span class="live"><span class="dot"></span><span id="stLeft">3D property marketing</span></span>
+  <span class="mid" id="stMid">Opening</span>
   <span class="rt">
     <span class="hint"><i>↑</i><i>↓</i> navigate</span>
     <span><em id="stNum">00</em> / 05</span>
@@ -183,105 +200,14 @@
 
 <div class="mob" id="mob">
   <a href="/services">Services</a>
-  <a href="/agents">For Agents</a>
+  <a href="/agents">For agents</a>
   <a href="/about">About</a>
   <a href="/blog">Journal</a>
-  <a href="#" data-mgv-open>Request a live demo</a>
+  <a href="#" data-mgv-open>Request a demo</a>
   <div class="mlang"><a href="/">EN</a><a href="/tr/">TR</a></div>
 </div>
 
-<script type="importmap">
-{"imports":{"three":"/assets/3d/three.module.js","three/addons/":"/assets/3d/jsm/"}}
-</script>
-<script>
-window.MGV_STAGE = {
-  "model": "/assets/3d/corner-block.glb",
-  "info": "/assets/3d/corner-block.json",
-  "status": "Real-time 3D · WebGL",
-  "shots": [
-    {
-      "az": 1.05,
-      "el": 0.22,
-      "d": 58,
-      "t": [
-        2,
-        6.5,
-        1
-      ],
-      "fx": -0.2,
-      "fy": -0.02,
-      "o": 1.0
-    },
-    {
-      "az": 1.8,
-      "el": 0.55,
-      "d": 100,
-      "t": [
-        2,
-        5.0,
-        1
-      ],
-      "fx": -0.24,
-      "fy": -0.02,
-      "o": 0.15
-    },
-    {
-      "az": 2.6,
-      "el": 0.18,
-      "d": 92,
-      "t": [
-        2,
-        6.5,
-        1
-      ],
-      "fx": -0.22,
-      "fy": -0.01,
-      "o": 0.28
-    },
-    {
-      "az": 3.4,
-      "el": 0.44,
-      "d": 104,
-      "t": [
-        2,
-        5.0,
-        1
-      ],
-      "fx": -0.25,
-      "fy": -0.02,
-      "o": 0.14
-    },
-    {
-      "az": 4.2,
-      "el": 0.24,
-      "d": 96,
-      "t": [
-        2,
-        6.0,
-        1
-      ],
-      "fx": -0.25,
-      "fy": -0.01,
-      "o": 0.15
-    },
-    {
-      "az": 5.0,
-      "el": 0.3,
-      "d": 84,
-      "t": [
-        2,
-        6.5,
-        1
-      ],
-      "fx": -0.1,
-      "fy": -0.01,
-      "o": 0.13
-    }
-  ]
-};
-</script>
 <script src="/assets/site.js"></script>
-<script type="module" src="/assets/stage.js"></script>
 <script src="/mergvs-contact.js"></script>
 </body>
 </html>
