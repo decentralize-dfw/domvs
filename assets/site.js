@@ -28,11 +28,23 @@
       burger.classList.toggle('x', on);
       burger.setAttribute('aria-expanded', on ? 'true' : 'false');
     });
-    mob.addEventListener('click', function (e) { if (e.target.tagName === 'A') closeMob(); });
+    mob.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A' || e.target === mob) closeMob();
+    });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeMob();
     });
   }
+
+  /* the injected contact form paints its dark layer beneath a full-screen
+     overlay, so a tap outside the box never reaches it. Close on the
+     overlay itself, whenever it is injected. */
+  document.addEventListener('click', function (e) {
+    if (e.target && e.target.id === 'mgv-overlay') {
+      var c = document.getElementById('mgv-close');
+      if (c) c.click();
+    }
+  });
 
   /* ── reading progress (article pages) ── */
   var bar = document.getElementById('progress');
