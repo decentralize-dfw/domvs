@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   MERGVS — deck controller
+   MERGVS deck controller
    One behaviour on every screen: the page is a stack of composed
    chapters, advanced by wheel, key, swipe or the rail. When a chapter
    is taller than the frame it scrolls inside itself first, and only
@@ -47,7 +47,7 @@
   }
 
   var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
-  if (!panels.length) return;          /* article page — nothing else to do */
+  if (!panels.length) return;          /* article page: nothing else to do */
 
   html.classList.add('deck');
 
@@ -82,7 +82,7 @@
   }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
-  /* how much of the frame this chapter's content needs — the stage uses it
+  /* how much of the frame this chapter's content needs. The stage uses it
      to lift the maquette clear of dense chapters in portrait */
   var deckEl = document.getElementById('deck');
   function fill(n) {

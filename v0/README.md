@@ -1,4 +1,4 @@
-# v0 — arşiv
+# v0 arşivi
 
 2026 yeniden tasarımından **önceki** MERGVS sitesinin dondurulmuş kopyası.
 Bej/parşömen paletli, uzun kaydırmalı eski sürüm.
@@ -20,7 +20,7 @@ v0/
 ## Notlar
 
 - Dosyalar **birebir** kopya; tek bir karakter değiştirilmedi.
-- Görseller (`mergvs-son.png`, `blog/*.png`) kopyalanmadı — hâlâ kökte
+- Görseller (`mergvs-son.png`, `blog/*.png`) kopyalanmadı, hâlâ kökte
   duruyorlar ve arşiv sayfaları onlara mutlak yolla erişiyor.
 - İngilizce sayfalar modalı göreli yolla (`mergvs-contact.js`) çağırdığı için
   buradaki kopyayı kullanıyor. Türkçe sayfalar ise mutlak yolla

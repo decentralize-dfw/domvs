@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════
-   MERGVS — live maquette
+   MERGVS live maquette
    A real MERGVS reconstruction (Luxembourg corner block) rendered in
    real time behind the deck. Framing is expressed in fractions of the
    frame, so a phone in portrait gets the same composition as a 4K
-   desktop — the camera re-fits instead of the layout changing.
+   desktop: the camera re-fits instead of the layout changing.
    Configured per page through window.MGV_STAGE.
    ═══════════════════════════════════════════════════════════════════ */
 const CFG = window.MGV_STAGE;
@@ -40,13 +40,13 @@ else {
     started = true;
     boot().catch(err => { console.warn('[mergvs] stage disabled:', err); bail('Architectural plate'); });
   };
-  /* the renderer + model are ~1.6 MB — never block first paint with them */
+  /* the renderer + model are ~1.6 MB, so never block first paint with them */
   if (document.readyState === 'complete') start();
   else addEventListener('load', start, { once: true });
   setTimeout(start, 1800);
 }
 
-/* maquette palette — a bronze-and-graphite study model at dusk */
+/* maquette palette: a bronze-and-graphite study model at dusk */
 const MAT = {
   siva_beyaz: { c: 0xC3B7A0 }, siva_ic: { c: 0x8E887B }, tas_rustik: { c: 0x8F8778, r: .92 },
   derz: { c: 0x6E675C }, sove_bej: { c: 0xAFA086 }, saceg: { c: 0xABA290 },
@@ -121,7 +121,7 @@ async function boot() {
       g.scene.traverse(o => {
         if (!o.isMesh) return;
         if (HIDE.test(o.name || '')) { o.visible = false; return; }
-        /* the export carries no NORMAL accessor — derive it, and shade the
+        /* the export carries no NORMAL accessor, so derive it and shade the
            architecture flat so every plane reads as a crisp facet */
         if (o.geometry && !o.geometry.attributes.normal) o.geometry.computeVertexNormals();
         const grp = (o.name || '').split('__')[0];
@@ -197,7 +197,7 @@ async function boot() {
       const bright = s.po != null ? s.po : Math.min(1, s.o + 0.18);
       opacityGoal = bright + (s.o * 0.5 - bright) * t;
     } else {
-      /* landscape: a text-dense chapter pushes the maquette further out of
+      /* wide viewport: a text-dense chapter pushes the maquette further out of
          frame and quiets it, so nothing is read over a render */
       const t = clamp((dens - 0.5) / 0.45, 0, 1);
       goal.fx = s.fx - 0.09 * t;

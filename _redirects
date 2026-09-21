@@ -1,4 +1,4 @@
-# Netlify / Cloudflare Pages — 301 redirects for legacy blog URLs
+# Netlify / Cloudflare Pages: 301 redirects for legacy blog URLs
 /blog-1    /blog/the-bosphorus-premium                        301
 /blog-2    /blog/brera-navigli-isola                          301
 /blog-3    /blog/luxembourg-quiet-supremacy                   301

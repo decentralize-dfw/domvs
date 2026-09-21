@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#EDEAE1;              /* kemik — ana metin */
+    --ink:#EDEAE1;              /* kemik: ana metin */
     --ink-deep:#FFFFFF;         /* en yüksek kontrast */
     --paper:#0A0C0B;            /* mürekkep zemin */
     --surface:#0E1110;          /* kart yüzeyi */
@@ -396,17 +396,17 @@
 
 <script>
 /* ============================================================
-   AYARLANABİLİR PARAMETRELER — fiyatları buradan değiştir
+ AYARLANABİLİR PARAMETRELER: fiyatları buradan değiştir
    ============================================================ */
 const P = {
   luksKomisyonOrani:  0.008,    // binde 8
-  luksMinFiyat:       2000000,  // € — modelin alt sınırı
-  apartmanTaban:      7100,     // € — boş paket (bina kabuğu + sirkülasyon + genel)
-  apartmanOrtakBasi:  900,      // € — her ortak alan
-  mobilyaMotoru:      1000,     // € — mobilya düzenleme motoru eklentisi
-  icMimariPaket:      300,      // € — iç mimari öneri paketi (adet başı)
-  reelFiyat:          650,      // € — 40 sn reel (adet)
-  filmDkFiyat:        520,      // € — kısa film (dakika)
+  luksMinFiyat:       2000000,  // €, modelin alt sınırı
+  apartmanTaban:      7100,     // €, boş paket (bina kabuğu + sirkülasyon + genel)
+  apartmanOrtakBasi:  900,      // €, her ortak alan
+  mobilyaMotoru:      1000,     // €, mobilya düzenleme motoru eklentisi
+  icMimariPaket:      300,      // €, iç mimari öneri paketi (adet başı)
+  reelFiyat:          650,      // €, 40 sn reel (adet)
+  filmDkFiyat:        520,      // €, kısa film (dakika)
   filmMinDk:          2,        // kısa film alt sınırı (dakika)
 };
 
@@ -433,7 +433,7 @@ const $$ = s => document.querySelectorAll(s);
 const CHECK_SVG = '<svg viewBox="0 0 12 12" fill="none"><path d="M2 6.2L4.6 9 10 2.8" stroke="#0A0C0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* ---------- chip üret ---------- */
-// konut tipleri — her birinin kendi fiyatı, etikette gösterilir
+// konut tipleri: her birinin kendi fiyatı, etikette gösterilir
 $('#tipChips').innerHTML = KONUT_TIPLERI.map(t => `
   <label class="chip">
     <input type="checkbox" data-group="tip" value="${t.ad}" data-price="${t.fiyat}" ${TIP_VARSAYILAN.includes(t.ad)?'checked':''}>
@@ -441,7 +441,7 @@ $('#tipChips').innerHTML = KONUT_TIPLERI.map(t => `
     <span class="label">${t.ad}</span>
   </label>`).join('');
 
-// ortak alanlar — her biri sabit
+// ortak alanlar: her biri sabit
 $('#ortakChips').innerHTML = ORTAK_ALANLAR.map(o => `
   <label class="chip">
     <input type="checkbox" data-group="ortak" value="${o}" ${ORTAK_VARSAYILAN.includes(o)?'checked':''}>
@@ -459,7 +459,7 @@ function rate(){ const r = parseFloat($('#rateInput').value); return (isFinite(r
 function rowsHTML(rows){ return rows.map(r => `<div class="b-row${r.total?' total':''}"><span>${r.k}</span><span class="v">${r.v}</span></div>`).join(''); }
 
 /* ============================================================
-   HESAPLAMA
+ HESAPLAMA
    ============================================================ */
 function render(){
   const R = rate();
@@ -541,7 +541,7 @@ function render(){
 }
 
 /* ============================================================
-   ETKİLEŞİM
+ ETKİLEŞİM
    ============================================================ */
 // sekmeler
 $$('.tab').forEach(t => t.addEventListener('click', () => {
@@ -586,7 +586,7 @@ document.addEventListener('input', e => {
   if (e.target.matches('#luksFiyat, #rateInput') || e.target.matches('input[type="checkbox"]')) render();
 });
 
-// kısa film stepper: 0 → 2 → 3 … (1 atlanır, geri inişte 2'den 0'a)
+// kısa film stepper: 0 -> 2 -> 3 (1 atlanır, geri inişte 2'den 0'a)
 $('[data-step="film"]').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const d = parseInt(b.dataset.d, 10);
