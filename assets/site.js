@@ -107,7 +107,7 @@
   /* ── overflow affordance ── */
   function marks() {
     var pin = panels[cur].querySelector('.pin');
-    if (pin) pin.classList.toggle('more', pin.scrollHeight - pin.clientHeight > 24);
+    if (pin) pin.classList.toggle('more', pin.scrollHeight - pin.clientHeight > 8);
   }
 
   /* ── navigation ── */
@@ -128,9 +128,21 @@
     var f = fill(n);
     html.style.setProperty('--scrim',
       (0.45 + 0.55 * Math.max(0, Math.min(1, (f - 0.42) / 0.48))).toFixed(3));
-    /* in portrait the maquette keeps the upper band, but a chapter that
-       needs the whole frame gets it: the model lifts and dims instead */
-    html.style.setProperty('--pin-max', f > 0.92 ? '94%' : f > 0.62 ? '86%' : '74%');
+    /* in portrait the maquette keeps the upper band and the text takes
+       exactly what it needs, as a share of the frame. A light chapter
+       leaves the model a wide band; a dense one borrows from it, down to
+       a floor that keeps the model on screen. */
+    var pin = panels[n].querySelector('.pin');
+    var want = 0.74;
+    if (pin && deckEl && deckEl.clientHeight) {
+      var cap = pin.style.maxHeight;
+      pin.style.maxHeight = 'none';
+      var content = pin.scrollHeight;      /* what the chapter actually needs */
+      pin.style.maxHeight = cap;
+      want = (content + deckEl.clientHeight * 0.05) / deckEl.clientHeight;
+    }
+    html.style.setProperty('--pin-max',
+      (Math.min(0.98, Math.max(0.58, want)) * 100).toFixed(1) + '%');
     if (stMid) stMid.textContent = CH[n].label;
     if (stNum) stNum.textContent = pad(n);
     if (spec) spec.classList.toggle('on', window.__mgv3d === 'ready' && n === 0);
