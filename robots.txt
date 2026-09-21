@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /v0/
 
 Sitemap: https://mergvs.com/sitemap.xml
