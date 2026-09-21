@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 620" fill="none" role="img" aria-label="Street elevation, Luxembourg corner block">
+  <g stroke="#C2A26A" stroke-width=".5" opacity=".18">
+    <path d="M40 60h440M40 140h440M40 220h440M40 300h440M40 380h440M40 460h440M40 540h440"/>
+    <path d="M60 40v520M140 40v520M220 40v520M300 40v520M380 40v520M460 40v520"/>
+  </g>
+  <g stroke="#EDEAE1" stroke-width="1" stroke-linejoin="round" opacity=".62">
+    <path d="M70 230h380M90 230v310M430 230v310M90 470h340M90 540h340"/>
+    <path d="M70 230 170 140h180l100 90"/>
+    <path d="M78 222h364v8H78z"/>
+    <path d="M20 540h480" opacity=".9"/>
+  </g>
+  <g stroke="#EDEAE1" stroke-width=".75" opacity=".45">
+    <path d="M113 244h34v52h-34zM173 244h34v52h-34zM243 244h34v52h-34zM313 244h34v52h-34zM373 244h34v52h-34z"/>
+    <path d="M113 324h34v52h-34zM173 324h34v52h-34zM243 324h34v52h-34zM313 324h34v52h-34zM373 324h34v52h-34z"/>
+    <path d="M113 404h34v52h-34zM173 404h34v52h-34zM243 404h34v52h-34zM313 404h34v52h-34zM373 404h34v52h-34z"/>
+    <path d="M109 298h42M169 298h42M239 298h42M309 298h42M369 298h42"/>
+    <path d="M109 378h42M169 378h42M239 378h42M309 378h42M369 378h42"/>
+    <path d="M109 458h42M169 458h42M239 458h42M309 458h42M369 458h42"/>
+  </g>
+  <g stroke="#EDEAE1" stroke-width=".75" opacity=".4">
+    <path d="M100 486h52v40h-52zM368 486h52v40h-52zM236 486h48v54h-48z"/>
+    <path d="M90 496h340M90 512h340" opacity=".35"/>
+  </g>
+  <g stroke="#EDEAE1" stroke-width=".75" opacity=".5">
+    <path d="M148 196h36v34h-36zM242 178h36v52h-36zM336 196h36v34h-36z"/>
+    <path d="M144 196l22-16 22 16M238 178l22-16 22 16M332 196l22-16 22 16"/>
+    <path d="M392 128h22v42h-22z"/>
+  </g>
+  <g stroke="#C2A26A" stroke-width=".65" stroke-dasharray="4 4" opacity=".55">
+    <path d="M232 230v310M288 230v310M232 230h56"/>
+  </g>
+  <g stroke="#C2A26A" stroke-width=".5" opacity=".5">
+    <path d="M478 230v310M472 230h12M472 540h12"/>
+    <path d="M90 566h340M90 560v12M430 560v12"/>
+  </g>
+  <g fill="#C2A26A" font-family="'IBM Plex Mono',ui-monospace,monospace" font-size="8.5" letter-spacing="1.4" opacity=".72">
+    <text x="20" y="596">LUXEMBOURG · CORNER BLOCK</text>
+    <text x="20" y="610" opacity=".6">STREET ELEVATION · 1:200 · SHEET 01</text>
+    <text x="492" y="388" transform="rotate(-90 492 388)">17.40 M</text>
+    <text x="238" y="582" opacity=".6">BAY +0.55</text>
+  </g>
+</svg>
