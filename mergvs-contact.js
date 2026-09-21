@@ -491,18 +491,18 @@ function init(){
       }else{
         res.json().then(function(data){
           console.error('Formspree error:', JSON.stringify(data));
-          var msg='Something went wrong on our end. Please try again, or write to us directly at hello@mergvs.com.';
+          var msg='Something went wrong on our end. Please try again in a moment.';
           if(data&&data.errors&&data.errors.length){
             var fieldErr=data.errors.find(function(e){return e.field==='email';});
             if(fieldErr) msg='The email address you entered doesn\'t appear to be valid. Please double-check it.';
           } else if(data&&data.error&&typeof data.error==='string'){
             if(data.error.toLowerCase().indexOf('activate')!==-1){
-              msg='The form is not yet active. Please contact us directly at hello@mergvs.com.';
+              msg='The form is not yet active. Please try again shortly.';
             }
           }
           showFormError(msg);
         }).catch(function(){
-          showFormError('Something went wrong. Please write to us directly at hello@mergvs.com.');
+          showFormError('Something went wrong. Please try again in a moment.');
         });
         btn.disabled=false;
         btn.textContent='Send Request →';
@@ -511,7 +511,7 @@ function init(){
       console.error('Formspree fetch error:', err);
       btn.disabled=false;
       btn.textContent='Send Request →';
-      showFormError('Unable to send — please check your connection, or write to us at hello@mergvs.com.');
+      showFormError('Unable to send. Please check your connection and try again.');
     });
   });
 

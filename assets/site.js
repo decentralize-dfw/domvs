@@ -116,6 +116,9 @@
     var f = fill(n);
     html.style.setProperty('--scrim',
       (0.45 + 0.55 * Math.max(0, Math.min(1, (f - 0.42) / 0.48))).toFixed(3));
+    /* in portrait the maquette keeps the upper band, but a chapter that
+       needs the whole frame gets it: the model lifts and dims instead */
+    html.style.setProperty('--pin-max', f > 0.92 ? '94%' : f > 0.62 ? '86%' : '74%');
     if (stMid) stMid.textContent = CH[n].label;
     if (stNum) stNum.textContent = pad(n);
     if (spec) spec.classList.toggle('on', window.__mgv3d === 'ready' && n === 0);

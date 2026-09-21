@@ -491,18 +491,18 @@ function init(){
       }else{
         res.json().then(function(data){
           console.error('Formspree error:', JSON.stringify(data));
-          var msg='Tarafımızda bir şeyler ters gitti. Lütfen tekrar deneyin ya da bize doğrudan hello@mergvs.com adresinden yazın.';
+          var msg='Tarafımızda bir şeyler ters gitti. Lütfen biraz sonra tekrar deneyin.';
           if(data&&data.errors&&data.errors.length){
             var fieldErr=data.errors.find(function(e){return e.field==='email';});
             if(fieldErr) msg='Girdiğiniz e-posta adresi geçerli görünmüyor. Lütfen tekrar kontrol edin.';
           } else if(data&&data.error&&typeof data.error==='string'){
             if(data.error.toLowerCase().indexOf('activate')!==-1){
-              msg='Form henüz aktif değil. Lütfen bize doğrudan hello@mergvs.com adresinden ulaşın.';
+              msg='Form henüz aktif değil. Lütfen kısa süre sonra tekrar deneyin.';
             }
           }
           showFormError(msg);
         }).catch(function(){
-          showFormError('Bir şeyler ters gitti. Lütfen bize doğrudan hello@mergvs.com adresinden yazın.');
+          showFormError('Bir şeyler ters gitti. Lütfen biraz sonra tekrar deneyin.');
         });
         btn.disabled=false;
         btn.textContent='Talebi Gönder →';
@@ -511,7 +511,7 @@ function init(){
       console.error('Formspree fetch error:', err);
       btn.disabled=false;
       btn.textContent='Talebi Gönder →';
-      showFormError('Gönderilemedi — lütfen bağlantınızı kontrol edin ya da bize hello@mergvs.com adresinden yazın.');
+      showFormError('Gönderilemedi. Lütfen bağlantınızı kontrol edip tekrar deneyin.');
     });
   });
 

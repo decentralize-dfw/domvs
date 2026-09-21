@@ -190,13 +190,17 @@ img,svg,canvas,video{display:block;max-width:100%}
   -webkit-overflow-scrolling:touch}
 .pin::-webkit-scrollbar{width:0;display:none}
 .panel>.pin>*{pointer-events:auto}
+/* a chapter taller than the frame takes the drag itself, so a touch that
+   starts on empty space still scrolls it instead of falling through to
+   the stage underneath */
+.panel.on>.pin.more{pointer-events:auto;touch-action:pan-y}
 .rise{opacity:0;transform:translateY(20px);
   transition:opacity .85s var(--ease),transform .95s var(--ease)}
 .panel.on .rise{opacity:1;transform:none;transition-delay:calc(var(--d,0) * 80ms + 90ms)}
 /* a panel whose content runs past the frame gets a quiet affordance */
-.pin.more::after{content:'';position:sticky;bottom:0;left:0;display:block;height:26px;
-  margin-top:-26px;pointer-events:none;
-  background:linear-gradient(to top,var(--ink),transparent)}
+.pin.more::after{content:'';position:sticky;bottom:0;left:0;display:block;height:34px;
+  margin-top:-34px;pointer-events:none;
+  background:linear-gradient(to top,var(--ink) 18%,transparent)}
 
 /* ───────── type ───────── */
 .eyebrow{display:flex;align-items:center;gap:.8rem;font-family:var(--mono);
@@ -430,6 +434,11 @@ h1 em,h2 em,h3 em,.h1 em,.h2 em,.h3 em{font-style:italic;color:var(--brass)}
 .foot a{transition:color .35s}
 .foot a:hover{color:var(--brass)}
 .foot .sp{flex:1 1 auto}
+/* the mark closes the last chapter, in the empty ground to the right */
+.crest{position:absolute;right:var(--gut);bottom:calc(var(--bar-bot) + 3.4rem);
+  width:clamp(64px,6.4vw,102px);height:auto;opacity:.24;pointer-events:none;
+  filter:drop-shadow(0 18px 40px rgba(0,0,0,.7))}
+@media (max-aspect-ratio:1/1),(max-width:900px){.crest{display:none}}
 
 /* opening layout for pages without the stage: statement left, facts right */
 .open{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,19rem);
@@ -473,7 +482,7 @@ h1 em,h2 em,h3 em,.h1 em,.h2 em,.h3 em{font-style:italic;color:var(--brass)}
   .scrim{background:linear-gradient(to top,#0A0C0B 0%,rgba(10,12,11,.985) 40%,
     rgba(10,12,11,.80) 56%,rgba(10,12,11,.22) 73%,transparent 88%)}
   html.stage .panel{align-items:flex-end;padding-bottom:clamp(.4rem,1.6vh,1.2rem)}
-  html.stage .pin{max-height:74%}
+  html.stage .pin{max-height:var(--pin-max,74%)}
   .scrim{opacity:calc(var(--scrim,.5) * .55 + .45)}
   #plate{right:auto;left:50%;top:30%;transform:translate(-50%,-50%);width:min(78vw,440px)}
   .open{gap:clamp(1.2rem,3vh,2rem)}
@@ -506,10 +515,94 @@ h1 em,h2 em,h3 em,.h1 em,.h2 em,.h3 em{font-style:italic;color:var(--brass)}
 }
 @media (max-width:560px){
   .brand-sub{display:none}
-  .stats{grid-template-columns:1fr}
-  .stat{border-right:none;padding-right:0;padding-left:0!important}
   .status .hint{display:none}
   .contact{gap:1.2rem}
+}
+
+/* ═══════════ small phones ═══════════
+   427x625 is the floor the layout is built against: the same deck and the
+   same composition, on a tighter scale, so a chapter fits the frame instead
+   of relying on the reader to find the scroll. */
+@media (max-width:640px){
+  :root{
+    --h1:clamp(1.62rem,7.4vw,2.45rem);
+    --h2:clamp(1.34rem,6.2vw,2rem);
+    --h3:clamp(1rem,4.2vw,1.3rem);
+    --lead:clamp(.79rem,3.35vw,.92rem);
+    --body:clamp(.75rem,3.05vw,.85rem);
+    --small:clamp(.7rem,2.9vw,.78rem);
+    --label:clamp(.56rem,2.3vw,.64rem);
+    --micro:clamp(.5rem,2.05vw,.57rem);
+    --bar-top:clamp(48px,7.4vh,60px);
+    --bar-bot:clamp(30px,4.6vh,38px);
+    --gut:.95rem;
+    --rail:34px;
+  }
+  .pin{padding:.2rem 0}
+  .eyebrow{margin-bottom:.55rem}
+  .eyebrow::before{width:12px}
+  h1,.h1{line-height:1.04}
+  h2,.h2{line-height:1.05}
+  .lead{margin-top:.6rem;line-height:1.62;max-width:none}
+  .acts{margin-top:.9rem;gap:.55rem .9rem}
+  .btn{padding:.72rem 1.1rem}
+  .btn-ghost{padding:.72rem 0}
+
+  /* a stat row stays a row: two up, never four stacked */
+  .stats{grid-template-columns:repeat(2,1fr);margin-top:.85rem}
+  .stat{padding:.6rem .55rem 0 0}
+  .stat:nth-child(2n){border-right:none;padding-right:0}
+  .stat:nth-child(n+3){padding-top:.75rem;border-top:1px solid var(--line-2)}
+  .stat b{font-size:clamp(1.35rem,6.6vw,2.1rem)}
+  .stat p{margin-top:.35rem;line-height:1.4;max-width:none}
+  .stat cite{margin-top:.3rem;line-height:1.5}
+
+  .cards,.people,.steps{margin-top:.7rem}
+  .card,.person,.step{padding-top:.6rem;padding-bottom:.55rem}
+  .card h3,.card .ch{margin-bottom:.35rem;line-height:1.45;letter-spacing:.16em}
+  .card .big{margin-bottom:.38rem;line-height:1.1;
+    font-size:clamp(1.02rem,4.7vw,1.5rem)}
+  .card .big br{display:none}
+  .card p,.step p,.person p{line-height:1.5}
+  .card ul{gap:.3rem}
+  .card li{line-height:1.4}
+  .card li u{flex-basis:2.5rem}
+  /* four short steps read better two-up than stacked four deep */
+  .steps{grid-template-columns:repeat(2,1fr)}
+  .step{padding-right:.55rem;border-right:1px solid var(--line-2);border-bottom:none}
+  .step:nth-child(2n){border-right:none;padding-right:0}
+  .step:nth-child(n+3){padding-top:.7rem;border-top:1px solid var(--line-2)}
+  .step:not(:first-child){padding-left:0}
+  .step:nth-child(2n){padding-left:.55rem!important}
+  .step b{margin-bottom:.3rem}
+  .step h3{margin-bottom:.3rem;font-size:clamp(.92rem,3.9vw,1.2rem)}
+  .person .pr{margin:.35rem 0 .45rem}
+  .col-narrow p,.col-mid p{line-height:1.55}
+  .caps{margin-top:.75rem}
+  .caps li{padding:.34rem 0;line-height:1.35}
+  .rule{margin-top:.65rem;padding-top:.5rem;gap:.4rem}
+  .rule p{line-height:1.6}
+  .note{line-height:1.6}
+  .faq{margin-top:.7rem}
+  .qa>summary{padding:.5rem 0;line-height:1.35}
+  .qa p{padding:0 .5rem .6rem 1.4rem;line-height:1.55}
+  .rows{margin-top:.8rem}
+  .row{padding:.62rem 0}
+  .rname{font-size:clamp(1.05rem,5vw,1.6rem)}
+  .tbl{margin-top:.8rem}
+  .tbl th,.tbl td{padding:.42rem .5rem}
+  .pull blockquote{font-size:clamp(1.2rem,5.6vw,1.9rem);line-height:1.18}
+  .person q{margin-top:.5rem}
+  .contact{margin-top:.9rem;gap:.9rem}
+  .mail{font-size:clamp(.95rem,4.2vw,1.3rem)}
+  .foot{margin-top:1rem;padding-top:.7rem;gap:.5rem .9rem}
+  .facts div{padding:.45rem 0}
+  .open{gap:.9rem}
+}
+
+/* the maquette gives the text more of the frame on a short screen */
+@media (max-aspect-ratio:1/1) and (max-height:760px){
+  #plate{top:24%;width:min(66vw,340px)}
 }
 @media (max-height:520px){
   .brand-sub{display:none}
