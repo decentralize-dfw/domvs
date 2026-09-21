@@ -55,6 +55,7 @@
     </span>
   </a>
   <nav class="tnav" aria-label="Main">
+    <a class="tl" href="/">Home</a>
     <a class="tl" href="/services" aria-current="page">Services</a>
     <a class="tl" href="/agents">For agents</a>
     <a class="tl" href="/about">About</a>
@@ -74,7 +75,8 @@
       <div>
     <p class="eyebrow rise" style="--d:0"><em>Services</em> · what we make</p>
     <h1 class="rise" style="--d:1">One 3D model.<br>Everything else<br><em>sits on top of it.</em></h1>
-    <p class="lead rise" style="--d:2">We rebuild the property once, accurately, from your plans and photographs. The virtual tour, the video, the staging, the floor plans and the property website all come out of that single model, which is why they agree with each other and why none of it needs a camera crew.</p>
+    <p class="lead rise hide-narrow" style="--d:2">We rebuild the property once, accurately, from your plans and photographs. The virtual tour, the video, the staging, the floor plans and the property website all come out of that single model, which is why they agree with each other and why none of it needs a camera crew.</p>
+    <p class="lead rise hide-wide" style="--d:2">One accurate model. The tour, the video, the staging and the website all come out of it.</p>
     <div class="acts rise" style="--d:3">
       <a class="btn" href="#" data-mgv-open><s>Request a demo</s></a>
       <a class="btn btn-ghost" href="/agents">How we charge agents <span class="arr">→</span></a>
@@ -99,20 +101,23 @@
       <div class="card">
         <h3>01 · Virtual tour</h3>
         <div class="big">Walk the house <br>from anywhere.</div>
-        <p>A navigable 3D tour built with Three.js, with room-to-room movement, spatial audio and camera paths through the house. Your buyer opens it in the browser they already have. No app, no plugin, no account.</p>
+        <p class="hide-narrow">A navigable 3D tour built with Three.js, with room-to-room movement, spatial audio and camera paths through the house. Your buyer opens it in the browser they already have. No app, no plugin, no account.</p>
+        <p class="hide-wide">Room to room in the browser your buyer already has. No app, no account.</p>
       </div>
       <div class="card">
         <h3>02 · Photography editing</h3>
         <div class="big">Your photographs, <br>corrected.</div>
-        <p>We retouch the photographs you already have: exposure, white balance, verticals, sky replacement and optical distortion. Half of the homes listed above $1 million are still marketed with substandard photographs.</p>
+        <p class="hide-narrow">We retouch the photographs you already have: exposure, white balance, verticals, sky replacement and optical distortion. Half of the homes listed above $1 million are still marketed with substandard photographs.</p>
+        <p class="hide-wide">Half of the homes above $1 million are still marketed with substandard photographs. We correct yours.</p>
       </div>
       <div class="card">
         <h3>03 · Video from the model</h3>
         <div class="big">No drone. <br>No film crew.</div>
-        <p>We render camera moves straight out of the 3D model, so a video costs a render rather than a shoot day. Nothing to schedule, nothing to reshoot, and a new version whenever the listing changes.</p>
+        <p class="hide-narrow">We render camera moves straight out of the 3D model, so a video costs a render rather than a shoot day. Nothing to schedule, nothing to reshoot, and a new version whenever the listing changes.</p>
+        <p class="hide-wide">Camera moves rendered from the model. A video costs a render, not a shoot day.</p>
       </div>
     </div>
-    <div class="rule rise" style="--d:3">
+    <div class="rule rise hide-narrow" style="--d:3">
       <p>Sources: VHT Studios and Matterport, 2024. NAR Profile of Home Buyers and Sellers, 2024. Every project starts from your plans, drawings and photographs, so there is <em>no site visit and no filming</em>.</p>
     </div>
   </div>
@@ -122,8 +127,9 @@
   <div class="pin">
     <p class="eyebrow rise" style="--d:0"><em>02</em> What we layer on</p>
     <h2 class="rise" style="--d:1">Eight things that come<br>out of the <em>same file.</em></h2>
-    <p class="lead rise" style="--d:2">None of these are separate products. They are views of one reconstruction, so the staging matches the plan and the video matches the tour. Agents on the commission model get all of it at no extra cost.</p>
-    <div class="rise" style="--d:3">
+    <p class="lead rise hide-narrow" style="--d:2">None of these are separate products. They are views of one reconstruction, so the staging matches the plan and the video matches the tour. Agents on the commission model get all of it at no extra cost.</p>
+    <p class="lead rise hide-wide" style="--d:2">All of it comes out of one reconstruction. Agents on commission pay nothing extra for any of it.</p>
+    <div class="rise hide-narrow" style="--d:3">
       <ul class="caps" style="--n:2">
         <li><i>01</i>Daylight and night lighting, and the hours in between</li>
         <li><i>02</i>Interactive floor plans with measurements and room labels</li>
@@ -135,7 +141,15 @@
         <li><i>08</i>Analytics: which rooms buyers open and how long they stay</li>
       </ul>
     </div>
-    <p class="note rise" style="--d:4;margin-top:1.6rem">Branded residences sell at a 33% premium on average, and 39% in resort markets. Savills Branded Residences Report, 2025/26.</p>
+    <div class="rise hide-wide" style="--d:3">
+      <ul class="caps" style="--n:2">
+        <li><i>01</i>Interactive floor plans with measurements and room labels</li>
+        <li><i>02</i>A property website on <em>your</em> domain, not ours</li>
+        <li><i>03</i>Virtual staging, with alternative furniture schemes</li>
+        <li><i>04</i>Analytics: which rooms buyers open and how long they stay</li>
+      </ul>
+    </div>
+    <p class="note rise hide-narrow" style="--d:4;margin-top:1.6rem">Branded residences sell at a 33% premium on average, and 39% in resort markets. Savills Branded Residences Report, 2025/26.</p>
   </div>
 </section>
 
@@ -143,25 +157,29 @@
   <div class="pin">
     <p class="eyebrow rise" style="--d:0"><em>03</em> For private sellers</p>
     <h2 class="rise" style="--d:1">Sell it yourself and<br>the files are <em>yours.</em></h2>
-    <p class="lead rise" style="--d:2">If you are selling without an agent there is no commission to take, so we quote a flat fee instead. You get the finished assets and the rights to them. Every property is scoped on its own, and we send a written proposal within 24 hours.</p>
+    <p class="lead rise hide-narrow" style="--d:2">If you are selling without an agent there is no commission to take, so we quote a flat fee instead. You get the finished assets and the rights to them. Every property is scoped on its own, and we send a written proposal within 24 hours.</p>
+    <p class="lead rise hide-wide" style="--d:2">No agent, no commission. A flat fee, the finished files and the rights to them.</p>
     <div class="cards rise" style="--d:3;--n:3">
       <div class="card">
         <h3>Core</h3>
         <div class="big">from €3,500</div>
-        <p>3D environment, architectural photography and floor plans. Ten working days from the moment we have your material.</p>
+        <p class="hide-narrow">3D environment, architectural photography and floor plans. Ten working days from the moment we have your material.</p>
+        <p class="hide-wide">3D environment, photography and floor plans. Ten working days.</p>
       </div>
       <div class="card">
         <h3>Full production</h3>
         <div class="big">from €6,500</div>
-        <p>Everything in Core, plus video rendered from the model, virtual staging and the property website.</p>
+        <p class="hide-narrow">Everything in Core, plus video rendered from the model, virtual staging and the property website.</p>
+        <p class="hide-wide">Core plus video, staging and the property website.</p>
       </div>
       <div class="card">
         <h3>Larger properties</h3>
         <div class="big">Quoted individually</div>
-        <p>Estates above €5,000,000, listed buildings and anything that needs a treatment of its own. One conversation and an itemised quote.</p>
+        <p class="hide-narrow">Estates above €5,000,000, listed buildings and anything that needs a treatment of its own. One conversation and an itemised quote.</p>
+        <p class="hide-wide">Above €5,000,000 and listed buildings. One call, an itemised quote.</p>
       </div>
     </div>
-    <div class="rule rise" style="--d:3">
+    <div class="rule rise hide-narrow" style="--d:3">
       <p>Commission only for agents, flat fee for private sellers. Every property gets its own build. We do not run listings through a <em>template</em>.</p>
     </div>
   </div>
@@ -194,6 +212,7 @@
       <a class="mail" href="#" data-mgv-open>Write to us through the form</a>
     </div>
     <div class="foot rise" style="--d:5">
+      <a href="/">Home</a>
       <a href="/services">Services</a>
       <a href="/agents">For agents</a>
       <a href="/about">About</a>
@@ -221,6 +240,7 @@
 </footer>
 
 <div class="mob" id="mob">
+  <a href="/">Home</a>
   <a href="/services">Services</a>
   <a href="/agents">For agents</a>
   <a href="/about">About</a>
