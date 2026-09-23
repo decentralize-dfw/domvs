@@ -97,10 +97,13 @@
   /* how much of the frame this chapter's content needs. The stage uses it
      to lift the maquette clear of dense chapters in portrait */
   var deckEl = document.getElementById('deck');
+  var bandNow = 0;                 /* the share of the frame left to the stage */
   function fill(n) {
     var pin = panels[n].querySelector('.pin');
     if (!pin || !deckEl || !deckEl.clientHeight) return 0;
-    return Math.min(1, pin.scrollHeight / deckEl.clientHeight);
+    /* the share of the frame this chapter takes, which is what the maquette
+       needs to know: a chapter that reserves a band is not dense */
+    return Math.min(1, pin.clientHeight / deckEl.clientHeight);
   }
   window.__mgvFill = fill;
 
@@ -123,33 +126,51 @@
     if (focus) panels[n].focus({ preventScroll: true });
     railBtns.forEach(function (b, i) { b.setAttribute('aria-current', i === n ? 'true' : 'false'); });
     html.setAttribute('data-ch', String(n));
+    /* the frame is divided first, then everything else reads the division:
+       in portrait the maquette keeps the upper band and the text takes what
+       it needs. A light chapter leaves the model a wide band; a dense one
+       borrows from it. */
+    var pin = panels[n].querySelector('.pin');
+    if (pin && deckEl && deckEl.clientHeight) {
+      /* what the chapter's blocks actually measure, which is not the pin's
+         own height: the pin fills the frame by design */
+      var kids = pin.children, top = null, bot = null, i, r, pos;
+      for (i = 0; i < kids.length; i++) {
+        pos = getComputedStyle(kids[i]).position;
+        if (pos === 'fixed' || pos === 'absolute') continue;  /* the plate */
+        r = kids[i].getBoundingClientRect();
+        if (!r.height) continue;
+        if (top === null || r.top < top) top = r.top;
+        if (bot === null || r.bottom > bot) bot = r.bottom;
+      }
+      var content = (top === null) ? 0 : bot - top;
+      var frame = deckEl.clientHeight;
+      var want = (content + frame * 0.07) / frame;
+      /* a chapter can reserve a band for the maquette, and the chapter that is
+         about the maquette does. Otherwise the model is either a presence or a
+         wash, never a clipped sliver: the text leaves it a third of the frame
+         or it takes the lot. */
+      var band = parseFloat(panels[n].getAttribute('data-band'));
+      /* a reserved band gives the maquette room, but the text is never
+         clipped for it: the band yields down to a floor of 30% */
+      var pct = band > 0 ? Math.min(0.7, Math.max(want, 1 - band)) * 100
+                         : (want > 0.82 ? 100 : Math.max(34, want * 100));
+      html.style.setProperty('--pin-max', pct.toFixed(1) + '%');
+      bandNow = 1 - pct / 100;
+    }
     /* a dense chapter needs a solid ground under it; a sparse one can let
        the stage breathe through */
     var f = fill(n);
     html.style.setProperty('--scrim',
       (0.45 + 0.55 * Math.max(0, Math.min(1, (f - 0.42) / 0.48))).toFixed(3));
-    /* in portrait the maquette keeps the upper band and the text takes
-       exactly what it needs, as a share of the frame. A light chapter
-       leaves the model a wide band; a dense one borrows from it, down to
-       a floor that keeps the model on screen. */
-    var pin = panels[n].querySelector('.pin');
-    var want = 0.74;
-    if (pin && deckEl && deckEl.clientHeight) {
-      var cap = pin.style.maxHeight;
-      pin.style.maxHeight = 'none';
-      var content = pin.scrollHeight;      /* what the chapter actually needs */
-      pin.style.maxHeight = cap;
-      want = (content + deckEl.clientHeight * 0.05) / deckEl.clientHeight;
-    }
-    html.style.setProperty('--pin-max',
-      (Math.min(0.98, Math.max(0.58, want)) * 100).toFixed(1) + '%');
     if (stMid) stMid.textContent = CH[n].label;
     if (stNum) stNum.textContent = pad(n);
     if (spec) spec.classList.toggle('on', window.__mgv3d === 'ready' && n === 0);
     var h = CH[n].hash ? '#' + CH[n].hash : '';
     try { history.replaceState(null, '', h || location.pathname); } catch (e) {}
     setTimeout(marks, 60);
-    window.dispatchEvent(new CustomEvent('mgv:chapter', { detail: { index: n, fill: f } }));
+    window.dispatchEvent(new CustomEvent('mgv:chapter',
+      { detail: { index: n, fill: f, band: bandNow } }));
   }
   window.__mgvGo = go;
   window.__mgvCount = panels.length;
@@ -252,7 +273,8 @@
   });
   window.addEventListener('resize', function () {
     marks();
-    window.dispatchEvent(new CustomEvent('mgv:chapter', { detail: { index: cur, fill: fill(cur) } }));
+    window.dispatchEvent(new CustomEvent('mgv:chapter',
+      { detail: { index: cur, fill: fill(cur), band: bandNow } }));
   });
 
   /* ── boot ── */

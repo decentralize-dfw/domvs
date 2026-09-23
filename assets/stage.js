@@ -173,6 +173,7 @@ async function boot() {
   const goal = Object.assign({}, cam);
   let opacity = SHOTS[0].o, opacityGoal = SHOTS[0].o;
   let chapter = 0, view = VIEWS ? Object.keys(VIEWS)[0] : null, drift = 0;
+  let band = 0;
   let dens = window.__mgvFill ? window.__mgvFill(0) : 0;   /* 0..1 content density */
   let mx = 0, my = 0, pmx = 0, pmy = 0;
   const target = new THREE.Vector3();
@@ -190,12 +191,23 @@ async function boot() {
     goal.fx = s.fx;
     if (p) {
       goal.fx = p.fx;
-      /* portrait: the denser the chapter, the higher and quieter the maquette,
-         so the text band below it is never fighting the render */
-      const t = clamp((dens - 0.5) / 0.45, 0, 1);
-      goal.fy = p.fy - 0.26 * t;
-      const bright = s.po != null ? s.po : Math.min(1, s.o + 0.18);
-      opacityGoal = bright + (s.o * 0.5 - bright) * t;
+      /* portrait: a light chapter leaves the maquette a band of its own at the
+         top and it is framed there, whole. A dense chapter takes the frame, so
+         the maquette comes back to the centre and drops to a wash rather than
+         being cut into a strip along the top edge. */
+      /* the deck says how much of the frame it left to the stage. The
+         maquette is framed inside that band, centred in it and sized to it,
+         so it is never a strip along the top edge or a shape under the text. */
+      const bd = clamp(band, 0, 1);
+      if (bd > 0.12) {
+        goal.fy = bd / 2 - 0.5;
+        goal.d *= 1 + (0.52 - bd) * 0.72;
+        opacityGoal = s.po != null ? s.po : Math.min(1, s.o + 0.18);
+      } else {
+        goal.fy = 0;
+        goal.d *= 1.1;
+        opacityGoal = 0.08;
+      }
     } else {
       /* wide viewport: a text-dense chapter pushes the maquette further out of
          frame and quiets it, so nothing is read over a render */
@@ -210,6 +222,7 @@ async function boot() {
   window.addEventListener('mgv:chapter', e => {
     chapter = e.detail.index;
     if (e.detail.fill != null) dens = e.detail.fill;
+    if (e.detail.band != null) band = e.detail.band;
     aim(); syncSpec();
   });
   window.addEventListener('pointermove', e => {
