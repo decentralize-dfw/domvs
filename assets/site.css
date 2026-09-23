@@ -340,6 +340,18 @@ h1 em,h2 em,h3 em,.h1 em,.h2 em,.h3 em{font-style:italic;color:var(--brass)}
   letter-spacing:.04em;color:var(--brass);flex:0 0 3.1rem;font-variant-numeric:tabular-nums}
 .card p{font-size:var(--body);line-height:1.6;color:var(--bone-2)}
 
+/* price bands: the card grid is replaced by a priced list where it will not fit */
+.bands{margin-top:var(--sp-3);border-top:1px solid var(--line)}
+.bands>div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;
+  column-gap:var(--sp-2);padding:var(--sp-2) 0;border-bottom:1px solid var(--line-2)}
+.bands b{font-family:var(--mono);font-weight:400;font-size:var(--label);letter-spacing:.22em;
+  text-transform:uppercase;color:var(--brass);line-height:1.4}
+.bands em{font-style:normal;font-family:var(--serif);
+  font-size:clamp(1.05rem,min(5.2vw,3.2vh),1.6rem);color:var(--bone);line-height:1;
+  white-space:nowrap;font-variant-numeric:tabular-nums}
+.bands span{grid-column:1/-1;margin-top:calc(var(--sp-1)*.8);font-size:var(--body);
+  line-height:1.45;color:var(--bone-2)}
+
 .rule{display:flex;align-items:baseline;gap:var(--gap-x);flex-wrap:wrap;
   margin-top:var(--sp-3);padding-top:var(--sp-2);border-top:1px solid var(--line-2)}
 .rule p{font-size:var(--body);color:var(--bone-2);max-width:62ch;line-height:1.7}
@@ -573,6 +585,11 @@ h1 em,h2 em,h3 em,.h1 em,.h2 em,.h3 em{font-style:italic;color:var(--brass)}
   .stat:nth-child(n+3){padding-top:var(--sp-3);border-top:1px solid var(--line-2)}
   .stat b{font-size:clamp(1.32rem,6.4vw,2.1rem)}
   .stat p{max-width:none;line-height:1.45}
+
+  /* the priced list carries the whole chapter on a phone, so it breathes but stays tight */
+  .bands{margin-top:var(--sp-2)}
+  .bands>div{padding:var(--sp-2) 0 calc(var(--sp-2)*.85)}
+  .bands span{margin-top:calc(var(--sp-1)*.55)}
 
   .card .big{line-height:1.12;font-size:clamp(1rem,4.6vw,1.5rem)}
   .card .big br{display:none}

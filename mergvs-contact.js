@@ -110,7 +110,7 @@ const HTML = `
       </div>
       <div class="mgv-step-dot" data-step="1">
         <span class="mgv-dot-num">2</span>
-        <span class="mgv-dot-label">Services</span>
+        <span class="mgv-dot-label">House</span>
       </div>
       <div class="mgv-step-dot" data-step="2">
         <span class="mgv-dot-num">3</span>
@@ -122,7 +122,7 @@ const HTML = `
     <div class="mgv-step active" data-step="0">
       <p class="mgv-eyebrow">Step 1 of 3</p>
       <h2 class="mgv-title">Tell us about<br>your <em>property</em></h2>
-      <p class="mgv-sub">We'll tailor our approach to your specific asset.</p>
+      <p class="mgv-sub">Three bands, and the quote says which one the house needs.</p>
 
       <div style="margin-bottom:1.8rem">
         <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin-bottom:0.9rem">I am</p>
@@ -131,13 +131,13 @@ const HTML = `
             <input type="radio" name="mgv-role" value="Agent / Estate Professional" hidden>
             <span class="mgv-card-icon" style="font-size:1.1rem">◇</span>
             <span class="mgv-card-label">Agent / Professional</span>
-            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">No cost · commission model</span>
+            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">Same three bands as everyone</span>
           </label>
           <label class="mgv-card">
             <input type="radio" name="mgv-role" value="Private Owner / Seller" hidden>
             <span class="mgv-card-icon" style="font-size:1.1rem">◈</span>
             <span class="mgv-card-label">Private Owner / Seller</span>
-            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">Fixed production packages</span>
+            <span style="font-family:'Lora',serif;font-size:0.66rem;color:#8A8070;font-style:italic;display:block;margin-top:0.3rem">Same three bands, quoted per house</span>
           </label>
         </div>
       </div>
@@ -194,62 +194,45 @@ const HTML = `
         </div>
       </div>
 
-      <div style="display:none;margin-top:1.8rem">
-        <div class="mgv-slider-wrap">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.6rem">
-            <p style="font-family:'Raleway',sans-serif;font-size:0.6rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:#7A5C3E;margin:0">Listing Price</p>
-            <span id="mgv-price-display" style="font-family:'Lora',serif;font-size:1rem;color:#2E3D28;font-weight:400">€2,000,000</span>
-          </div>
-          <input type="range" class="mgv-range" id="mgv-price-slider" min="0" max="100" value="25" step="1">
-          <div style="display:flex;justify-content:space-between;margin-top:0.3rem">
-            <span style="font-family:'Raleway',sans-serif;font-size:0.58rem;letter-spacing:0.1em;color:#B0A090">€500K</span>
-            <span style="font-family:'Raleway',sans-serif;font-size:0.58rem;letter-spacing:0.1em;color:#B0A090">€20M+</span>
-          </div>
-        </div>
-      </div>
-
       <div class="mgv-btns">
         <button class="mgv-btn-next" id="mgv-next-1">Continue →</button>
       </div>
     </div>
 
-    <!-- STEP 2: SERVICES -->
+    <!-- STEP 2: THE HOUSE -->
     <div class="mgv-step" data-step="1">
       <p class="mgv-eyebrow">Step 2 of 3</p>
-      <h2 class="mgv-title">What do you<br>need <em>created</em>?</h2>
-      <p class="mgv-sub">Select all that apply. We'll build a tailored proposal.</p>
+      <h2 class="mgv-title">About the <em>house</em></h2>
+      <p class="mgv-sub">The quote follows plans and photographs.</p>
 
-      <div class="mgv-cards" style="margin-top:1.8rem;grid-template-columns:repeat(2,1fr)">
-        <label class="mgv-card">
-          <input type="checkbox" name="mgv-svc" value="3D Immersive Tour" hidden>
-          <span class="mgv-card-icon" style="font-size:1.1rem">⟐</span>
-          <span class="mgv-card-label">3D Immersive Tour</span>
-        </label>
-        <label class="mgv-card">
-          <input type="checkbox" name="mgv-svc" value="Cinematic Video" hidden>
-          <span class="mgv-card-icon" style="font-size:1.1rem">▶</span>
-          <span class="mgv-card-label">Cinematic Video</span>
-        </label>
-        <label class="mgv-card">
-          <input type="checkbox" name="mgv-svc" value="Photography Editing" hidden>
-          <span class="mgv-card-icon" style="font-size:1.1rem">◎</span>
-          <span class="mgv-card-label">Photo Editing</span>
-        </label>
-        <label class="mgv-card">
-          <input type="checkbox" name="mgv-svc" value="Virtual Staging" hidden>
-          <span class="mgv-card-icon" style="font-size:1.1rem">□</span>
-          <span class="mgv-card-label">Virtual Staging</span>
-        </label>
-        <label class="mgv-card">
-          <input type="checkbox" name="mgv-svc" value="Presentation Boards" hidden>
-          <span class="mgv-card-icon" style="font-size:1.1rem">≡</span>
-          <span class="mgv-card-label">Presentation Boards</span>
-        </label>
-        <label class="mgv-card">
-          <input type="checkbox" name="mgv-svc" value="Full Package" hidden>
-          <span class="mgv-card-icon" style="font-size:1.1rem">◈</span>
-          <span class="mgv-card-label">Full Package</span>
-        </label>
+      <div class="mgv-fields" style="margin-top:1.6rem">
+        <div class="mgv-field">
+          <label class="mgv-label" for="mgv-addr">Property address</label>
+          <input class="mgv-input" type="text" id="mgv-addr" placeholder="Street, town">
+        </div>
+        <div class="mgv-field">
+          <label class="mgv-label" for="mgv-area">Living area (m²)</label>
+          <input class="mgv-input" type="text" id="mgv-area" placeholder="e.g. 420" inputmode="numeric">
+        </div>
+        <div class="mgv-field">
+          <label class="mgv-label" for="mgv-floors">Floors</label>
+          <input class="mgv-input" type="text" id="mgv-floors" placeholder="e.g. 3" inputmode="numeric">
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem">
+        <p class="mgv-label" style="margin-bottom:.5rem">Plans available</p>
+        <div class="mgv-cards" style="grid-template-columns:repeat(2,1fr)">
+          <label class="mgv-card"><input type="radio" name="mgv-plans" value="Yes" hidden><span class="mgv-card-label">Yes</span></label>
+          <label class="mgv-card"><input type="radio" name="mgv-plans" value="Not yet" hidden><span class="mgv-card-label">Not yet</span></label>
+        </div>
+      </div>
+      <div style="margin-top:1.5rem">
+        <p class="mgv-label" style="margin-bottom:.5rem">Photographs available</p>
+        <div class="mgv-cards" style="grid-template-columns:repeat(2,1fr)">
+          <label class="mgv-card"><input type="radio" name="mgv-photos" value="Yes" hidden><span class="mgv-card-label">Yes</span></label>
+          <label class="mgv-card"><input type="radio" name="mgv-photos" value="Not yet" hidden><span class="mgv-card-label">Not yet</span></label>
+        </div>
       </div>
 
       <div class="mgv-btns">
@@ -262,7 +245,7 @@ const HTML = `
     <div class="mgv-step" data-step="2">
       <p class="mgv-eyebrow">Step 3 of 3</p>
       <h2 class="mgv-title">How should<br>we <em>reach you</em>?</h2>
-      <p class="mgv-sub">We respond within 24 hours, always personally.</p>
+      <p class="mgv-sub">A written quote comes back within 24 hours.</p>
 
       <div class="mgv-fields" style="margin-top:1.8rem">
         <div class="mgv-field">
@@ -278,14 +261,8 @@ const HTML = `
           <input class="mgv-input" type="tel" id="mgv-phone" placeholder="+352 …" autocomplete="tel">
         </div>
         <div class="mgv-field">
-          <label class="mgv-label" for="mgv-timeline">Timeline</label>
-          <select class="mgv-input" id="mgv-timeline" style="appearance:none;cursor:pointer">
-            <option value="">Select…</option>
-            <option value="This month">This month</option>
-            <option value="1-3 months">1–3 months</option>
-            <option value="3-6 months">3–6 months</option>
-            <option value="Just exploring">Just exploring</option>
-          </select>
+          <label class="mgv-label" for="mgv-note">Short note</label>
+          <input class="mgv-input" type="text" id="mgv-note" placeholder="Anything we should know">
         </div>
       </div>
 
@@ -456,11 +433,9 @@ function init(){
     const role=(document.querySelector('input[name="mgv-role"]:checked')||{}).value||'Not specified';
     const city=(document.querySelector('input[name="mgv-city"]:checked')||{}).value||'Not specified';
     const type=(document.querySelector('input[name="mgv-type"]:checked')||{}).value||'Not specified';
-    const priceIdx=document.getElementById('mgv-price-slider').value;
-    const price=fmtPrice(PRICE_SCALE[parseInt(priceIdx)])+(parseInt(priceIdx)===PRICE_SCALE.length-1?'+':'');
-    const svcs=Array.from(document.querySelectorAll('input[name="mgv-svc"]:checked')).map(function(i){return i.value;}).join(', ')||'Not specified';
+    const val=function(id){var e=document.getElementById(id);return e&&e.value.trim()?e.value.trim():'—';};
+    const pick=function(n){return (document.querySelector('input[name="'+n+'"]:checked')||{}).value||'—';};
     const phone=document.getElementById('mgv-phone').value.trim();
-    const timeline=document.getElementById('mgv-timeline').value||'Not specified';
 
     /* Send to Formspree */
     var btn=document.getElementById('mgv-submit');
@@ -477,10 +452,13 @@ function init(){
         role:role,
         city:city,
         property_type:type,
-        listing_price:price,
-        services:svcs,
-        timeline:timeline,
-        _subject:'MERGVS Inquiry — '+role+' · '+city+' / '+price,
+        address:val('mgv-addr'),
+        living_area:val('mgv-area'),
+        floors:val('mgv-floors'),
+        plans:pick('mgv-plans'),
+        photographs:pick('mgv-photos'),
+        note:val('mgv-note'),
+        _subject:'MERGVS quote request — '+role+' · '+city,
         _replyto:email
       })
     }).then(function(res){
