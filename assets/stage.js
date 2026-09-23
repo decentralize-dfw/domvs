@@ -156,6 +156,32 @@ async function boot() {
     } catch (e) {}
   }
 
+  /* the eight corners of what is actually visible, used to keep the subject
+     optically centred whatever the camera is doing */
+  const bounds = new THREE.Box3();
+  function measureBounds() {
+    bounds.makeEmpty();
+    const b = new THREE.Box3();
+    for (const o of meshes) {
+      if (!o.visible) continue;
+      b.setFromObject(o);
+      if (!b.isEmpty()) bounds.union(b);
+    }
+  }
+  measureBounds();
+  const corners = [];
+  for (let i = 0; i < 8; i++) corners.push(new THREE.Vector3());
+  function cornerList() {
+    const lo = bounds.min, hi = bounds.max;
+    let i = 0;
+    for (const x of [lo.x, hi.x]) for (const y of [lo.y, hi.y]) for (const z of [lo.z, hi.z])
+      corners[i++].set(x, y, z);
+    return corners;
+  }
+  cornerList();
+  const probe = new THREE.Vector3();
+  let corrX = 0, corrY = 0, fitK = 1;
+
   /* ── framing ──
      fx / fy are fractions of the visible frame: fx -0.19 puts the subject
      19% of the frame width right of centre, fy -0.20 puts it 20% above. */
@@ -173,7 +199,7 @@ async function boot() {
   const goal = Object.assign({}, cam);
   let opacity = SHOTS[0].o, opacityGoal = SHOTS[0].o;
   let chapter = 0, view = VIEWS ? Object.keys(VIEWS)[0] : null, drift = 0;
-  let band = 0;
+  let band = 0, bandTop = 0, bandBot = 0, frameTop = 0, frameBot = 1;
   let dens = window.__mgvFill ? window.__mgvFill(0) : 0;   /* 0..1 content density */
   let mx = 0, my = 0, pmx = 0, pmy = 0;
   const target = new THREE.Vector3();
@@ -200,11 +226,13 @@ async function boot() {
          so it is never a strip along the top edge or a shape under the text. */
       const bd = clamp(band, 0, 1);
       if (bd > 0.12) {
-        goal.fy = bd / 2 - 0.5;
-        goal.d *= 1 + (0.52 - bd) * 0.72;
+        /* the band is given as window fractions, and the canvas is the
+           window, so the mark is simply its middle */
+        goal.fy = (bandTop + bandBot) / 2 - 0.5;
+        goal.d *= 1 + (0.52 - (bandBot - bandTop)) * 0.72;
         opacityGoal = s.po != null ? s.po : Math.min(1, s.o + 0.18);
       } else {
-        goal.fy = 0;
+        goal.fy = (frameTop + frameBot) / 2 - 0.5;
         goal.d *= 1.1;
         opacityGoal = 0.08;
       }
@@ -213,7 +241,10 @@ async function boot() {
          frame and quiets it, so nothing is read over a render */
       const t = clamp((dens - 0.5) / 0.45, 0, 1);
       goal.fx = s.fx - 0.09 * t;
-      goal.fy = s.fy || 0;
+      /* the maquette sits in the middle of the frame it is given, on every
+         chapter and in every camera view: the chrome takes a slice off the
+         top and the bottom, so the middle is the deck's, not the window's */
+      goal.fy = (frameTop + frameBot) / 2 - 0.5;
       opacityGoal = s.o * (1 - 0.5 * t);
     }
   }
@@ -223,6 +254,10 @@ async function boot() {
     chapter = e.detail.index;
     if (e.detail.fill != null) dens = e.detail.fill;
     if (e.detail.band != null) band = e.detail.band;
+    if (e.detail.top != null) bandTop = e.detail.top;
+    if (e.detail.bottom != null) bandBot = e.detail.bottom;
+    if (e.detail.frameTop != null) frameTop = e.detail.frameTop;
+    if (e.detail.frameBot != null) frameBot = e.detail.frameBot;
     aim(); syncSpec();
   });
   window.addEventListener('pointermove', e => {
@@ -325,7 +360,7 @@ async function boot() {
     /* hold the subject at the same place in the frame whatever the aspect */
     const a = camera.aspect;
     const fit = a >= 1 ? clamp(1.62 / a, 0.88, 1.9) : clamp(1.07 / a, 1.15, 2.6);
-    const de = cam.d * fit;
+    const de = cam.d * fit * fitK;
     const halfH = de * TAN;
     const ce = Math.max(0.02, Math.min(1.25, cam.el));
 
@@ -336,8 +371,49 @@ async function boot() {
     );
     target.set(cam.tx, cam.ty, cam.tz);
     camera.lookAt(target);
-    camera.translateX(cam.fx * halfH * a * 2);
-    camera.translateY(cam.fy * halfH * 2);
+    camera.translateX((cam.fx + corrX) * halfH * a * 2);
+    camera.translateY((cam.fy + corrY) * halfH * 2);
+
+    /* measure where the subject actually landed and close the gap. The mark
+       is where fx / fy say it should be, so the model reads as centred in
+       its part of the frame at every camera angle, not just the default one. */
+    camera.updateMatrixWorld();
+    let lox = 2, hix = -2, loy = 2, hiy = -2;
+    for (let i = 0; i < 8; i++) {
+      probe.copy(corners[i]).project(camera);
+      if (probe.x < lox) lox = probe.x;
+      if (probe.x > hix) hix = probe.x;
+      if (probe.y < loy) loy = probe.y;
+      if (probe.y > hiy) hiy = probe.y;
+    }
+    if (hix > lox) {
+      const gain = 1 - Math.pow(0.0008, dt);
+      corrX = clamp(corrX + (((lox + hix) / 2 + 2 * cam.fx) / 2) * gain, -0.6, 0.6);
+      corrY = clamp(corrY + (((loy + hiy) / 2 + 2 * cam.fy) / 2) * gain, -0.6, 0.6);
+
+      /* and it has to fit the room it is centred in. The mark has an edge on
+         either side; the nearer one sets the limit, and the camera steps back
+         until the whole subject is inside it. It never steps closer than the
+         shot intends. */
+      const mx = -2 * cam.fx, my = -2 * cam.fy;
+      const tall = innerHeight > innerWidth;
+      const roomY = tall && (bandBot - bandTop) > 0.12
+        ? (bandBot - bandTop) * 0.94
+        : Math.max(0.12, Math.min(1 - my, 1 + my)) * 0.95;
+      let over = (hiy - loy) / 2 / roomY;
+      if (tall) {
+        /* on a phone the band is a box and nothing may hang out of it */
+        const roomX = Math.max(0.12, Math.min(1 - mx, 1 + mx)) * 0.97;
+        over = Math.max(over, (hix - lox) / 2 / roomX);
+      } else {
+        /* on a wide screen the maquette is composed to run past the right
+           edge, but never so far that the building stops reading */
+        const out = Math.max(hix - 1.17, -1.17 - lox);
+        if (out > 0) over = Math.max(over, (hix - lox + out * 2) / (hix - lox));
+      }
+      fitK += (Math.max(1, fitK * over) - fitK) * gain * 0.5;
+      fitK = clamp(fitK, 1, 2.4);
+    }
 
     const os = opacity.toFixed(3);
     if (os !== lastOp) { canvas.style.opacity = os; lastOp = os; }

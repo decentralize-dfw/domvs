@@ -98,6 +98,8 @@
      to lift the maquette clear of dense chapters in portrait */
   var deckEl = document.getElementById('deck');
   var bandNow = 0;                 /* the share of the frame left to the stage */
+  var bandTop = 0, bandBot = 0;    /* and where it sits in the window */
+  var frameTop = 0, frameBot = 1;  /* the deck itself, same measure */
   function fill(n) {
     var pin = panels[n].querySelector('.pin');
     if (!pin || !deckEl || !deckEl.clientHeight) return 0;
@@ -156,7 +158,14 @@
       var pct = band > 0 ? Math.min(0.7, Math.max(want, 1 - band)) * 100
                          : (want > 0.82 ? 100 : Math.max(34, want * 100));
       html.style.setProperty('--pin-max', pct.toFixed(1) + '%');
+      /* where that band sits in the window, which is the frame the stage
+         renders into. Fractions of the window, top down. */
+      var dr = deckEl.getBoundingClientRect();
       bandNow = 1 - pct / 100;
+      frameTop = dr.top / innerHeight;
+      frameBot = dr.bottom / innerHeight;
+      bandTop = frameTop;
+      bandBot = (dr.top + frame * bandNow) / innerHeight;
     }
     /* a dense chapter needs a solid ground under it; a sparse one can let
        the stage breathe through */
@@ -170,7 +179,8 @@
     try { history.replaceState(null, '', h || location.pathname); } catch (e) {}
     setTimeout(marks, 60);
     window.dispatchEvent(new CustomEvent('mgv:chapter',
-      { detail: { index: n, fill: f, band: bandNow } }));
+      { detail: { index: n, fill: f, band: bandNow, top: bandTop, bottom: bandBot,
+                  frameTop: frameTop, frameBot: frameBot } }));
   }
   window.__mgvGo = go;
   window.__mgvCount = panels.length;
@@ -274,7 +284,9 @@
   window.addEventListener('resize', function () {
     marks();
     window.dispatchEvent(new CustomEvent('mgv:chapter',
-      { detail: { index: cur, fill: fill(cur), band: bandNow } }));
+      { detail: { index: cur, fill: fill(cur), band: bandNow,
+                  top: bandTop, bottom: bandBot,
+                  frameTop: frameTop, frameBot: frameBot } }));
   });
 
   /* ── boot ── */
